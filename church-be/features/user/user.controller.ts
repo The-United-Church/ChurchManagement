@@ -36,7 +36,7 @@ export class UserController {
     try {
       const { id } = req.params;
       const user = await this.userRepository.findOne({ 
-        where: { id: parseInt(id) } 
+        where: { id }
       });
 
       if (!user) {
