@@ -62,6 +62,12 @@ export class User {
     @Column({ nullable: true })
     phoneNumber: string;
 
+    @Column({ nullable: true })
+    otpExpires: string;
+
+    @Column({ nullable: true })
+    otp: string;
+
     @Column()
     password: string;
 
@@ -147,6 +153,9 @@ export class User {
 
     @Column('simple-json', { nullable: true })
     familyMembers: { name: string, relationship: string }[];
+
+    @Column('simple-json', { nullable: true })
+    talents: {name: string}[];
 
     @Column({ nullable: true })
     profileImg: string;
