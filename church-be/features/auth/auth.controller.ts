@@ -5,8 +5,8 @@ const authService = new AuthService();
 
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, firstName, lastName, password, role } = req.body;
-        const result = await authService.register(email, firstName, lastName, password, role);
+        const { email, churchName, approximateSize, firstName, lastName, password } = req.body;
+        const result = await authService.register(email, churchName, approximateSize, firstName, lastName, password);
 
         res.status(201).json({
             statusCode: 201,
@@ -15,8 +15,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                 user: {
                     id: result.user.id,
                     email: result.user.email,
-                    username: result.user.username,
-                    role: result.user.role
+                    // username: result.user.username,
+                    // role: result.user.role
                 },
                 token: result.token
             }
@@ -42,7 +42,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                 user: {
                     id: result.user.id,
                     email: result.user.email,
-                    username: result.user.username
+                    // username: result.user.username
                 },
                 token: result.token
             }
