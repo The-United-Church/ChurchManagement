@@ -1,0 +1,9 @@
+.header {
+  background: #4f46e5;
+  color: #fff;
+  padding: 1.5rem 2rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
