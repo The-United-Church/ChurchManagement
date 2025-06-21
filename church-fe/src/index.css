@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles below can be removed or replaced with Tailwind classes in your components */
+/* Example: Use className="font-sans text-base text-gray-900 bg-white" on <body> or <div> */
