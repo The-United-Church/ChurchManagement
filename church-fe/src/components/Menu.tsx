@@ -12,18 +12,18 @@ const menuItems = [
         href: "/",
         visible: ["admin", "teacher", "student", "parent"],
       },
-      // {
-      //   icon: "/home.png",
-      //   label: "Signup",
-      //   href: "/auth/signup",
-      //   visible: ["admin", "teacher", "student", "parent"],
-      // },
-      // {
-      //   icon: "/home.png",
-      //   label: "Login",
-      //   href: "/auth/login",
-      //   visible: ["admin", "teacher", "student", "parent"],
-      // },
+      {
+        icon: "/home.png",
+        label: "Signup",
+        href: "/auth/signup",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
+      {
+        icon: "/home.png",
+        label: "Login",
+        href: "/auth/login",
+        visible: ["admin", "teacher", "student", "parent"],
+      },
       {
         icon: "/teacher.png",
         label: "Teachers",

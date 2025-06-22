@@ -44,10 +44,10 @@ export class User {
     @Column({ nullable: true })
     approximateSize: string;
 
-    @Column()
+    @Column({ nullable: true })
     firstName: string;
 
-    @Column()
+    @Column({ nullable: true })
     lastName: string;
 
     @Column({ nullable: true })

@@ -5,8 +5,8 @@ const authService = new AuthService();
 
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, churchName, approximateSize, firstName, lastName, password } = req.body;
-        const result = await authService.register(email, churchName, approximateSize, firstName, lastName, password);
+        const { email, churchName, password } = req.body;
+        const result = await authService.register(email, churchName, password);
 
         res.status(201).json({
             statusCode: 201,
