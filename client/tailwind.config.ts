@@ -1,9 +1,10 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
 import tailwindcssAnimate from "tailwindcss-animate";
 import tailwindcssAspectRatio from "@tailwindcss/aspect-ratio";
 
 export default {
-  // darkMode: ["class"],
+  darkMode: "class",
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
@@ -59,6 +60,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      borderColor: {
+        ...defaultTheme.colors,
+        border: 'hsl(var(--border))',
       },
       borderRadius: {
         lg: "var(--radius)",
