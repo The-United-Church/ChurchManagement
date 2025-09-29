@@ -5,7 +5,13 @@ import tailwindcssAspectRatio from "@tailwindcss/aspect-ratio";
 
 export default {
   darkMode: "class",
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./client/index.html",                      // 👈 important if index.html is in client/
+    "./client/src/pages/**/*.{ts,tsx}",
+    "./client/src/components/**/*.{ts,tsx}",
+    "./client/src/app/**/*.{ts,tsx}",
+    "./client/src/**/*.{js,ts,jsx,tsx}"        // 👈 includes everything in src
+  ],
   prefix: "",
   theme: {
     container: {
@@ -61,10 +67,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      borderColor: {
-        ...defaultTheme.colors,
-        border: 'hsl(var(--border))',
-      },
+      // borderColor: {
+      //   ...defaultTheme.colors,
+      //   border: 'hsl(var(--border))',
+      // },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

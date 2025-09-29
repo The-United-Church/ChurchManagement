@@ -3,10 +3,10 @@
   "required_fields": [],
   "required_files": [
     "README.md",
-    "src/App.tsx",
-    "src/main.tsx",
-    "src/pages/Index.tsx",
-    "index.html"
+    "./client/src/App.tsx",
+    "./client/src/main.tsx",
+    "./client/src/pages/Index.tsx",
+    "./client/index.html"
   ],
   "lang": "typescript",
   "framework": "react",

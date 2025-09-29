@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Church } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { LoginForm } from '@/components/auth/LoginForm';
-import { RegisterForm } from '@/components/auth/RegisterForm';
+import { useAuth } from '../components/auth/AuthProvider';
+import { LoginForm } from '../components/auth/LoginForm';
+import { RegisterForm } from '../components/auth/RegisterForm';
 
 export default function IndexPage() {
   const { isAuthenticated } = useAuth();
@@ -14,22 +14,22 @@ export default function IndexPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div style={styles.container}>
       {/* Header */}
-      <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-700">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <Church className="h-12 w-12 text-blue-600" />
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+      <div style={styles.header}>
+        <div style={styles.titleContainer}>
+          <Church style={styles.icon} />
+          <h1 style={styles.title}>
             Church Management
           </h1>
         </div>
-        <p className="text-lg text-muted-foreground max-w-md">
+        <p style={styles.subtitle}>
           Connect with your church community and track your spiritual journey
         </p>
       </div>
 
       {/* Auth Forms */}
-      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom duration-700 delay-200">
+      <div style={styles.formContainer}>
         {isLoginMode ? (
           <LoginForm onSwitchToRegister={() => setIsLoginMode(false)} />
         ) : (
@@ -38,9 +38,140 @@ export default function IndexPage() {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-sm text-muted-foreground animate-in fade-in delay-500 duration-700">
+      <div style={styles.footer}>
         <p>Built with ❤️ for our church community</p>
       </div>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(to bottom right, #eff6ff, #ffffff, #faf5ff)',
+    padding: '24px',
+  },
+  header: {
+    textAlign: 'center' as const,
+    marginBottom: '32px',
+    animation: 'fadeIn 0.7s ease-in-out',
+  },
+  titleContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '12px',
+    marginBottom: '16px',
+  },
+  icon: {
+    height: '48px',
+    width: '48px',
+    color: '#2563eb',
+  },
+  title: {
+    fontSize: '36px',
+    fontWeight: 'bold',
+    background: 'linear-gradient(to right, #2563eb, #9333ea)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    margin: 0,
+  },
+  subtitle: {
+    fontSize: '18px',
+    color: '#64748b',
+    maxWidth: '448px',
+    margin: '0 auto',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: '448px',
+    animation: 'fadeInUp 0.7s ease-in-out 0.2s both',
+  },
+  footer: {
+    marginTop: '32px',
+    textAlign: 'center' as const,
+    fontSize: '14px',
+    color: '#64748b',
+    animation: 'fadeIn 0.7s ease-in-out 0.5s both',
+  },
+};
+
+// Add this to your global CSS file or in a <style> tag
+const globalStyles = `
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+
+
+// import React, { useState } from 'react';
+// import { Navigate } from 'react-router-dom';
+// import { Church } from 'lucide-react';
+// import { useAuth } from '../components/auth/AuthProvider';
+// import { LoginForm } from '../components/auth/LoginForm';
+// import { RegisterForm } from '../components/auth/RegisterForm';
+// // import { useAuth } from '@/components/auth/AuthProvider';
+// // import { LoginForm } from '@/components/auth/LoginForm';
+// // import { RegisterForm } from '@/components/auth/RegisterForm';
+
+// export default function IndexPage() {
+//   const { isAuthenticated } = useAuth();
+//   const [isLoginMode, setIsLoginMode] = useState(true);
+
+//   if (isAuthenticated) {
+//     return <Navigate to="/dashboard" replace />;
+//   }
+
+//   return (
+//     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+//       {/* Header */}
+//       <div className="text-center mb-8 animate-in fade-in slide-in-from-top duration-700">
+//         <div className="flex items-center justify-center gap-3 mb-4">
+//           <Church className="h-12 w-12 text-blue-600" />
+//           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+//             Church Management
+//           </h1>
+//         </div>
+//         <p className="text-lg text-muted-foreground max-w-md">
+//           Connect with your church community and track your spiritual journey
+//         </p>
+//       </div>
+
+//       {/* Auth Forms */}
+//       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom duration-700 delay-200">
+//         {isLoginMode ? (
+//           <LoginForm onSwitchToRegister={() => setIsLoginMode(false)} />
+//         ) : (
+//           <RegisterForm onSwitchToLogin={() => setIsLoginMode(true)} />
+//         )}
+//       </div>
+
+//       {/* Footer */}
+//       <div className="mt-8 text-center text-sm text-muted-foreground animate-in fade-in delay-500 duration-700">
+//         <p>Built with ❤️ for our church community</p>
+//       </div>
+//     </div>
+//   );
+// }
