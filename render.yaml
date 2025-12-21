@@ -1,0 +1,24 @@
+services:
+  # Backend Service
+  - type: web
+    name: otuobiri-be
+    env: node
+    region: oregon
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=4096
+
+  # Frontend Service (Next.js)
+  - type: web
+    name: church-management-fe
+    env: node
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production

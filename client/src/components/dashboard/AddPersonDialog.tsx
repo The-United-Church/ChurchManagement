@@ -24,7 +24,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
 import { User, Pencil, Calendar as CalendarIcon } from 'lucide-react';
-import { Person } from '@/types/person';
+import type { Person } from '@/types/person';
 
 interface AddPersonDialogProps {
   open: boolean;
