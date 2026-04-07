@@ -20,6 +20,8 @@ import {
   DollarSign
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useChurch } from '@/components/church/ChurchProvider';
+import ChurchSelector from '@/components/church/ChurchSelector';
 
 interface MemberSidebarProps {
   activeSection: string;
@@ -28,14 +30,16 @@ interface MemberSidebarProps {
 
 const MemberSidebar: React.FC<MemberSidebarProps> = ({ activeSection, onSectionChange }) => {
   const { user, logout } = useAuth();
+  const { effectiveRole, currentChurch } = useChurch();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!user) return null;
 
   const getRoleIcon = () => {
-    switch (user.role) {
-      case 'owner':
-        return <Church className="h-4 w-4 text-yellow-600" />;
+    if (user.systemRole === 'super_admin') {
+      return <Church className="h-4 w-4 text-yellow-600" />;
+    }
+    switch (effectiveRole) {
       case 'admin':
         return <Shield className="h-4 w-4 text-red-600" />;
       default:
@@ -92,33 +96,22 @@ const MemberSidebar: React.FC<MemberSidebarProps> = ({ activeSection, onSectionC
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      {/* Church Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Church className="h-6 w-6 text-white" />
-          </div>
+      {/* Church Switcher */}
+      <ChurchSelector />
+
+      {/* User Info */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          {getRoleIcon()}
           <div>
-            <h1 className="font-bold text-lg text-gray-900">Grace Church</h1>
-            <p className="text-xs text-gray-600">Community of Faith</p>
+            <span className="font-medium text-sm text-gray-900">{user.firstName} {user.lastName}</span>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {effectiveRole}
+              </Badge>
+            </div>
           </div>
         </div>
-        
-        <Card className="bg-gray-50">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              {getRoleIcon()}
-              <div>
-                <span className="font-medium text-sm text-gray-900">{user.firstName} {user.lastName}</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {user.role}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Navigation */}

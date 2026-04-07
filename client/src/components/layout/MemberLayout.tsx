@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useChurch } from '@/components/church/ChurchProvider';
 import MemberSidebar from './MemberSidebar';
 import MobileMemberSidebar from './MobileMemberSidebar';
 import MemberHome from '../member/MemberHome';
@@ -17,6 +18,7 @@ interface MemberLayoutProps {
 const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
   const [activeSection, setActiveSection] = useState('home');
   const { user } = useAuth();
+  const { currentChurch, effectiveRole } = useChurch();
 
   const renderContent = () => {
     switch (activeSection) {
@@ -59,7 +61,9 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-3">
             <MobileMemberSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Grace Church</h1>
+              <h1 className="text-lg font-bold text-gray-900">
+                {currentChurch?.name || 'Church'}
+              </h1>
               {user && (
                 <p className="text-sm text-gray-600">
                   {user.firstName} ({user.role})

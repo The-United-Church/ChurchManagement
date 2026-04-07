@@ -1,10 +1,14 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useChurch } from '@/components/church/ChurchProvider';
 import Sidebar from './Sidebar';
 import MobileSidebar from './MobileSidebar';
 import AdminDashboard from '../dashboard/AdminDashboard';
 import PeopleManagement from '../dashboard/PeopleManagement';
+import ChurchManagement from '../dashboard/ChurchManagement';
+import BranchManagement from '../dashboard/BranchManagement';
+import ChurchMemberManagement from '../dashboard/ChurchMemberManagement';
 
 interface MainLayoutProps {
   children?: React.ReactNode;
@@ -14,6 +18,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { currentChurch, effectiveRole } = useChurch();
 
   const activeSection = location.pathname.substring(1) || 'dashboard';
 
@@ -27,6 +32,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         return <AdminDashboard />;
       case 'people':
         return <PeopleManagement />;
+      case 'churches':
+        return <ChurchManagement />;
+      case 'branches':
+        return <BranchManagement />;
+      case 'church-members':
+        return <ChurchMemberManagement />;
       case 'groups':
         return (
           <div className="p-4 md:p-6">
@@ -179,7 +190,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-3">
             <MobileSidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Church Management</h1>
+              <h1 className="text-lg font-bold text-gray-900">
+              {currentChurch?.name || 'Church Management'}
+            </h1>
               {user && (
                 <p className="text-sm text-gray-600">
                   {user.firstName} ({user.role})

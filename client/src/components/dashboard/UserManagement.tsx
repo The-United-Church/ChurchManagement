@@ -15,7 +15,8 @@ type UserType = {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'owner' | 'admin' | 'member' | 'user';
+  role: 'super_admin' | 'admin' | 'member';
+  systemRole?: 'super_admin';
   joinDate: string;
 };
 
@@ -65,14 +66,12 @@ export const UserManagement: React.FC = () => {
 
   const getRoleIcon = (role: UserType['role']) => {
     switch (role) {
-      case 'owner':
+      case 'super_admin':
         return <Crown className="h-4 w-4 text-yellow-600" />;
       case 'admin':
         return <Shield className="h-4 w-4 text-red-600" />;
       case 'member':
         return <UserCheck className="h-4 w-4 text-blue-600" />;
-      case 'user':
-        return <User className="h-4 w-4 text-gray-600" />;
       default:
         return <User className="h-4 w-4 text-gray-600" />;
     }
@@ -80,26 +79,24 @@ export const UserManagement: React.FC = () => {
 
   const getRoleBadgeColor = (role: UserType['role']) => {
     switch (role) {
-      case 'owner':
+      case 'super_admin':
         return 'bg-yellow-100 text-yellow-800';
       case 'admin':
         return 'bg-red-100 text-red-800';
       case 'member':
         return 'bg-blue-100 text-blue-800';
-      case 'user':
-        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getCreatableRoles = (): Array<'admin' | 'member' | 'user'> => {
+  const getCreatableRoles = (): Array<'admin' | 'member'> => {
     if (!user) return [];
     
-    if (user.role === 'owner') {
-      return ['admin'];
+    if (user.systemRole === 'super_admin') {
+      return ['admin', 'member'];
     } else if (user.role === 'admin') {
-      return ['member', 'user'];
+      return ['member'];
     }
     
     return [];
@@ -108,7 +105,7 @@ export const UserManagement: React.FC = () => {
   const canCreateUsers = user && getCreatableRoles().length > 0;
   const canDeleteUser = (targetUser: UserType) => {
     if (!user) return false;
-    return user.role === 'owner' || (user.role === 'admin' && (targetUser.role === 'member' || targetUser.role === 'user'));
+    return user.systemRole === 'super_admin' || (user.role === 'admin' && targetUser.role === 'member');
   };
 
   if (!user) return null;
@@ -162,30 +159,24 @@ export const UserManagement: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">
-                {users.filter(u => u.role === 'owner').length}
+                {users.filter(u => u.systemRole === 'super_admin').length}
               </div>
-              <div className="text-sm text-yellow-600">Owners</div>
+              <div className="text-sm text-yellow-600">Super Admins</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
               <div className="text-2xl font-bold text-red-600">
-                {users.filter(u => u.role === 'admin').length}
+                {users.filter(u => u.role === 'admin' && !u.systemRole).length}
               </div>
-              <div className="text-sm text-red-600">Admins</div>
+              <div className="text-sm text-red-600">Church Admins</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
                 {users.filter(u => u.role === 'member').length}
               </div>
               <div className="text-sm text-blue-600">Members</div>
-            </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl font-bold text-gray-600">
-                {users.filter(u => u.role === 'user').length}
-              </div>
-              <div className="text-sm text-gray-600">Users</div>
             </div>
           </div>
         </CardContent>

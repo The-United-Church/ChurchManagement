@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   ChevronDown, 
@@ -31,9 +29,11 @@ import {
   LogOut,
   Church,
   Crown,
-  Zap
+  MapPin,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useChurch } from '@/components/church/ChurchProvider';
+import ChurchSelector from '@/components/church/ChurchSelector';
 
 interface SidebarProps {
   activeSection: string;
@@ -42,23 +42,17 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
   const { user, logout } = useAuth();
+  const { effectiveRole } = useChurch();
   const [contributionsOpen, setContributionsOpen] = useState(false);
-  const [currentMinistry, setCurrentMinistry] = useState('Main Church');
 
   if (!user) return null;
 
-  const ministries = [
-    { name: 'Main Church', users: 312, maxUsers: 500, color: 'bg-blue-500' },
-    { name: 'Youth Ministry', users: 85, maxUsers: 150, color: 'bg-green-500' },
-    { name: 'Worship Team', users: 24, maxUsers: 50, color: 'bg-purple-500' }
-  ];
-
-  const currentMinistryData = ministries.find(m => m.name === currentMinistry) || ministries[0];
-  const progressPercentage = (currentMinistryData.users / currentMinistryData.maxUsers) * 100;
-
   const getRoleIcon = () => {
-    switch (user.role) {
-      case 'owner':
+    if (user.systemRole === 'super_admin') {
+      return <Crown className="h-4 w-4 text-yellow-600" />;
+    }
+    switch (effectiveRole) {
+      case 'super_admin':
         return <Crown className="h-4 w-4 text-yellow-600" />;
       case 'admin':
         return <Shield className="h-4 w-4 text-red-600" />;
@@ -67,8 +61,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
     }
   };
 
-  const canViewAnalytics = user.role === 'owner' || user.role === 'admin';
-  const canManageUsers = user.role === 'owner' || user.role === 'admin';
+  const canViewAnalytics = effectiveRole === 'super_admin' || effectiveRole === 'admin';
+  const canManageUsers = effectiveRole === 'super_admin' || effectiveRole === 'admin';
+  const isSuperAdmin = user.systemRole === 'super_admin';
 
   const menuItems = [
     {
@@ -82,6 +77,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       label: 'People',
       icon: Users,
       visible: true
+    },
+    {
+      id: 'church-members',
+      label: 'Church Members',
+      icon: UserCheck,
+      visible: canManageUsers
     },
     {
       id: 'groups',
@@ -155,6 +156,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
 
   const bottomMenuItems = [
     {
+      id: 'churches',
+      label: 'Churches',
+      icon: Building,
+      visible: isSuperAdmin
+    },
+    {
+      id: 'branches',
+      label: 'Branches',
+      icon: MapPin,
+      visible: canManageUsers && !isSuperAdmin
+    },
+    {
       id: 'users-roles',
       label: 'Users & Roles',
       icon: Shield,
@@ -182,33 +195,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      {/* Ministry Switcher */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center gap-2 mb-3">
+      {/* Church Switcher */}
+      <ChurchSelector />
+
+      {/* User Info */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
           {getRoleIcon()}
           <span className="font-semibold text-sm text-gray-900">{user.firstName}</span>
           <Badge variant="secondary" className="text-xs">
-            {user.role}
+            {effectiveRole}
           </Badge>
         </div>
-        
-        <Card className="bg-gray-50">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-sm">{currentMinistry}</span>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>Users</span>
-                <span>{currentMinistryData.users}/{currentMinistryData.maxUsers}</span>
-              </div>
-              <Progress value={progressPercentage} className="h-1.5" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Navigation */}

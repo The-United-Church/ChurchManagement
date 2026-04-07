@@ -131,18 +131,18 @@
 
 
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Church } from 'lucide-react';
 import { useAuth } from '../components/auth/AuthProvider';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
-// import { useAuth } from '@/components/auth/AuthProvider';
-// import { LoginForm } from '@/components/auth/LoginForm';
-// import { RegisterForm } from '@/components/auth/RegisterForm';
+import { ChurchRegistrationForm } from '../components/church/ChurchRegistrationForm';
 
 export default function IndexPage() {
   const { isAuthenticated } = useAuth();
-  const [isLoginMode, setIsLoginMode] = useState(true);
+  const location = useLocation();
+  const initialMode = location.pathname === '/register-church' ? 'register-church' : 'login';
+  const [mode, setMode] = useState<'login' | 'register' | 'register-church'>(initialMode);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -165,10 +165,25 @@ export default function IndexPage() {
 
       {/* Auth Forms */}
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom duration-700 delay-200">
-        {isLoginMode ? (
-          <LoginForm onSwitchToRegister={() => setIsLoginMode(false)} />
+        {mode === 'login' ? (
+          <>
+            <LoginForm onSwitchToRegister={() => setMode('register')} />
+            <div className="mt-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Want to register your church?{' '}
+                <button
+                  className="text-blue-600 hover:underline font-medium"
+                  onClick={() => setMode('register-church')}
+                >
+                  Register Church
+                </button>
+              </p>
+            </div>
+          </>
+        ) : mode === 'register' ? (
+          <RegisterForm onSwitchToLogin={() => setMode('login')} />
         ) : (
-          <RegisterForm onSwitchToLogin={() => setIsLoginMode(true)} />
+          <ChurchRegistrationForm onSwitchToLogin={() => setMode('login')} />
         )}
       </div>
 

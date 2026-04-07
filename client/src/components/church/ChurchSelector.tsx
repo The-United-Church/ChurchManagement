@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Church,
+  ChevronDown,
+  Check,
+  Plus,
+  MapPin,
+} from 'lucide-react';
+import { useChurch } from '@/components/church/ChurchProvider';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/components/auth/AuthProvider';
+
+const ChurchSelector: React.FC = () => {
+  const { currentChurch, userChurches, branches, currentBranch, selectChurch, selectBranch, effectiveRole } = useChurch();
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [showBranches, setShowBranches] = useState(false);
+  const navigate = useNavigate();
+
+  if (!user) return null;
+
+  // Super admin without any churches
+  if (user.systemRole === 'super_admin' && userChurches.length === 0) {
+    return (
+      <div className="p-3 border-b border-gray-200">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Church className="h-4 w-4" />
+          <span>No churches yet</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentChurch) {
+    return (
+      <div className="p-3 border-b border-gray-200">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Church className="h-4 w-4" />
+          <span>No church selected</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-b border-gray-200">
+      {/* Current Church Display */}
+      <button
+        className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <Church className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 truncate">
+            {currentChurch.name}
+          </p>
+          <div className="flex items-center gap-1.5">
+            {currentBranch && (
+              <span className="text-xs text-gray-500 truncate flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {currentBranch.name}
+              </span>
+            )}
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              {effectiveRole}
+            </Badge>
+          </div>
+        </div>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown */}
+      {isOpen && (
+        <div className="border-t border-gray-100 bg-gray-50">
+          {/* Church List */}
+          {userChurches.length > 1 && (
+            <div className="p-2">
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-1">
+                Your Churches
+              </p>
+              {userChurches.map(church => (
+                <button
+                  key={church.id}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
+                    currentChurch.id === church.id
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                  onClick={() => {
+                    selectChurch(church.id);
+                    setIsOpen(false);
+                  }}
+                >
+                  <Church className="h-3.5 w-3.5" />
+                  <span className="flex-1 text-left truncate">{church.name}</span>
+                  {currentChurch.id === church.id && (
+                    <Check className="h-3.5 w-3.5 text-blue-600" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Branch Selector */}
+          {branches.length > 1 && (
+            <div className="p-2 border-t border-gray-100">
+              <button
+                className="w-full flex items-center gap-2 px-2 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider"
+                onClick={() => setShowBranches(!showBranches)}
+              >
+                <MapPin className="h-3 w-3" />
+                Branches ({branches.length})
+                <ChevronDown className={`h-3 w-3 ml-auto transition-transform ${showBranches ? 'rotate-180' : ''}`} />
+              </button>
+              {showBranches && (
+                <div className="mt-1">
+                  <button
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
+                      !currentBranch ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                    onClick={() => {
+                      selectBranch(null);
+                      setShowBranches(false);
+                    }}
+                  >
+                    <span className="flex-1 text-left">All Branches</span>
+                    {!currentBranch && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                  </button>
+                  {branches.map(branch => (
+                    <button
+                      key={branch.id}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
+                        currentBranch?.id === branch.id
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                      onClick={() => {
+                        selectBranch(branch.id);
+                        setShowBranches(false);
+                      }}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      <span className="flex-1 text-left truncate">{branch.name}</span>
+                      {branch.isHeadquarters && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">HQ</Badge>
+                      )}
+                      {currentBranch?.id === branch.id && (
+                        <Check className="h-3.5 w-3.5 text-blue-600" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Manage Churches link for super admin */}
+          {user?.systemRole === 'super_admin' && (
+            <div className="p-2 border-t border-gray-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start h-8 text-xs"
+                onClick={() => {
+                  navigate('/churches');
+                  setIsOpen(false);
+                }}
+              >
+                <Plus className="h-3 w-3 mr-2" />
+                Manage All Churches
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ChurchSelector;

@@ -4,8 +4,8 @@ import { registerUser } from '../../lib/auth';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
-  createdBy?: string; // For admin/owner creating accounts
-  allowedRoles?: Array<'admin' | 'member' | 'user'>;
+  createdBy?: string;
+  allowedRoles?: Array<'admin' | 'member'>;
   onSuccess?: () => void;
 }
 
@@ -22,7 +22,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     firstName: '',
     lastName: '',
     phone: '',
-    role: (allowedRoles?.[0] || 'user') as 'owner' | 'admin' | 'member' | 'user'
+    role: (allowedRoles?.[0] || 'member') as 'super_admin' | 'admin' | 'member'
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +90,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     
     // Default roles for self-registration
     return [
-      { value: 'user', label: 'User' },
       { value: 'member', label: 'Member' }
     ];
   };
