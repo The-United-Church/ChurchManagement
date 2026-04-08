@@ -6,6 +6,10 @@ const BRANCHES_KEY = 'church_mgmt_branches';
 // ─── Church (Denomination) CRUD — localStorage fallback ───────────────────
 
 export const getChurches = (): Church[] => {
+  console.log("getChurches called");
+  console.log("getChurches called");
+  console.log("getChurches called");
+
   const data = localStorage.getItem(CHURCHES_KEY);
   return data ? JSON.parse(data) : [];
 };
@@ -115,6 +119,8 @@ export const deleteBranch = (id: string): boolean => {
 export const getChurchesForUser = (
   memberships: ChurchMembership[]
 ): Church[] => {
+  console.log("getChurchesForUser called");
+  console.log("getChurchesForUser called");
   const churches = getChurches();
   const churchIds = memberships.map(m => m.churchId);
   return churches.filter(c => churchIds.includes(c.id));

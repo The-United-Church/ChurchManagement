@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { authFetch, getAccessToken, setTokens, clearTokens } from '@/services/auth.service';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:7777/api';
@@ -19,25 +20,30 @@ export async function backendLogin(
   email: string,
   password: string
 ): Promise<string> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
+  const res = await axios.post(`${API_BASE}/auth/login`, { email, password }, {
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.message || 'Login failed');
-  const token = body.data?.accessToken || body.token || body.access_token;
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(res.data?.message || 'Login failed');
+  }
+  const token = (res.headers['x-access-token'] as string) ||
+    (() => {
+      const auth = res.headers['authorization'] as string | undefined;
+      return auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+    })();
   if (!token) throw new Error('Server did not return a token');
+  const refreshToken = (res.headers['x-refresh-token'] as string) || '';
+  setTokens(token, refreshToken);
   return token;
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  console.log(`API Request: ${endpoint}`, options);
   const res = await authFetch(endpoint, options);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `Request failed: ${res.status}`);
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(res.data?.message || `Request failed: ${res.status}`);
   }
-  return res.json();
+  return res.data;
 }
 
 // Users
@@ -74,9 +80,9 @@ export const fetchPermissions = () =>
 
 // Health
 export const fetchHealth = () =>
-  fetch(
+  axios.get(
     `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:7777'}/health`
-  ).then((r) => r.json());
+  ).then((r) => r.data);
 
 // Delete user
 export const deleteUserById = (id: string) =>
@@ -115,6 +121,10 @@ export interface ChurchDTO {
 
 export const fetchChurches = () =>
   request<{ data: ChurchDTO[]; status: number; message: string }>('/churches');
+
+/** Returns only the denominations (with branches) the logged-in user belongs to */
+export const fetchUserChurches = () =>
+  request<{ data: ChurchDTO[]; status: number; message: string }>('/user/churches');
 
 export const fetchChurchById = (id: string) =>
   request<{ data: ChurchDTO; status: number; message: string }>(`/churches/${id}`);

@@ -39,8 +39,13 @@ import { useBranchCrud } from '@/hooks/useBranchCrud';
 import BranchFormDialog from '@/components/church/BranchFormDialog';
 import ChurchViewDialog from '@/components/church/ChurchViewDialog';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
+import { useChurch } from '@/components/church/ChurchProvider';
 
 const BranchManagement: React.FC = () => {
+  const { currentChurch, effectiveRole } = useChurch();
+  const isAdmin = effectiveRole === 'admin';
+  const isSuperAdmin = effectiveRole === 'super_admin';
+
   const [denominations, setDenominations] = useState<ChurchDTO[]>([]);
   const [selectedDenomId, setSelectedDenomId] = useState<string | null>(null);
   const [denomLoading, setDenomLoading] = useState(true);
@@ -55,18 +60,30 @@ const BranchManagement: React.FC = () => {
 
   const { branches, loading, saving, load, create, update, remove } = useBranchCrud(selectedDenomId);
 
-  // Load denominations from backend
+  // For admin: use their church directly; for superadmin: fetch all denominations
   useEffect(() => {
-    setDenomLoading(true);
-    fetchChurches()
-      .then((res) => {
-        const list = res.data ?? [];
-        setDenominations(list);
-        if (list.length > 0) setSelectedDenomId(list[0].id);
-      })
-      .catch(() => {})
-      .finally(() => setDenomLoading(false));
-  }, []);
+    if (isAdmin) {
+      if (currentChurch) {
+        setDenominations([currentChurch as unknown as ChurchDTO]);
+        setSelectedDenomId(currentChurch.id);
+      } else {
+        setDenominations([]);
+        setSelectedDenomId(null);
+      }
+      setDenomLoading(false);
+    } else {
+      // superadmin: load all denominations
+      setDenomLoading(true);
+      fetchChurches()
+        .then((res) => {
+          const list = res.data ?? [];
+          setDenominations(list);
+          if (list.length > 0) setSelectedDenomId(list[0].id);
+        })
+        .catch(() => {})
+        .finally(() => setDenomLoading(false));
+    }
+  }, [isAdmin, currentChurch]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -106,8 +123,12 @@ const BranchManagement: React.FC = () => {
         <Card>
           <CardContent className="py-12 text-center text-gray-500">
             <Building className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p className="font-medium">No denominations found</p>
-            <p className="text-sm">Register a denomination first before adding branches.</p>
+            <p className="font-medium">No denomination found</p>
+            <p className="text-sm">
+              {isAdmin
+                ? 'Your denomination could not be loaded. Please try refreshing.'
+                : 'Register a denomination first before adding branches.'}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -126,16 +147,22 @@ const BranchManagement: React.FC = () => {
       {/* Denomination selector */}
       <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Denomination:</label>
-        <Select value={selectedDenomId ?? ''} onValueChange={setSelectedDenomId}>
-          <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder="Select a denomination" />
-          </SelectTrigger>
-          <SelectContent>
-            {denominations.map((d) => (
-              <SelectItem key={d.id} value={d.id}>{d.denomination_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isSuperAdmin ? (
+          <Select value={selectedDenomId ?? ''} onValueChange={setSelectedDenomId}>
+            <SelectTrigger className="w-full sm:w-72">
+              <SelectValue placeholder="Select a denomination" />
+            </SelectTrigger>
+            <SelectContent>
+              {denominations.map((d) => (
+                <SelectItem key={d.id} value={d.id}>{d.denomination_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="text-sm font-semibold text-gray-900">
+            {selectedDenom?.denomination_name ?? '—'}
+          </span>
+        )}
         {selectedDenom && (
           <Badge variant="outline" className="text-xs">{branches.length} branch{branches.length !== 1 ? 'es' : ''}</Badge>
         )}

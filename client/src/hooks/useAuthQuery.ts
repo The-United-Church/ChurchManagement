@@ -22,9 +22,10 @@ export function useProfile() {
   return useQuery({
     queryKey: AUTH_KEYS.profile,
     queryFn: apiFetchProfile,
-    enabled: true, // cookies are HttpOnly; server returns null/401 if not logged in
+    enabled: true, // queryFn short-circuits when no token
     staleTime: 5 * 60 * 1000,
     retry: false,
+    refetchOnWindowFocus: false,
   });
 }
 

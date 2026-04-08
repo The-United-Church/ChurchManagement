@@ -99,6 +99,18 @@ export class UserController {
     }
   );
 
+  getUserChurches = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { user } = req as AuthRequest;
+      const churches = await this.userService.getUserChurches(user!.id);
+      res.status(200).json({
+        data: churches,
+        status: 200,
+        message: "User churches fetched successfully",
+      });
+    }
+  );
+
   getUserProfile = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { user } = req as AuthRequest;

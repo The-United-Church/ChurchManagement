@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     clearTokens();
     disconnectSocket();
-    // Await the server logout so cookies are cleared BEFORE the page navigates.
+    // Await the server logout before navigating.
     // A timeout ensures we never block indefinitely if the network is slow.
     await Promise.race([
       apiLogout(),

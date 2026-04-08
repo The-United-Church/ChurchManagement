@@ -3,7 +3,6 @@ import express, { Express } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import { config } from '../config';
 import { Logger } from '../utils/logger';
 import path from 'path';
@@ -14,11 +13,11 @@ export const setupMiddleware = (app: Express) => {
 
   app.use(cors({
     origin: config.corsOrigins,
-    credentials: true,
-    exposedHeaders: ['Authorization'],
+    // No cookies used for auth; credentials not required
+    credentials: false,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Access-Token', 'X-Refresh-Token'],
+    exposedHeaders: ['Authorization', 'X-Access-Token', 'X-Refresh-Token'],
   }));
-
-  app.use(cookieParser());
   app.use('/public', express.static(path.join(__dirname, '../public')));
   app.use(express.json({ limit: '10mb' }));
   app.use(helmet());

@@ -6,9 +6,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from "typeorm";
 import { Denomination } from "./denomination.model";
+import { BranchMembership } from "./branch-membership.model";
 
 /**
  * A Branch is a local church (physical location) that belongs to a Denomination.
@@ -49,6 +51,10 @@ export class Branch {
   @ManyToOne(() => Denomination, (d) => d.branches, { onDelete: "CASCADE" })
   @JoinColumn({ name: "denomination_id" })
   denomination: Denomination;
+
+  /** All memberships for this branch (each holds user + role) */
+  @OneToMany(() => BranchMembership, (m) => m.branch)
+  memberships: BranchMembership[];
 
   @CreateDateColumn()
   created_at: Date;

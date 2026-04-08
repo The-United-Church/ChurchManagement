@@ -159,13 +159,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       id: 'churches',
       label: 'Churches',
       icon: Building,
-      visible: isSuperAdmin
+      visible: false
     },
     {
       id: 'branches',
       label: 'Branches',
       icon: MapPin,
-      visible: canManageUsers && !isSuperAdmin
+      visible: canManageUsers
     },
     {
       id: 'users-roles',

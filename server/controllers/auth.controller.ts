@@ -8,29 +8,9 @@ import { ActivityAction, EntityType } from "../models/activity-log.model";
 
 const authService = new AuthService();
 
-const IS_PROD = process.env.NODE_ENV === 'production';
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: IS_PROD,
-  sameSite: IS_PROD ? ('none' as const) : ('lax' as const),
-  path: '/',
-};
-
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-  res.cookie('access_token', accessToken, {
-    ...COOKIE_OPTIONS,
-    maxAge: 15 * 60 * 1000, // 15 minutes
-  });
-  res.cookie('refresh_token', refreshToken, {
-    ...COOKIE_OPTIONS,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-}
-
-function clearAuthCookies(res: Response) {
-  res.clearCookie('access_token', COOKIE_OPTIONS);
-  res.clearCookie('refresh_token', COOKIE_OPTIONS);
+function setTokenHeaders(res: Response, tokens: { accessToken: string; refreshToken: string }) {
+  res.setHeader('X-Access-Token', tokens.accessToken);
+  res.setHeader('X-Refresh-Token', tokens.refreshToken);
 }
 
 function buildAuthResponse(result: { user: any; tokens: any }) {
@@ -73,7 +53,7 @@ export const register = asyncHandler(
 
       const roleName = result.user.role || 'admin';
       const permissions = getPermissionsForRole(roleName as string);
-      setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+      setTokenHeaders(res, result.tokens);
 
       logActivity(
         result.user.id, ActivityAction.REGISTER, EntityType.AUTH, result.user.id,
@@ -107,7 +87,7 @@ export const register = asyncHandler(
     } else {
       // Register without church (creates a member account)
       const result = await authService.registerMember(idToken, full_name);
-      setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+      setTokenHeaders(res, result.tokens);
 
       logActivity(
         result.user.id, ActivityAction.REGISTER, EntityType.AUTH, result.user.id,
@@ -133,7 +113,7 @@ export const firebaseLogin = asyncHandler(
     }
 
     const result = await authService.firebaseLogin(idToken);
-    setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+    setTokenHeaders(res, result.tokens);
 
     logActivity(
       result.user.id, ActivityAction.LOGIN, EntityType.AUTH, result.user.id,
@@ -161,7 +141,7 @@ export const login = asyncHandler(
     }
 
     const result = await authService.login(email, password);
-    setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+    setTokenHeaders(res, result.tokens);
 
     logActivity(
       result.user.id, ActivityAction.LOGIN, EntityType.AUTH, result.user.id,
@@ -189,7 +169,7 @@ export const googleSignIn = asyncHandler(
     }
 
     const result = await authService.googleSignIn(idToken);
-    setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+    setTokenHeaders(res, result.tokens);
 
     logActivity(
       result.user.id,
@@ -211,7 +191,7 @@ export const googleSignIn = asyncHandler(
 
 export const refreshToken = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const token = req.cookies?.refresh_token || req.body?.refreshToken;
+    const token = req.body?.refreshToken;
     if (!token) {
       res.status(400).json({
         status: 400,
@@ -221,7 +201,7 @@ export const refreshToken = asyncHandler(
     }
 
     const result = await authService.refreshTokens(token);
-    setAuthCookies(res, result.tokens.accessToken, result.tokens.refreshToken);
+    setTokenHeaders(res, result.tokens);
 
     res.status(200).json({
       data: buildAuthResponse(result),
@@ -233,11 +213,12 @@ export const refreshToken = asyncHandler(
 
 export const logout = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    // Try to identify the user from the access token cookie so we can
+    // Try to identify the user from the Authorization header so we can
     // revoke their refresh token. This is best-effort — even if the token
-    // is expired or missing we still clear the cookies.
+    // is expired or missing we still proceed.
     try {
-      const token = req.cookies?.access_token;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
       if (token) {
         const { TokenService } = await import('../services/token.service');
         const ts = new TokenService();
@@ -247,9 +228,8 @@ export const logout = asyncHandler(
         }
       }
     } catch {
-      // Token expired or invalid — still proceed with clearing cookies
+      // Token expired or invalid — still proceed with logout
     }
-    clearAuthCookies(res);
     res.status(200).json({ status: 200, message: "Logged out successfully" });
   }
 );

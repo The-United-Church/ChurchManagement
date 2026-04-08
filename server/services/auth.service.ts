@@ -109,6 +109,16 @@ export class AuthService {
     });
     const savedChurch = await this.churchRepository.save(newChurch);
 
+    // Link the user as a member of their denomination
+    const userForMembership = await this.userRepository.findOne({
+      where: { id: savedUser.id },
+      relations: ["denominations"],
+    });
+    if (userForMembership) {
+      userForMembership.denominations = [savedChurch];
+      await this.userRepository.save(userForMembership);
+    }
+
     const tokens = this.tokenService.generateTokenPair(completeUser);
     await this.saveRefreshToken(completeUser, tokens.refreshToken);
 

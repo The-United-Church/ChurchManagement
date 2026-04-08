@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  ManyToMany,
   OneToMany,
   JoinColumn,
 } from "typeorm";
@@ -51,6 +52,10 @@ export class Denomination {
 
   @OneToMany(() => Branch, (branch) => branch.denomination, { cascade: true })
   branches: Branch[];
+
+  /** Users who are members of this denomination */
+  @ManyToMany(() => User, (u) => u.denominations)
+  members: User[];
 
   @CreateDateColumn()
   created_at: Date;

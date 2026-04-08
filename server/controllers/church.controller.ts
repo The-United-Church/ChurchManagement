@@ -130,6 +130,7 @@ export const createBranch = asyncHandler(
         pastor_name: pastor_name?.trim(),
         description: description?.trim(),
         is_headquarters: is_headquarters ?? false,
+        created_by: userId,
       });
 
       logActivity(

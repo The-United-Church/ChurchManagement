@@ -22,8 +22,17 @@ export const authMiddleware = (userService: UserService) => {
     return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
             const authHeader = req.headers.authorization;
-            const cookieToken = req.cookies?.access_token;
-            const token = (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null) || cookieToken;
+            const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+            const xAccessToken = (req.headers['x-access-token'] as string | undefined) || undefined;
+            const token = headerToken || xAccessToken || null;
+
+            if (process.env.NODE_ENV !== 'production') {
+                console.debug('[auth] incoming request', {
+                    path: req.path,
+                    hasAuthHeader: Boolean(authHeader),
+                    hasXAccessToken: Boolean(xAccessToken),
+                });
+            }
 
             if (!token) {
                 res.status(401).json({
@@ -64,10 +73,14 @@ export const authMiddleware = (userService: UserService) => {
             };
             next();
         } catch (error) {
-            res.status(401).json({
-                statusCode: 401,
-                message: "Invalid token"
-            });
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('[auth] token verification failed', {
+                    name: (error as any)?.name,
+                    message: (error as any)?.message,
+                });
+            }
+            const msg = (error as any)?.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token';
+            res.status(401).json({ statusCode: 401, message: msg });
         }
     };
 };

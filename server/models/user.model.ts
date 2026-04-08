@@ -9,6 +9,7 @@ import {
   BeforeUpdate,
   ManyToOne,
   ManyToMany,
+  OneToMany,
   JoinTable,
   JoinColumn,
 } from "typeorm";
@@ -17,6 +18,8 @@ import { Exclude } from "class-transformer";
 import { Gender, UserSettings } from "../types/user";
 import { Department } from "./catalogs/department.model";
 import { Group } from "./role-permission/group.model";
+import { Denomination } from "./church/denomination.model";
+import { BranchMembership } from "./church/branch-membership.model";
 
 @Entity("users")
 export class User {
@@ -141,6 +144,19 @@ export class User {
     inverseJoinColumn: { name: "group_id", referencedColumnName: "id" },
   })
   groups: Group[];
+
+  /** Denominations (churches) this user is a member of */
+  @ManyToMany(() => Denomination, (d) => d.members)
+  @JoinTable({
+    name: "user_denominations",
+    joinColumn: { name: "user_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "denomination_id", referencedColumnName: "id" },
+  })
+  denominations: Denomination[];
+
+  /** Branch memberships — each entry records the branch and the user's role in it */
+  @OneToMany(() => BranchMembership, (m) => m.user)
+  branchMemberships: BranchMembership[];
 
   @Column({
     type: "boolean",

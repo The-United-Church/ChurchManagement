@@ -63,6 +63,12 @@ router.get(
 );
 
 router.get(
+  "/churches",
+  authMiddleware(new UserService()) as RequestHandler,
+  userController.getUserChurches.bind(userController)
+);
+
+router.get(
   "/:userId/permissions",
   authMiddleware(new UserService()) as RequestHandler,
   adminMiddleware,

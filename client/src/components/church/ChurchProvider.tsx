@@ -1,28 +1,31 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Church, Branch } from '@/types/church';
-import { getChurches, getBranchesByChurch } from '@/lib/church';
+import { fetchChurches, fetchBranches, fetchUserChurches } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useProfile } from '@/hooks/useAuthQuery';
 
 interface ChurchContextType {
   currentChurch: Church | null;
   currentBranch: Branch | null;
   branches: Branch[];
+  myBranches: Branch[]; // all branches the user belongs to (across churches)
   userChurches: Church[];
   effectiveRole: 'super_admin' | 'admin' | 'member';
   selectChurch: (churchId: string) => void;
   selectBranch: (branchId: string | null) => void;
+  selectBranchGlobal: (branch: Branch) => Promise<void>;
   refreshChurches: () => void;
 }
 
 const ChurchContext = createContext<ChurchContextType | undefined>(undefined);
 
-export const useChurch = () => {
+export function useChurch() {
   const context = useContext(ChurchContext);
   if (context === undefined) {
     throw new Error('useChurch must be used within a ChurchProvider');
   }
   return context;
-};
+}
 
 const SELECTED_CHURCH_KEY = 'church_mgmt_selected_church';
 const SELECTED_BRANCH_KEY = 'church_mgmt_selected_branch';
@@ -33,12 +36,14 @@ interface ChurchProviderProps {
 
 export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
   const { user } = useAuth();
+  const { data: profile } = useProfile();
   const [currentChurch, setCurrentChurch] = useState<Church | null>(null);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [userChurches, setUserChurches] = useState<Church[]>([]);
+  const [myBranches, setMyBranches] = useState<Branch[]>([]);
 
-  const loadUserChurches = () => {
+  const loadUserChurches = useCallback(async () => {
     if (!user) {
       setUserChurches([]);
       setCurrentChurch(null);
@@ -47,25 +52,38 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
       return;
     }
 
-    // Derive role from backend user role (string or { name })
+    // Derive role inline to avoid stale closure issues
     const rawRole = user.role;
     const roleName = typeof rawRole === 'string' ? rawRole : (rawRole?.name || '');
-    const isAdmin = roleName === 'admin' || roleName === 'super_admin';
+    const isSuperAdmin = roleName === 'super_admin';
 
-    if (isAdmin) {
-      const allChurches = getChurches();
+    try {
+      // Super admin sees all denominations; everyone else only sees their own
+      const res = isSuperAdmin ? await fetchChurches() : await fetchUserChurches();
+      const allChurches = (res.data ?? []) as unknown as Church[];
       setUserChurches(allChurches);
-    } else {
-      // For non-admin users, show all churches (will be server-managed later)
-      const allChurches = getChurches();
-      setUserChurches(allChurches);
+    } catch {
+      setUserChurches([]);
     }
-  };
+  }, [user]);
 
   // Load user churches when user changes
   useEffect(() => {
     loadUserChurches();
-  }, [user]);
+  }, [loadUserChurches]);
+
+  // Derive all branches the user belongs to from profile.branchMemberships
+  useEffect(() => {
+    const memberships = (profile as any)?.branchMemberships as Array<{ branch?: Branch }> | undefined;
+    if (Array.isArray(memberships)) {
+      const list = memberships
+        .map((m) => m?.branch)
+        .filter(Boolean) as Branch[];
+      setMyBranches(list);
+    } else {
+      setMyBranches([]);
+    }
+  }, [profile]);
 
   // Auto-select church from localStorage or first available
   useEffect(() => {
@@ -81,25 +99,26 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
       ? userChurches.find(c => c.id === savedChurchId)
       : null;
 
-    if (savedChurch) {
-      setCurrentChurch(savedChurch);
-      const churchBranches = getBranchesByChurch(savedChurch.id);
-      setBranches(churchBranches);
-
-      const savedBranchId = localStorage.getItem(SELECTED_BRANCH_KEY);
-      const savedBranch = savedBranchId
-        ? churchBranches.find(b => b.id === savedBranchId)
-        : null;
-      setCurrentBranch(savedBranch || null);
-    } else {
-      // Select first church
-      const first = userChurches[0];
-      setCurrentChurch(first);
-      localStorage.setItem(SELECTED_CHURCH_KEY, first.id);
-      const churchBranches = getBranchesByChurch(first.id);
-      setBranches(churchBranches);
+    const targetChurch = savedChurch ?? userChurches[0];
+    setCurrentChurch(targetChurch);
+    if (!savedChurch) {
+      localStorage.setItem(SELECTED_CHURCH_KEY, targetChurch.id);
       setCurrentBranch(null);
     }
+
+    fetchBranches(targetChurch.id)
+      .then((res) => {
+        const churchBranches = (res.data ?? []) as unknown as Branch[];
+        setBranches(churchBranches);
+        if (savedChurch) {
+          const savedBranchId = localStorage.getItem(SELECTED_BRANCH_KEY);
+          const savedBranch = savedBranchId
+            ? churchBranches.find(b => b.id === savedBranchId)
+            : null;
+          setCurrentBranch(savedBranch || null);
+        }
+      })
+      .catch(() => setBranches([]));
   }, [userChurches]);
 
   const selectChurch = (churchId: string) => {
@@ -107,10 +126,11 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
     if (church) {
       setCurrentChurch(church);
       localStorage.setItem(SELECTED_CHURCH_KEY, churchId);
-      const churchBranches = getBranchesByChurch(churchId);
-      setBranches(churchBranches);
       setCurrentBranch(null);
       localStorage.removeItem(SELECTED_BRANCH_KEY);
+      fetchBranches(churchId)
+        .then((res) => setBranches((res.data ?? []) as unknown as Branch[]))
+        .catch(() => setBranches([]));
     }
   };
 
@@ -122,6 +142,27 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
     } else {
       setCurrentBranch(null);
       localStorage.removeItem(SELECTED_BRANCH_KEY);
+    }
+  };
+
+  // Select a branch across churches: switches church, loads its branches, then selects the branch
+  const selectBranchGlobal = async (branch: Branch) => {
+    const targetChurch = userChurches.find(c => c.id === branch.denomination_id) || null;
+    if (!targetChurch) return;
+    setCurrentChurch(targetChurch);
+    localStorage.setItem(SELECTED_CHURCH_KEY, targetChurch.id);
+    // Pre-mark desired branch so selection persists after fetch
+    localStorage.setItem(SELECTED_BRANCH_KEY, branch.id);
+    setCurrentBranch(null);
+    try {
+      const res = await fetchBranches(targetChurch.id);
+      const churchBranches = (res.data ?? []) as unknown as Branch[];
+      setBranches(churchBranches);
+      const match = churchBranches.find(b => b.id === branch.id) || null;
+      setCurrentBranch(match);
+    } catch {
+      setBranches([]);
+      setCurrentBranch(null);
     }
   };
 
@@ -143,10 +184,12 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
     currentChurch,
     currentBranch,
     branches,
+    myBranches,
     userChurches,
     effectiveRole,
     selectChurch,
     selectBranch,
+    selectBranchGlobal,
     refreshChurches,
   };
 

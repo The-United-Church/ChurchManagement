@@ -3,16 +3,13 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
+import axios from "axios";
+import type { AxiosResponse } from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7777/api";
 
-// Tokens are stored in HttpOnly cookies set by the server.
-// We only track lightweight flags in memory.
-let sessionActive = false;
-// Persisted to sessionStorage so it survives the page reload triggered by logout.
-// This prevents useProfile from firing on the /login page after logout,
-// which would make spurious /user/profile (401) and /auth/refresh-token (400) calls.
-let sessionInvalidated = sessionStorage.getItem('session_invalidated') === '1';
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 export interface AuthResponse {
   user: {
@@ -46,26 +43,32 @@ export interface RegisterResponse {
   permissions: any[];
 }
 
-/** Called after a successful login to mark the session as active. */
-export function setTokens(_accessToken: string, _refreshToken: string): void {
-  sessionActive = true;
+/** Store tokens in localStorage after a successful login/register. */
+export function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
-/** Returns true if the session is active (used for react-query enabled flag). */
+/** Read the current access token from localStorage. */
 export function getAccessToken(): string | null {
-  // Cookies are HttpOnly — not readable from JS.
-  // We use sessionActive to track state in memory.
-  // On a fresh page load, attempt a profile fetch; a 401 means no session.
-  return sessionActive ? 'cookie' : null;
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+/** Read the current refresh token from localStorage. */
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export function clearTokens(): void {
-  sessionActive = false;
-  sessionInvalidated = true;
-  sessionStorage.setItem('session_invalidated', '1');
-  // Remove legacy localStorage tokens if present from old version
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+/** Extract JWT tokens from response headers set by the server (Axios). */
+function saveTokensFromResponse(res: Pick<AxiosResponse, 'headers'>): void {
+  const accessToken = (res.headers["x-access-token"] as string) || undefined;
+  const refreshToken = (res.headers["x-refresh-token"] as string) || undefined;
+  if (accessToken) setTokens(accessToken, refreshToken || '');
 }
 
 let isRefreshing = false;
@@ -77,44 +80,60 @@ function onTokenRefreshed() {
 }
 
 async function refreshAccessToken(): Promise<void> {
-  // The refresh_token cookie is sent automatically with credentials: 'include'
-  const res = await fetch(`${API_BASE}/auth/refresh-token`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!res.ok) {
+  const refreshTokenValue = getRefreshToken();
+  if (!refreshTokenValue) {
     clearTokens();
     throw new Error("Session expired");
   }
-  sessionActive = true;
-  sessionInvalidated = false;
+
+  const res = await axios.post(`${API_BASE}/auth/refresh-token`, { refreshToken: refreshTokenValue }, {
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (res.status !== 200) {
+    clearTokens();
+    throw new Error("Session expired");
+  }
+  saveTokensFromResponse(res);
 }
 
 export async function authFetch(
   endpoint: string,
   options?: RequestInit
-): Promise<Response> {
-  const headers: HeadersInit = {
+): Promise<AxiosResponse> {
+  const hasOptions = Boolean(options);
+  const token = getAccessToken();
+  const hasToken = Boolean(token);
+  console.debug(`API Request -> ${endpoint} | method=${options?.method || 'GET'} | hasOptions=${hasOptions} | hasToken=${hasToken}`);
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options?.headers,
+    ...(token ? { Authorization: `Bearer ${token}`, 'X-Access-Token': token } : {}),
+    ...(options?.headers as Record<string, string> | undefined),
   };
 
-  let res = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
+  const axiosConfig = {
+    method: (options?.method || 'GET') as string,
+    url: `${API_BASE}${endpoint}`,
     headers,
-    credentials: "include",
-  });
+    data: options?.body,
+    validateStatus: () => true, // handle all status codes manually
+  };
 
-  if (res.status === 401) {
+  let res = await axios(axiosConfig);
+
+  // Only attempt token refresh if we actually sent an Authorization header
+  if (res.status === 401 && token) {
+    console.warn(`401 Unauthorized on ${endpoint}; attempting token refresh`);
     const refreshed = await handleTokenRefresh();
     if (refreshed) {
-      res = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers,
-        credentials: "include",
-      });
+      const newToken = getAccessToken();
+      const retryHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(newToken ? { Authorization: `Bearer ${newToken}`, 'X-Access-Token': newToken } : {}),
+        ...(options?.headers as Record<string, string> | undefined),
+      };
+      res = await axios({ ...axiosConfig, headers: retryHeaders });
     }
   }
 
@@ -150,36 +169,29 @@ export async function apiLogin(
   const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
   const idToken = await credential.user.getIdToken();
 
-  // Exchange the Firebase ID token for our server's HttpOnly cookies.
-  const res = await fetch(`${API_BASE}/auth/firebase-login`, {
-    method: "POST",
-    credentials: "include",
+  // Exchange the Firebase ID token for JWT tokens.
+  const res = await axios.post(`${API_BASE}/auth/firebase-login`, {
+    idToken,
+  }, {
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || "Login failed");
-  sessionActive = true;
-  sessionInvalidated = false;
-  sessionStorage.removeItem('session_invalidated');
-  return body.data;
+
+  if (res.status !== 200) {
+    throw new Error(res.data?.message || "Login failed");
+  }
+  // Clear any stale token before saving fresh ones
+  clearTokens();
+  saveTokensFromResponse(res);
+  return res.data.data;
 }
 
 export async function apiGoogleSignIn(
   idToken: string
 ): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/google`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || "Google sign-in failed");
-  sessionActive = true;
-  sessionInvalidated = false;
-  sessionStorage.removeItem('session_invalidated');
-  return body.data;
+  const res = await axios.post(`${API_BASE}/auth/google`, { idToken }, { headers: { "Content-Type": "application/json" } });
+  clearTokens();
+  saveTokensFromResponse(res);
+  return res.data.data;
 }
 
 export async function apiRegister(
@@ -195,79 +207,70 @@ export async function apiRegister(
     address?: string;
   }
 ): Promise<RegisterResponse> {
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-  const idToken = await credential.user.getIdToken();
-
-  const res = await fetch(`${API_BASE}/auth/signup`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken, full_name, ...(church ?? {}) }),
-  });
-  const body = await res.json();
-  if (!res.ok) {
-    await credential.user.delete();
-    throw new Error(body.message || "Registration failed");
+  let firebaseUser: import('firebase/auth').User | null = null;
+  try {
+    const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    firebaseUser = credential.user;
+    const idToken = await firebaseUser.getIdToken();
+    const res = await axios.post(`${API_BASE}/auth/signup`, { idToken, full_name, ...(church ?? {}) }, { headers: { "Content-Type": "application/json" } });
+    saveTokensFromResponse(res);
+    return res.data.data;
+  } catch (err: any) {
+    if (firebaseUser) await firebaseUser.delete();
+    const msg = err?.response?.data?.message || "Registration failed";
+    throw new Error(msg);
   }
-  return body.data;
 }
 
 export async function apiForgotPassword(email: string): Promise<{ otpSent: boolean }> {
-  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || "Failed to send reset code");
-  return body.data;
+  try {
+    const res = await axios.post(`${API_BASE}/auth/forgot-password`, { email }, { headers: { "Content-Type": "application/json" } });
+    return res.data.data;
+  } catch (err: any) {
+    throw new Error(err?.response?.data?.message || "Failed to send reset code");
+  }
 }
 
 export async function apiVerifyResetOtp(email: string, otp: string): Promise<{ isValid: boolean }> {
-  const res = await fetch(`${API_BASE}/auth/verify-reset-otp`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, otp }),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || "Invalid code");
-  return body.data;
+  try {
+    const res = await axios.post(`${API_BASE}/auth/verify-reset-otp`, { email, otp }, { headers: { "Content-Type": "application/json" } });
+    return res.data.data;
+  } catch (err: any) {
+    throw new Error(err?.response?.data?.message || "Invalid code");
+  }
 }
 
 export async function apiSetNewPassword(email: string, newPassword: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/auth/set-new-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, newPassword }),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || "Failed to set password");
+  try {
+    await axios.post(`${API_BASE}/auth/set-new-password`, { email, newPassword }, { headers: { "Content-Type": "application/json" } });
+  } catch (err: any) {
+    throw new Error(err?.response?.data?.message || "Failed to set password");
+  }
 }
 
 export async function apiLogout(): Promise<void> {
-  // Use plain fetch so a 401 (expired access token) does NOT trigger
-  // the refresh-token cycle. The server will still clear the cookies.
-  await fetch(`${API_BASE}/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-  }).catch(() => {});
+  const token = getAccessToken();
+  try {
+    await axios.post(`${API_BASE}/auth/logout`, {}, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {}
+  clearTokens();
 }
 
 export async function apiFetchProfile(): Promise<any> {
-  // If the session was explicitly invalidated (logout / expired), return null
-  // immediately without making a network call. This prevents the infinite loop
-  // after logout: queryClient.clear() → refetch → 401 → refresh → fail → repeat.
-  if (sessionInvalidated) return null;
+  // If there's no token in localStorage, skip the network call
+  if (!getAccessToken()) return null;
 
-  // Use authFetch so an expired access token is transparently refreshed via
-  // the refresh-token cookie before retrying the profile request.
-  const res = await authFetch('/user/profile');
-
-  if (res.status === 401) return null;
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.message || 'Failed to fetch profile');
-  sessionActive = true;
-  return body.data;
+  try {
+    const res = await authFetch('/user/profile');
+    console.log('Profile fetch response:', res);
+    if (res.status === 200) return res.data.data;
+    if (res.status === 401) return null;
+    throw new Error(res.data?.message || 'Failed to fetch profile');
+  } catch (err: any) {
+    console.log('Profile fetch error:', err);
+    if (err?.response?.status === 401) return null;
+    throw new Error(err?.response?.data?.message || 'Failed to fetch profile');
+  }
 }
 
 

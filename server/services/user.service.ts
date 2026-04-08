@@ -113,9 +113,24 @@ export class UserService {
   async getUserById(id: string): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ["groups", "department"]
+      relations: [
+        "groups",
+        "department",
+        "denominations",
+        "denominations.branches",
+        "branchMemberships",
+        "branchMemberships.branch",
+      ],
     });
     return user ? classToPlain(user) : null;
+  }
+
+  async getUserChurches(userId: string): Promise<any[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ["denominations", "denominations.branches"],
+    });
+    return user?.denominations ?? [];
   }
 
   async updateUser(id: string, data: Partial<User>): Promise<User | null> {

@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const ChurchSelector: React.FC = () => {
-  const { currentChurch, userChurches, branches, currentBranch, selectChurch, selectBranch, effectiveRole } = useChurch();
+  const { currentChurch, myBranches, branches, currentBranch, selectBranch, selectBranchGlobal, effectiveRole } = useChurch();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showBranches, setShowBranches] = useState(false);
@@ -21,24 +21,15 @@ const ChurchSelector: React.FC = () => {
 
   if (!user) return null;
 
-  // Super admin without any churches
-  if (effectiveRole === 'super_admin' && userChurches.length === 0) {
-    return (
-      <div className="p-3 border-b border-gray-200">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Church className="h-4 w-4" />
-          <span>No churches yet</span>
-        </div>
-      </div>
-    );
-  }
+  // Super admin without branches falls through to the general empty-branches state
 
-  if (!currentChurch) {
+  // If user has no branches memberships
+  if (!myBranches || myBranches.length === 0) {
     return (
       <div className="p-3 border-b border-gray-200">
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <Church className="h-4 w-4" />
-          <span>No church selected</span>
+          <span>No branch assigned</span>
         </div>
       </div>
     );
@@ -46,7 +37,7 @@ const ChurchSelector: React.FC = () => {
 
   return (
     <div className="border-b border-gray-200">
-      {/* Current Church Display */}
+      {/* Current Branch Display (no denomination shown) */}
       <button
         className="w-full p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
         onClick={() => setIsOpen(!isOpen)}
@@ -56,19 +47,11 @@ const ChurchSelector: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">
-            {currentChurch.denomination_name}
+            {currentBranch ? currentBranch.name : 'All Branches'}
           </p>
-          <div className="flex items-center gap-1.5">
-            {currentBranch && (
-              <span className="text-xs text-gray-500 truncate flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {currentBranch.name}
-              </span>
-            )}
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              {effectiveRole}
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
+            {effectiveRole}
+          </Badge>
         </div>
         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -76,87 +59,48 @@ const ChurchSelector: React.FC = () => {
       {/* Dropdown */}
       {isOpen && (
         <div className="border-t border-gray-100 bg-gray-50">
-          {/* Church List */}
-          {userChurches.length > 1 && (
-            <div className="p-2">
-              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-1">
-                Your Churches
-              </p>
-              {userChurches.map(church => (
-                <button
-                  key={church.id}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                    currentChurch.id === church.id
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-                  onClick={() => {
-                    selectChurch(church.id);
-                    setIsOpen(false);
-                  }}
-                >
-                  <Church className="h-3.5 w-3.5" />
-                  <span className="flex-1 text-left truncate">{church.denomination_name}</span>
-                  {currentChurch.id === church.id && (
-                    <Check className="h-3.5 w-3.5 text-blue-600" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Branch Selector */}
-          {branches.length > 1 && (
-            <div className="p-2 border-t border-gray-100">
+          {/* Branch Selector across all memberships */}
+          <div className="p-2">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-1">
+              Your Branches
+            </p>
+            <button
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
+                !currentBranch ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+              }`}
+              onClick={() => {
+                selectBranch(null);
+                setIsOpen(false);
+              }}
+            >
+              <MapPin className="h-3 w-3" />
+              <span className="flex-1 text-left truncate">All Branches</span>
+              {!currentBranch && <Check className="h-3.5 w-3.5 text-blue-600" />}
+            </button>
+            {myBranches.map((branch) => (
               <button
-                className="w-full flex items-center gap-2 px-2 py-1 text-[10px] font-medium text-gray-400 uppercase tracking-wider"
-                onClick={() => setShowBranches(!showBranches)}
+                key={branch.id}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
+                  currentBranch?.id === branch.id
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'hover:bg-gray-100 text-gray-700'
+                }`}
+                onClick={async () => {
+                  await selectBranchGlobal(branch);
+                  setIsOpen(false);
+                }}
               >
                 <MapPin className="h-3 w-3" />
-                Branches ({branches.length})
-                <ChevronDown className={`h-3 w-3 ml-auto transition-transform ${showBranches ? 'rotate-180' : ''}`} />
+                <span className="flex-1 text-left truncate">{branch.name}</span>
+                {branch.is_headquarters && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">HQ</Badge>
+                )}
+                {currentBranch?.id === branch.id && (
+                  <Check className="h-3.5 w-3.5 text-blue-600" />
+                )}
               </button>
-              {showBranches && (
-                <div className="mt-1">
-                  <button
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                      !currentBranch ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
-                    }`}
-                    onClick={() => {
-                      selectBranch(null);
-                      setShowBranches(false);
-                    }}
-                  >
-                    <span className="flex-1 text-left">All Branches</span>
-                    {!currentBranch && <Check className="h-3.5 w-3.5 text-blue-600" />}
-                  </button>
-                  {branches.map(branch => (
-                    <button
-                      key={branch.id}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                        currentBranch?.id === branch.id
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'hover:bg-gray-100 text-gray-700'
-                      }`}
-                      onClick={() => {
-                        selectBranch(branch.id);
-                        setShowBranches(false);
-                      }}
-                    >
-                      <MapPin className="h-3 w-3" />
-                      <span className="flex-1 text-left truncate">{branch.name}</span>
-                      {branch.is_headquarters && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">HQ</Badge>
-                      )}
-                      {currentBranch?.id === branch.id && (
-                        <Check className="h-3.5 w-3.5 text-blue-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            ))}
+          </div>
 
           {/* Manage Churches link for super admin */}
           {effectiveRole === 'super_admin' && (

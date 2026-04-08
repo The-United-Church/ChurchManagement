@@ -1,5 +1,5 @@
 import type { ChurchMembership } from '@/types/church';
-import { createChurch, createBranch, updateChurch } from '@/lib/church';
+import { createChurch, createBranch } from '@/lib/church';
 
 export interface User {
   id: string;
@@ -109,6 +109,9 @@ export const saveUsers = (users: User[]) => {
 
 export const getCurrentUser = (): User | null => {
   const user = localStorage.getItem(CURRENT_USER_KEY);
+  console.log("getCurrentUser:", user ? JSON.parse(user) : null);
+  console.log("getCurrentUser:", user ? JSON.parse(user) : null);
+  console.log("Current")
   return user ? JSON.parse(user) : null;
 };
 
@@ -288,21 +291,7 @@ export const registerChurchWithAdmin = (
     return { success: false, message: 'An account with this email already exists' };
   }
 
-  // Create the church
-  const church = createChurch({
-    name: churchData.name,
-    description: churchData.description,
-    createdBy: '',
-  });
-
-  // Create default HQ branch
-  createBranch({
-    churchId: church.id,
-    name: 'Main Branch',
-    isHeadquarters: true,
-  });
-
-  // Create admin user
+  // Prepare admin user first to obtain id for church admin assignment
   const adminUser: User = {
     id: Date.now().toString(),
     email: adminData.email,
@@ -310,16 +299,30 @@ export const registerChurchWithAdmin = (
     lastName: adminData.lastName,
     phone: adminData.phone,
     role: 'admin',
-    churchMemberships: [{ churchId: church.id, role: 'admin' }],
+    churchMemberships: [],
     joinDate: new Date().toISOString(),
     attendance: [],
   };
 
+  // Create the church with correct shape (denomination_name, admin_id)
+  const church = createChurch({
+    denomination_name: churchData.name,
+    description: churchData.description,
+    admin_id: adminUser.id,
+  });
+
+  // Create default HQ branch for this denomination
+  createBranch({
+    denomination_id: church.id,
+    name: 'Main Branch',
+    is_headquarters: true,
+  });
+
+  // Attach membership now that church exists
+  adminUser.churchMemberships = [{ churchId: church.id, role: 'admin' }];
+
   users.push(adminUser);
   saveUsers(users);
-
-  // Update church createdBy
-  updateChurch(church.id, { createdBy: adminUser.id } as any);
 
   return { success: true, message: 'Church registered successfully', user: adminUser, churchId: church.id };
 };

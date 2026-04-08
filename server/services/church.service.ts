@@ -1,9 +1,10 @@
 import { AppDataSource } from "../config/database";
-import { Denomination, Branch } from "../models/church";
+import { Denomination, Branch, BranchMembership, BranchRole } from "../models/church";
 
 export class ChurchService {
   private readonly denomRepo = AppDataSource.getRepository(Denomination);
   private readonly branchRepo = AppDataSource.getRepository(Branch);
+  private readonly membershipRepo = AppDataSource.getRepository(BranchMembership);
 
   // ─── Denomination CRUD ────────────────────────────────────────────────────
 
@@ -65,12 +66,27 @@ export class ChurchService {
     pastor_name?: string;
     description?: string;
     is_headquarters?: boolean;
+    created_by?: string; // user id of the creator
   }): Promise<Branch> {
     // Ensure denomination exists
     const denom = await this.denomRepo.findOneBy({ id: data.denomination_id });
     if (!denom) throw new Error("Denomination not found");
-    const branch = this.branchRepo.create(data);
-    return this.branchRepo.save(branch);
+
+    const { created_by, ...branchData } = data;
+    const branch = this.branchRepo.create(branchData);
+    const savedBranch = await this.branchRepo.save(branch);
+
+    // Assign pastor role to the creator
+    if (created_by) {
+      const membership = this.membershipRepo.create({
+        user_id: created_by,
+        branch_id: savedBranch.id,
+        role: BranchRole.ADMIN,
+      });
+      await this.membershipRepo.save(membership);
+    }
+
+    return savedBranch;
   }
 
   async findBranchesByDenomination(denomination_id: string): Promise<Branch[]> {
