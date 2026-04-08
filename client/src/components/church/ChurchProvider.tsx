@@ -3,6 +3,7 @@ import type { Church, Branch } from '@/types/church';
 import { fetchChurches, fetchBranches, fetchUserChurches } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useProfile } from '@/hooks/useAuthQuery';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ChurchContextType {
   currentChurch: Church | null;
@@ -38,6 +39,7 @@ interface ChurchProviderProps {
 export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { data: profile, isFetching: profileFetching } = useProfile();
+  const queryClient = useQueryClient();
   const [currentChurch, setCurrentChurch] = useState<Church | null>(null);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -209,6 +211,15 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
 
   const refreshChurches = () => {
     loadUserChurches();
+    // Invalidate the profile cache so myBranches (derived from branchMemberships) reflects
+    // any newly created/deleted branches without requiring a page refresh.
+    queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
+    // Re-fetch branches for the current church to keep the branch lookup table current.
+    if (currentChurch) {
+      fetchBranches(currentChurch.id)
+        .then((res) => setBranches((res.data ?? []) as unknown as Branch[]))
+        .catch(() => {});
+    }
   };
 
   // Derive effective role from backend user — role can be a string or { name: string }

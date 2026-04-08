@@ -13,10 +13,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const ChurchSelector: React.FC = () => {
-  const { currentChurch, myBranches, branches, currentBranch, selectBranch, selectBranchGlobal, effectiveRole, isMembershipsReady } = useChurch();
+  const { myBranches, currentBranch, selectBranch, selectBranchGlobal, effectiveRole, isMembershipsReady } = useChurch();
   const { user, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [showBranches, setShowBranches] = useState(false);
   const navigate = useNavigate();
 
   // Ensure a default branch is auto-selected after login without refresh
