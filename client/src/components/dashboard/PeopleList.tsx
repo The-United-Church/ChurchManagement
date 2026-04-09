@@ -14,13 +14,14 @@ interface PeopleListProps {
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
+  viewMode?: 'table' | 'card';
 }
 
 function fullName(p: Person) {
   return `${p.first_name} ${p.last_name}`;
 }
 
-const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onConvert, selectedIds, onToggleSelect, onToggleSelectAll }) => {
+const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onConvert, selectedIds, onToggleSelect, onToggleSelectAll, viewMode }) => {
   console.log('Rendering PeopleList with people:', people);
   if (people.length === 0) {
     return <p className="p-4 text-center text-gray-500">No people found.</p>;
@@ -29,10 +30,14 @@ const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onCon
   const allSelected = people.length > 0 && people.every((p) => selectedIds.has(p.id));
   const someSelected = people.some((p) => selectedIds.has(p.id)) && !allSelected;
 
+  const showCards = viewMode === 'card';
+  const showTable = viewMode === 'table';
+
   return (
     <>
-      {/* Mobile */}
-      <div className="md:hidden space-y-3">
+      {/* Card view: always on mobile, or when toggled */}
+      <div className={showTable ? 'hidden' : showCards ? 'block' : 'md:hidden'}>
+        <div className="space-y-3">
         <div className="flex items-center gap-2 px-1 pb-1 border-b">
           <Checkbox
             checked={allSelected}
@@ -57,9 +62,10 @@ const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onCon
             />
           ))}
         </div>
+        </div>
       </div>
-      {/* Desktop */}
-      <div className="hidden md:block rounded-md border">
+      {/* Table view: always on desktop, or when toggled */}
+      <div className={showCards ? 'hidden' : showTable ? 'block rounded-md border' : 'hidden md:block rounded-md border'}>
         <table className="w-full caption-bottom text-sm">
           <thead className="[&_tr]:border-b">
             <tr className="border-b hover:bg-muted/50">

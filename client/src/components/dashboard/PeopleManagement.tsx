@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Download, Upload, Search, Loader2, UserPlus, Trash2 } from 'lucide-react';
+import { Plus, Download, Upload, Search, Loader2, UserPlus, Trash2, LayoutGrid, LayoutList } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePeopleCrud } from '@/hooks/usePeopleCrud';
 import type { Person } from '@/types/person';
@@ -22,6 +22,7 @@ const PeopleManagement = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   useEffect(() => { load(); }, [load]);
 
@@ -114,7 +115,7 @@ const PeopleManagement = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <HeaderSection onAdd={() => setAddOpen(true)} onImport={() => setImportOpen(true)} onExport={handleExport} />
+      <HeaderSection onAdd={() => setAddOpen(true)} onImport={() => setImportOpen(true)} onExport={handleExport} viewMode={viewMode} onToggleView={() => setViewMode((v) => v === 'table' ? 'card' : 'table')} />
 
       <Card className="flex flex-col h-[600px]">
         <CardHeader className="pb-3">
@@ -158,6 +159,7 @@ const PeopleManagement = () => {
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll}
+            viewMode={viewMode}
           />
         </CardContent>
       </Card>
@@ -206,16 +208,19 @@ const PeopleManagement = () => {
 export default PeopleManagement;
 
 /* ─── Header sub-component ────────────────────────────────────────────── */
-const HeaderSection: React.FC<{ onAdd: () => void; onImport: () => void; onExport: () => void }> = ({ onAdd, onImport, onExport }) => (
+const HeaderSection: React.FC<{ onAdd: () => void; onImport: () => void; onExport: () => void; viewMode: 'table' | 'card'; onToggleView: () => void }> = ({ onAdd, onImport, onExport, viewMode, onToggleView }) => (
   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
       <h2 className="text-2xl font-bold tracking-tight">People</h2>
       <p className="text-gray-500">Manage your church members and visitors.</p>
     </div>
-    <div className="flex flex-wrap gap-2">
-      <Button variant="outline" size="sm" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
-      <Button variant="outline" size="sm" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
-      <Button size="sm" onClick={onAdd}><Plus className="mr-2 h-4 w-4" />Add Person</Button>
+    <div className="flex flex-wrap gap-2 items-center">
+      <Button variant="outline" size="sm" onClick={onToggleView} title={viewMode === 'table' ? 'Card view' : 'Table view'}>
+        {viewMode === 'table' ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
+      </Button>
+      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
+      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
+      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onAdd}><Plus className="mr-2 h-4 w-4" />Add Person</Button>
     </div>
   </div>
 );
