@@ -25,8 +25,7 @@ import { format } from "date-fns";
 import { User, Pencil, Calendar as CalendarIcon, Loader2, ChevronDown } from 'lucide-react';
 import type { PersonCreateDTO } from '@/types/person';
 import { Country, State } from 'country-state-city';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { firebaseStorage } from '@/lib/firebase';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 interface AddPersonDialogProps {
   open: boolean;
@@ -60,10 +59,7 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
   const handleImagePick = async (file: File) => {
     try {
       setUploading(true);
-      const path = `people/${Date.now()}_${file.name}`;
-      const storageRef = ref(firebaseStorage, path);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadToCloudinary(file, 'people');
       set('profile_image', url as any);
     } finally {
       setUploading(false);

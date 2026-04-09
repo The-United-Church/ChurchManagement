@@ -14,8 +14,7 @@ import { Country, State } from 'country-state-city';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { firebaseStorage } from '@/lib/firebase';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { Pencil } from 'lucide-react';
 import { PhoneField } from './AddPersonDialog';
 
@@ -97,10 +96,7 @@ const EditPersonDialog: React.FC<EditPersonDialogProps> = ({ open, onOpenChange,
   const handleImagePick = async (file: File) => {
     try {
       setUploading(true);
-      const path = `people/${Date.now()}_${file.name}`;
-      const storageRef = ref(firebaseStorage, path);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const url = await uploadToCloudinary(file, 'people');
       set('profile_image', url as any);
     } finally {
       setUploading(false);

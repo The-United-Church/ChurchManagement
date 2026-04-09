@@ -23,7 +23,7 @@ interface ImportPeopleDialogProps {
 // ── Template download ────────────────────────────────────────────────────────
 function downloadTemplate() {
   const header = PERSON_IMPORT_COLUMNS.join(',');
-  const sample = 'John,Doe,Michael,Johnny,1990-01-15,male,"123 Main St, Apt 4",Lagos,Ikeja,Nigeria,john@email.com,08012345678';
+  const sample = 'John,Doe,Michael,Johnny,1990-01-15,male,"123 Main St, Apt 4",Lagos,Ikeja,Nigeria,john@email.com,+234 7001234567';
   const csv = `${header}\n${sample}`;
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -92,7 +92,7 @@ const RowTable: React.FC<{ rows: Record<string, any>[]; reasonKey?: string }> = 
         <tbody>
           {dataRows.map((r, i) => (
             <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
-              {reasonKey && <td className="px-2 py-1.5 text-red-600 whitespace-nowrap max-w-[160px] truncate">{reasons[i]}</td>}
+              {reasonKey && <td className="px-2 py-1.5 text-red-600 max-w-[240px]">{reasons[i]}</td>}
               {cols.map((c) => <td key={c} className="px-2 py-1.5 text-gray-700 whitespace-nowrap max-w-[120px] truncate">{String(r[c] ?? '')}</td>)}
             </tr>
           ))}
@@ -140,7 +140,7 @@ const ImportPeopleDialog: React.FC<ImportPeopleDialogProps> = ({ open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl bg-white">
+      <DialogContent className="max-w-[90vw] sm:max-w-5xl bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Import People</DialogTitle>
         </DialogHeader>
