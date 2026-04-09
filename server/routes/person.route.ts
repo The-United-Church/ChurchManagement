@@ -20,7 +20,7 @@ router.post("/", createPerson);
 router.get("/", getPeople);
 router.get("/:id", getPersonById);
 router.put("/:id", updatePerson);
-router.delete("/:id", deletePerson);
+router.delete("/", deletePerson);
 router.post("/import", importPeople);
 router.post("/:id/convert", convertToMember);
 

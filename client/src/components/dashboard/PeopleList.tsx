@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Person } from '@/types/person';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Edit, Trash2, Mail, Phone, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,24 +11,38 @@ interface PeopleListProps {
   onEdit: (person: Person) => void;
   onDelete: (person: Person) => void;
   onConvert: (person: Person) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
 }
 
 function fullName(p: Person) {
   return `${p.first_name} ${p.last_name}`;
 }
 
-const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onConvert }) => {
+const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onConvert, selectedIds, onToggleSelect, onToggleSelectAll }) => {
   console.log('Rendering PeopleList with people:', people);
   if (people.length === 0) {
     return <p className="p-4 text-center text-gray-500">No people found.</p>;
   }
+
+  const allSelected = people.length > 0 && people.every((p) => selectedIds.has(p.id));
+  const someSelected = people.some((p) => selectedIds.has(p.id)) && !allSelected;
 
   return (
     <>
       {/* Mobile */}
       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
         {people.map((p) => (
-          <MobileCard key={p.id} person={p} onEdit={onEdit} onDelete={onDelete} onConvert={onConvert} />
+          <MobileCard
+            key={p.id}
+            person={p}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onConvert={onConvert}
+            selected={selectedIds.has(p.id)}
+            onToggleSelect={onToggleSelect}
+          />
         ))}
       </div>
       {/* Desktop */}
@@ -35,6 +50,14 @@ const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onCon
         <table className="w-full caption-bottom text-sm">
           <thead className="[&_tr]:border-b">
             <tr className="border-b hover:bg-muted/50">
+              <th className="h-12 px-4 w-10">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={onToggleSelectAll}
+                  aria-label="Select all"
+                  data-state={someSelected ? 'indeterminate' : allSelected ? 'checked' : 'unchecked'}
+                />
+              </th>
               <th className="h-12 px-4 text-left font-medium text-gray-500">Name</th>
               <th className="h-12 px-4 text-left font-medium text-gray-500">Email</th>
               <th className="h-12 px-4 text-left font-medium text-gray-500">Phone</th>
@@ -45,7 +68,15 @@ const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onCon
           </thead>
           <tbody className="[&_tr:last-child]:border-0">
             {people.map((p) => (
-              <DesktopRow key={p.id} person={p} onEdit={onEdit} onDelete={onDelete} onConvert={onConvert} />
+              <DesktopRow
+                key={p.id}
+                person={p}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onConvert={onConvert}
+                selected={selectedIds.has(p.id)}
+                onToggleSelect={onToggleSelect}
+              />
             ))}
           </tbody>
         </table>
@@ -58,12 +89,20 @@ export default PeopleList;
 
 /* ─── Sub-components ──────────────────────────────────────────────────── */
 
-const MobileCard: React.FC<{ person: Person; onEdit: (p: Person) => void; onDelete: (p: Person) => void; onConvert: (p: Person) => void }> = ({ person, onEdit, onDelete, onConvert }) => (
-  <Card className="p-4 space-y-3">
+const MobileCard: React.FC<{ person: Person; onEdit: (p: Person) => void; onDelete: (p: Person) => void; onConvert: (p: Person) => void; selected: boolean; onToggleSelect: (id: string) => void }> = ({ person, onEdit, onDelete, onConvert, selected, onToggleSelect }) => (
+  <Card className={`p-4 space-y-3 transition-colors ${selected ? 'ring-2 ring-primary bg-primary/5' : ''}`}>
     <div className="flex justify-between items-start">
-      <div>
-        <h3 className="font-semibold">{fullName(person)}</h3>
-        {person.converted_user_id && <Badge variant="secondary" className="text-xs mt-1">Member</Badge>}
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(person.id)}
+          aria-label={`Select ${person.first_name} ${person.last_name}`}
+          className="mt-0.5"
+        />
+        <div>
+          <h3 className="font-semibold">{fullName(person)}</h3>
+          {person.converted_user_id && <Badge variant="secondary" className="text-xs mt-1">Member</Badge>}
+        </div>
       </div>
       <ActionButtons person={person} onEdit={onEdit} onDelete={onDelete} onConvert={onConvert} />
     </div>
@@ -74,8 +113,15 @@ const MobileCard: React.FC<{ person: Person; onEdit: (p: Person) => void; onDele
   </Card>
 );
 
-const DesktopRow: React.FC<{ person: Person; onEdit: (p: Person) => void; onDelete: (p: Person) => void; onConvert: (p: Person) => void }> = ({ person, onEdit, onDelete, onConvert }) => (
-  <tr className="border-b hover:bg-muted/50">
+const DesktopRow: React.FC<{ person: Person; onEdit: (p: Person) => void; onDelete: (p: Person) => void; onConvert: (p: Person) => void; selected: boolean; onToggleSelect: (id: string) => void }> = ({ person, onEdit, onDelete, onConvert, selected, onToggleSelect }) => (
+  <tr className={`border-b hover:bg-muted/50 ${selected ? 'bg-primary/5' : ''}`}>
+    <td className="p-4 w-10">
+      <Checkbox
+        checked={selected}
+        onCheckedChange={() => onToggleSelect(person.id)}
+        aria-label={`Select ${person.first_name} ${person.last_name}`}
+      />
+    </td>
     <td className="p-4 font-medium">{fullName(person)}</td>
     <td className="p-4">{person.email && <span className="flex items-center gap-2"><Mail className="h-3 w-3 text-gray-400" />{person.email}</span>}</td>
     <td className="p-4">{person.phone && <span className="flex items-center gap-2"><Phone className="h-3 w-3 text-gray-400" />{person.phone}</span>}</td>

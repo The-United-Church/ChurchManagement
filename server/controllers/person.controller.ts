@@ -72,9 +72,14 @@ export const updatePerson = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const deletePerson = asyncHandler(async (req: Request, res: Response) => {
-  const ok = await personService.delete(req.params.id);
-  if (!ok) { res.status(404).json({ status: 404, message: "Person not found" }); return; }
-  res.status(200).json({ status: 200, message: "Person deleted" });
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ status: 400, message: "'ids' must be a non-empty array" });
+    return;
+  }
+  const deleted = await personService.delete(ids);
+  const noun = deleted === 1 ? 'Person' : 'People';
+  res.status(200).json({ status: 200, message: `${deleted} ${noun} deleted`, data: { deleted } });
 });
 
 // ─── IMPORT ─────────────────────────────────────────────────────────────────

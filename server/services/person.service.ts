@@ -32,9 +32,10 @@ export class PersonService {
     return this.repo.save(person);
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await this.repo.delete(id);
-    return (result.affected ?? 0) > 0;
+  async delete(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const result = await this.repo.delete(ids);
+    return result.affected ?? 0;
   }
 
   async search(term: string, branchId?: string): Promise<Person[]> {

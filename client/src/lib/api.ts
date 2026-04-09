@@ -220,8 +220,11 @@ export const updatePersonApi = (id: string, data: PersonUpdateDTO) =>
     body: JSON.stringify(data),
   });
 
-export const deletePersonApi = (id: string) =>
-  request<{ status: number; message: string }>(`/people/${id}`, { method: 'DELETE' });
+export const deletePersonApi = (ids: string[]) =>
+  request<{ status: number; message: string; data: { deleted: number } }>('/people', {
+    method: 'DELETE',
+    body: JSON.stringify({ ids }),
+  });
 
 export const importPeopleApi = (rows: Partial<PersonCreateDTO>[]) =>
   request<{ data: Person[]; status: number; message: string }>('/people/import', {

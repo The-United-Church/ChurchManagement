@@ -65,7 +65,7 @@ export function usePeopleCrud() {
   const remove = async (id: string) => {
     setSaving(true);
     try {
-      await deletePersonApi(id);
+      await deletePersonApi([id]);
       toast.success('Person deleted successfully');
       await load();
       return true;
@@ -107,5 +107,20 @@ export function usePeopleCrud() {
     }
   };
 
-  return { people, loading, saving, load, create, update, remove, importPeople, convert };
+  const removeMany = async (ids: string[]) => {
+    setSaving(true);
+    try {
+      const res = await deletePersonApi(ids);
+      toast.success(res.message || `${ids.length} people deleted`);
+      await load();
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete people');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return { people, loading, saving, load, create, update, remove, removeMany, importPeople, convert };
 }

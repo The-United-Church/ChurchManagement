@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Download, Upload, Search, Loader2, UserPlus } from 'lucide-react';
+import { Plus, Download, Upload, Search, Loader2, UserPlus, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePeopleCrud } from '@/hooks/usePeopleCrud';
 import type { Person } from '@/types/person';
@@ -13,13 +13,15 @@ import PeopleList from './PeopleList';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
 
 const PeopleManagement = () => {
-  const { people, loading, saving, load, create, update, remove, importPeople, convert } = usePeopleCrud();
+  const { people, loading, saving, load, create, update, remove, removeMany, importPeople, convert } = usePeopleCrud();
   const [searchTerm, setSearchTerm] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Person | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Person | null>(null);
   const [convertTarget, setConvertTarget] = useState<Person | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   useEffect(() => { load(); }, [load]);
 
@@ -59,6 +61,27 @@ const PeopleManagement = () => {
     if (ok) setConvertTarget(null);
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    if (filteredPeople.every((p) => selectedIds.has(p.id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredPeople.map((p) => p.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ok = await removeMany(Array.from(selectedIds));
+    if (ok) { setSelectedIds(new Set()); setBulkDeleteOpen(false); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <HeaderSection onAdd={() => setAddOpen(true)} onImport={() => setImportOpen(true)} onExport={handleExport} />
@@ -66,7 +89,20 @@ const PeopleManagement = () => {
       <Card className="flex flex-col h-[600px]">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <CardTitle className="text-lg font-medium">All People {loading && <Loader2 className="inline h-4 w-4 animate-spin ml-2" />}</CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-lg font-medium">All People {loading && <Loader2 className="inline h-4 w-4 animate-spin ml-2" />}</CardTitle>
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  disabled={saving}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete {selectedIds.size} selected
+                </Button>
+              )}
+            </div>
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
               <Input
@@ -84,7 +120,15 @@ const PeopleManagement = () => {
           </div>
         </CardHeader>
         <CardContent className="overflow-y-auto">
-          <PeopleList people={filteredPeople} onEdit={setEditTarget} onDelete={setDeleteTarget} onConvert={setConvertTarget} />
+          <PeopleList
+            people={filteredPeople}
+            onEdit={setEditTarget}
+            onDelete={setDeleteTarget}
+            onConvert={setConvertTarget}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleSelectAll={handleToggleSelectAll}
+          />
         </CardContent>
       </Card>
 
@@ -100,6 +144,18 @@ const PeopleManagement = () => {
         description={`Are you sure you want to delete "${deleteTarget ? `${deleteTarget.first_name} ${deleteTarget.last_name}` : ''}"? This action cannot be undone.`}
         onConfirm={handleDelete}
         loading={saving}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(o) => { if (!o) setBulkDeleteOpen(false); }}
+        title="Delete Selected People"
+        description={`Are you sure you want to delete ${selectedIds.size} ${selectedIds.size === 1 ? 'person' : 'people'}? This action cannot be undone.`}
+        onConfirm={handleBulkDelete}
+        loading={saving}
+        confirmLabel="Delete All"
+        variant="danger"
+        icon={<Trash2 className="h-6 w-6 text-red-600" />}
       />
 
       <ConfirmDialog
