@@ -13,7 +13,9 @@
     "dev:watch": "concurrently \"tsc -w\" \"nodemon dist/server.js\"",
     "typeorm": "typeorm-ts-node-commonjs",
     "seed:categories": "ts-node scripts/seedCategories.ts",
-    "fix:enums": "ts-node scripts/fix-enums.ts"
+    "fix:enums": "ts-node scripts/fix-enums.ts",
+    "delete:users": "ts-node scripts/deleteUsers.ts",
+    "delete:users:all": "ts-node scripts/deleteUsers.ts --all --force"
   },
   "keywords": [],
   "author": "",
