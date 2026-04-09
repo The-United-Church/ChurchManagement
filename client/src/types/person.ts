@@ -36,3 +36,9 @@ export const PERSON_IMPORT_COLUMNS = [
   'email',
   'phone',
 ] as const;
+
+export interface ImportPeopleResult {
+  valid: Person[];
+  duplicates: Array<{ row: Record<string, any>; reason: string }>;
+  invalid: Array<{ row: Record<string, any>; reason: string }>;
+}

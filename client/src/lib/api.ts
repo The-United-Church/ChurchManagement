@@ -198,7 +198,7 @@ export const deleteBranchApi = (denominationId: string, branchId: string) =>
   });
 
 // ─── People ───────────────────────────────────────────────────────────────
-import type { Person, PersonCreateDTO, PersonUpdateDTO } from '@/types/person';
+import type { Person, PersonCreateDTO, PersonUpdateDTO, ImportPeopleResult } from '@/types/person';
 
 export const fetchPeople = (search?: string) => {
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
@@ -227,7 +227,7 @@ export const deletePersonApi = (ids: string[]) =>
   });
 
 export const importPeopleApi = (rows: Partial<PersonCreateDTO>[]) =>
-  request<{ data: Person[]; status: number; message: string }>('/people/import', {
+  request<{ data: ImportPeopleResult; status: number; message: string }>('/people/import', {
     method: 'POST',
     body: JSON.stringify(rows),
   });

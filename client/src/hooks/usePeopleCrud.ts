@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { Person, PersonCreateDTO, PersonUpdateDTO } from '@/types/person';
+import type { Person, PersonCreateDTO, PersonUpdateDTO, ImportPeopleResult } from '@/types/person';
 import {
   fetchPeople,
   createPersonApi,
@@ -77,13 +77,18 @@ export function usePeopleCrud() {
     }
   };
 
-  const importPeople = async (rows: Partial<PersonCreateDTO>[]) => {
+  const importPeople = async (rows: Partial<PersonCreateDTO>[]): Promise<ImportPeopleResult | false> => {
     setSaving(true);
     try {
       const res = await importPeopleApi(rows);
-      toast.success(res.message || 'Import successful');
       await load();
-      return true;
+      const { valid, duplicates, invalid } = res.data;
+      if (valid.length > 0) {
+        toast.success(`${valid.length} ${valid.length === 1 ? 'person' : 'people'} imported successfully`);
+      } else if (duplicates.length === 0 && invalid.length === 0) {
+        toast.success('Import successful');
+      }
+      return res.data;
     } catch (err: any) {
       toast.error(err.message || 'Import failed');
       return false;
