@@ -32,18 +32,31 @@ const PeopleList: React.FC<PeopleListProps> = ({ people, onEdit, onDelete, onCon
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {people.map((p) => (
-          <MobileCard
-            key={p.id}
-            person={p}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onConvert={onConvert}
-            selected={selectedIds.has(p.id)}
-            onToggleSelect={onToggleSelect}
+      <div className="md:hidden space-y-3">
+        <div className="flex items-center gap-2 px-1 pb-1 border-b">
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={onToggleSelectAll}
+            aria-label="Select all"
+            data-state={someSelected ? 'indeterminate' : allSelected ? 'checked' : 'unchecked'}
           />
-        ))}
+          <span className="text-sm text-gray-500">
+            {someSelected || allSelected ? `${selectedIds.size} selected` : 'Select all'}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {people.map((p) => (
+            <MobileCard
+              key={p.id}
+              person={p}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onConvert={onConvert}
+              selected={selectedIds.has(p.id)}
+              onToggleSelect={onToggleSelect}
+            />
+          ))}
+        </div>
       </div>
       {/* Desktop */}
       <div className="hidden md:block rounded-md border">
