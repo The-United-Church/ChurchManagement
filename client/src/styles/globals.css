@@ -30,6 +30,9 @@
   --app-accent-border:      #3b82f6;   /* blue-500 — hover borders, accents */
   --app-accent-text:        #1d4ed8;   /* blue-700 — accent text on white bg */
 
+  /* Selected / active state text (deep brand blue — tab triggers, radio labels) */
+  --app-selected-text:      #1e3a8a;   /* blue-900 */
+
   /* Brand gradient (used in headings and logo text on landing page) */
   --app-gradient-from:      #2563eb;   /* blue-600 */
   --app-gradient-to:        #9333ea;   /* purple-600 */
@@ -47,6 +50,8 @@
   --app-primary-border:     #3b82f6;   /* blue-500 */
   --app-accent-border:      #60a5fa;   /* blue-400 */
   --app-accent-text:        #93c5fd;   /* blue-300 */
+
+  --app-selected-text:      #bfdbfe;   /* blue-200 — readable on dark */
 
   --app-gradient-from:      #60a5fa;   /* blue-400 */
   --app-gradient-to:        #c084fc;   /* purple-400 */
@@ -67,4 +72,5 @@
   --color-app-primary-border:     var(--app-primary-border);
   --color-app-accent-border:      var(--app-accent-border);
   --color-app-accent-text:        var(--app-accent-text);
+  --color-app-selected-text:      var(--app-selected-text);
 }

@@ -44,11 +44,11 @@ const ConfirmDialog: React.FC<Props> = ({
       defaultBtnIcon: <Trash2 className="h-4 w-4" />,
     },
     primary: {
-      stripe: 'bg-gradient-to-r from-teal-500 to-cyan-600',
-      iconWrap: 'bg-teal-50 border-teal-100',
-      iconColor: 'text-teal-600',
-      action: 'bg-teal-600 hover:bg-teal-700 focus-visible:ring-teal-600',
-      defaultIcon: <UserPlus className="h-6 w-6 text-teal-600" strokeWidth={2} />,
+      stripe: 'bg-gradient-to-r from-app-primary to-app-primary-hover',
+      iconWrap: 'bg-app-primary-light border-app-primary-subtle',
+      iconColor: 'text-app-primary',
+      action: 'bg-app-primary hover:bg-app-primary-hover focus-visible:ring-app-primary',
+      defaultIcon: <UserPlus className="h-6 w-6 text-app-primary" strokeWidth={2} />,
       defaultBtnIcon: <UserPlus className="h-4 w-4" />,
     },
     success: {
@@ -82,7 +82,7 @@ const ConfirmDialog: React.FC<Props> = ({
         <div className="mx-6 my-4 border-t border-gray-200" />
         <AlertDialogFooter className="px-6 pb-6 gap-3 sm:gap-2 flex-row justify-end">
           <AlertDialogCancel disabled={loading} className="flex-1 sm:flex-none min-w-[90px]">Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={loading} className={`flex-1 sm:flex-none min-w-[90px] gap-2 text-white disabled:opacity-60 ${s.action}`}>
+          <AlertDialogAction onClick={onConfirm} disabled={loading} className={`flex-1 sm:flex-none min-w-[90px] gap-2 text-app-primary-foreground font-medium disabled:opacity-60 ${s.action}`}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

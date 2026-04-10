@@ -164,10 +164,10 @@ const PeopleManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Dialogs */}
-      <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} onSave={create} saving={saving} />
-      <EditPersonDialog open={!!editTarget} onOpenChange={(o) => { if (!o) setEditTarget(null); }} person={editTarget} onSave={update} saving={saving} />
-      <ImportPeopleDialog open={importOpen} onOpenChange={setImportOpen} onImport={importPeople} saving={saving} />
+       {/* Dialogs */}
+       <AddPersonDialog open={addOpen} onOpenChange={setAddOpen} onSave={create} saving={saving} />
+       <EditPersonDialog open={!!editTarget} onOpenChange={(o) => { if (!o) setEditTarget(null); }} person={editTarget} onSave={update} saving={saving} />
+       <ImportPeopleDialog open={importOpen} onOpenChange={setImportOpen} onImport={importPeople} saving={saving} />
 
       <ConfirmDialog
         open={!!deleteTarget}
@@ -214,13 +214,13 @@ const HeaderSection: React.FC<{ onAdd: () => void; onImport: () => void; onExpor
       <h2 className="text-2xl font-bold tracking-tight">People</h2>
       <p className="text-gray-500">Manage your church members and visitors.</p>
     </div>
-    <div className="flex flex-wrap gap-2 items-center">
-      <Button variant="outline" size="sm" onClick={onToggleView} title={viewMode === 'table' ? 'Card view' : 'Table view'}>
-        {viewMode === 'table' ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
-      </Button>
-      <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
-      <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
+     <div className="flex flex-wrap gap-2 items-center">
+       <Button variant="outline" size="sm" onClick={onToggleView} title={viewMode === 'table' ? 'Card view' : 'Table view'}>
+         {viewMode === 'table' ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
+       </Button>
+       <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
+       <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
       <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onAdd}><Plus className="mr-2 h-4 w-4" />Add Person</Button>
-    </div>
+     </div>
   </div>
 );

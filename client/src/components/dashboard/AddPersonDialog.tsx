@@ -114,7 +114,7 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
           showContactLocation
         />
         <DialogFooter className="bg-white p-4 -mx-6 -mb-6 border-t border-gray-100 mt-6">
-          <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name} className="bg-teal-600 hover:bg-teal-700 text-white px-8">
+          <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name} className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground font-medium px-8">
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</> : 'Save'}
           </Button>
         </DialogFooter>
@@ -126,7 +126,7 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
 export default AddPersonDialog;
 
 /* ─── Shared form fields (reused by Edit dialog) ──────────────────────── */
-function isoToFlag(isoCode: string): string {
+export function isoToFlag(isoCode: string): string {
   try { return String.fromCodePoint(...isoCode.toUpperCase().split('').map((c) => 127397 + c.charCodeAt(0))); } catch { return '🏳️'; }
 }
 
@@ -162,7 +162,7 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
           <select
             value={cc}
             onChange={(e) => { const next = e.target.value; setCc(next); update(next, local); }}
-            className="border-0 border-b border-gray-300 rounded-none pl-3 pr-8 py-2.5 text-sm appearance-none min-w-[120px] bg-transparent focus:outline-none focus-visible:border-teal-600"
+            className="border-0 border-b border-gray-300 rounded-none pl-3 pr-8 py-2.5 text-sm appearance-none min-w-[120px] bg-transparent focus:outline-none focus-visible:border-app-primary"
           >
             {countryCodes.map((item, idx) => (
               <option key={`${item.code}-${idx}`} value={item.code}>
@@ -176,7 +176,7 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
           value={local}
           onChange={(e) => { const v = e.target.value; setLocal(v); update(cc, v); }}
           placeholder="Phone number"
-          className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-teal-600 bg-transparent"
+          className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent"
         />
       </div>
     </div>
@@ -207,7 +207,7 @@ export const PersonFormFields: React.FC<{
               <AvatarFallback className="bg-gray-200 text-gray-400"><User className="h-16 w-16" /></AvatarFallback>
             </Avatar>
             {onPickImage && (
-              <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-teal-600 hover:bg-teal-700 text-white border-2 border-white grid place-items-center cursor-pointer">
+              <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground border-2 border-white grid place-items-center cursor-pointer">
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickImage(f); }} />
               </label>
@@ -238,7 +238,7 @@ export const PersonFormFields: React.FC<{
                 showYearDropdown showMonthDropdown dropdownMode="select"
                 customInput={
                   <div className="relative">
-                    <Input value={birthdateDate ? format(birthdateDate, 'dd/MM/yyyy') : ''} readOnly placeholder="DD/MM/YYYY" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-teal-600 bg-transparent pr-8" />
+                     <Input value={birthdateDate ? format(birthdateDate, 'dd/MM/yyyy') : ''} readOnly placeholder="DD/MM/YYYY" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent pr-8" />
                     <CalendarIcon className="absolute right-0 top-2 h-4 w-4 text-gray-400" />
                   </div>
                 }
@@ -254,8 +254,8 @@ export const PersonFormFields: React.FC<{
       <Card className="border-none shadow-sm h-fit bg-white overflow-hidden">
         <Tabs defaultValue="address" className="w-full">
           <TabsList className="w-full justify-start bg-transparent border-b border-gray-100 rounded-none h-auto p-0">
-            <TabsTrigger value="address" className="rounded-none border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold text-gray-500">Address</TabsTrigger>
-            <TabsTrigger value="map" className="rounded-none border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:text-teal-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold text-gray-500">Map</TabsTrigger>
+            <TabsTrigger value="address" className="rounded-none border-b-2 border-transparent data-[state=active]:border-app-primary data-[state=active]:text-app-selected-text data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold text-gray-500">Address</TabsTrigger>
+            <TabsTrigger value="map" className="rounded-none border-b-2 border-transparent data-[state=active]:border-app-primary data-[state=active]:text-app-selected-text data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold text-gray-500">Map</TabsTrigger>
           </TabsList>
           <TabsContent value="address" className="p-6 space-y-6 mt-0">
             <FormInput label="Address" value={form.address || ''} onChange={(v) => set('address', v)} />
@@ -309,7 +309,7 @@ export const PersonFormFields: React.FC<{
 const FormInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; required?: boolean }> = ({ label, value, onChange, required }) => (
   <div className="space-y-2">
     <Label className="text-xs font-bold text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</Label>
-    <Input value={value} onChange={(e) => onChange(e.target.value)} className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-teal-600 bg-transparent" />
+    <Input value={value} onChange={(e) => onChange(e.target.value)} className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent" />
   </div>
 );
 
@@ -319,11 +319,11 @@ const GenderRadio: React.FC<{ value?: string; onChange: (v: string) => void }> =
     <div className="flex gap-6 pt-2">
       {(['male', 'female'] as const).map((g) => (
         <label key={g} className="flex items-center gap-2 cursor-pointer">
-          <div className={`w-5 h-5 rounded-full border ${value === g ? 'border-teal-600' : 'border-gray-300'} flex items-center justify-center bg-white`}>
-            {value === g && <div className="w-2.5 h-2.5 rounded-full bg-teal-600" />}
+          <div className={`w-5 h-5 rounded-full border ${value === g ? 'border-app-primary' : 'border-gray-300'} flex items-center justify-center bg-white`}>
+            {value === g && <div className="w-2.5 h-2.5 rounded-full bg-app-primary" />}
           </div>
           <input type="radio" name="gender" className="hidden" checked={value === g} onChange={() => onChange(g)} />
-          <span className="text-sm text-teal-900 capitalize">{g}</span>
+          <span className="text-sm text-app-selected-text capitalize">{g}</span>
         </label>
       ))}
     </div>

@@ -9,14 +9,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Loader2, UserPlus } from 'lucide-react';
+import { PhoneField, isoToFlag } from './AddPersonDialog';
+import { Country } from 'country-state-city';
 
 interface MemberFormData {
   first_name: string;
@@ -53,6 +48,16 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
 }) => {
   const [form, setForm] = useState<MemberFormData>({ ...EMPTY });
   const [error, setError] = useState('');
+  const [countries] = useState(() => Country.getAllCountries());
+  const phoneOptions = React.useMemo(
+    () => countries.map((c) => ({
+      isoCode: c.isoCode,
+      name: c.name,
+      code: `+${c.phonecode}`,
+      flag: isoToFlag(c.isoCode),
+    })),
+    [countries]
+  );
 
   const set = (field: keyof MemberFormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -91,7 +96,7 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
       <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-teal-600" />
+            <UserPlus className="h-5 w-5 text-app-primary" />
             Add Member{displayOrg ? ` to ${displayOrg}` : ''}
           </DialogTitle>
           {displayOrg && (
@@ -144,27 +149,32 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="add-phone">Phone Number</Label>
-            <Input
-              id="add-phone"
-              type="tel"
-              placeholder="+234 700 000 0000"
+            <PhoneField
               value={form.phone_number}
-              onChange={(e) => set('phone_number', e.target.value)}
+              onChange={(v) => set('phone_number', v)}
+              options={phoneOptions}
+              countryName=""
             />
           </div>
 
           <div className="space-y-1.5">
             <Label>Role</Label>
-            <Select value={form.role} onValueChange={(v) => set('role', v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 gap-2">
+              {(['member', 'coordinator', 'admin'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => set('role', r)}
+                  className={`px-2 py-2 text-sm rounded-md border transition-colors ${
+                    form.role === r
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {r.charAt(0).toUpperCase() + r.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
 
           <DialogFooter className="pt-2 gap-2">
@@ -174,7 +184,7 @@ const AddMemberDialog: React.FC<AddMemberDialogProps> = ({
             <Button
               type="submit"
               disabled={saving}
-              className="bg-teal-600 hover:bg-teal-700 text-white"
+              className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground font-medium"
             >
               {saving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding…</>

@@ -151,9 +151,9 @@ const DesktopRow: React.FC<{ person: Person; onEdit: (p: Person) => void; onDele
 );
 
 const ActionButtons: React.FC<{ person: Person; onEdit: (p: Person) => void; onDelete: (p: Person) => void; onConvert: (p: Person) => void }> = ({ person, onEdit, onDelete, onConvert }) => (
-  <div className="flex gap-1">
+  <div className="flex gap-1 justify-end">
     {!person.converted_user_id && (
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-teal-600 hover:text-teal-700 hover:bg-teal-50" title="Convert to Member" onClick={() => onConvert(person)}>
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-app-primary hover:text-app-primary-hover hover:bg-app-primary-light" title="Convert to Member" onClick={() => onConvert(person)}>
         <UserPlus className="h-4 w-4" />
       </Button>
     )}

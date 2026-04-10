@@ -122,7 +122,7 @@ const EditPersonDialog: React.FC<EditPersonDialogProps> = ({ open, onOpenChange,
                   <AvatarImage src={(form as any).profile_image || ''} />
                   <AvatarFallback className="bg-gray-200 text-gray-400">{form.first_name?.[0]}{form.last_name?.[0]}</AvatarFallback>
                 </Avatar>
-                <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-teal-600 hover:bg-teal-700 text-white border-2 border-white grid place-items-center cursor-pointer">
+                <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground border-2 border-white grid place-items-center cursor-pointer">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImagePick(f); }} />
                 </label>
@@ -165,7 +165,7 @@ const EditPersonDialog: React.FC<EditPersonDialogProps> = ({ open, onOpenChange,
           <PhoneField value={form.phone || ''} onChange={(v) => set('phone', v)} options={phoneOptions} countryName={(form as any).country || ''} />
         </div>
         <DialogFooter className="bg-white p-4 -mx-6 -mb-6 border-t border-gray-100 mt-6">
-          <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name} className="bg-teal-600 hover:bg-teal-700 text-white px-8">
+          <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name} className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground font-medium px-8">
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</> : 'Update'}
           </Button>
         </DialogFooter>
