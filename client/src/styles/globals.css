@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Application Color Tokens  —  globals.css
+ *
+ * All application-wide brand and UI colors are defined here as CSS custom
+ * properties. To retheme the entire app, update the :root values below.
+ *
+ * The .dark block is pre-wired so that when dark-mode toggling is added,
+ * only this file needs to change — no component edits required.
+ *
+ * Tailwind v4 design-token registration (via @theme inline) at the bottom
+ * exposes every variable as a Tailwind utility class, e.g.:
+ *   bg-app-primary          →  background-color: var(--app-primary)
+ *   hover:bg-app-primary-hover
+ *   text-app-accent-text
+ *   border-app-accent-border
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Light mode (default) ─────────────────────────────────────────────────── */
+:root {
+  /* Primary action / brand color  (blue-600 grade, confirmed on landing page) */
+  --app-primary:            #2563eb;   /* blue-600 */
+  --app-primary-hover:      #1d4ed8;   /* blue-700 */
+  --app-primary-foreground: #ffffff;   /* text on primary bg */
+
+  /* Subtle / surface variants of the primary color */
+  --app-primary-light:      #eff6ff;   /* blue-50  — light tinted background */
+  --app-primary-subtle:     #dbeafe;   /* blue-100 — badge / chip background */
+  --app-primary-muted-text: #1d4ed8;   /* blue-700 — text on light surface */
+  --app-primary-border:     #93c5fd;   /* blue-300 — focus rings, drop-zone */
+  --app-accent-border:      #3b82f6;   /* blue-500 — hover borders, accents */
+  --app-accent-text:        #1d4ed8;   /* blue-700 — accent text on white bg */
+
+  /* Brand gradient (used in headings and logo text on landing page) */
+  --app-gradient-from:      #2563eb;   /* blue-600 */
+  --app-gradient-to:        #9333ea;   /* purple-600 */
+}
+
+/* ── Dark mode overrides (ready for future implementation) ────────────────── */
+.dark {
+  --app-primary:            #3b82f6;   /* blue-500  — slightly lighter on dark */
+  --app-primary-hover:      #2563eb;   /* blue-600 */
+  --app-primary-foreground: #ffffff;
+
+  --app-primary-light:      #1e3a5f;   /* deep blue surface */
+  --app-primary-subtle:     #1e40af;   /* blue-800 */
+  --app-primary-muted-text: #93c5fd;   /* blue-300 — readable on dark */
+  --app-primary-border:     #3b82f6;   /* blue-500 */
+  --app-accent-border:      #60a5fa;   /* blue-400 */
+  --app-accent-text:        #93c5fd;   /* blue-300 */
+
+  --app-gradient-from:      #60a5fa;   /* blue-400 */
+  --app-gradient-to:        #c084fc;   /* purple-400 */
+}
+
+/* ── Tailwind v4: register tokens as design-system utilities ──────────────── *
+ * `@theme inline` preserves the CSS variable reference so that dark-mode     *
+ * overrides in .dark are respected at runtime without recompilation.          *
+ * ─────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-app-primary:            var(--app-primary);
+  --color-app-primary-hover:      var(--app-primary-hover);
+  --color-app-primary-foreground: var(--app-primary-foreground);
+
+  --color-app-primary-light:      var(--app-primary-light);
+  --color-app-primary-subtle:     var(--app-primary-subtle);
+  --color-app-primary-muted-text: var(--app-primary-muted-text);
+  --color-app-primary-border:     var(--app-primary-border);
+  --color-app-accent-border:      var(--app-accent-border);
+  --color-app-accent-text:        var(--app-accent-text);
+}

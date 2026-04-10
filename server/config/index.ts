@@ -14,8 +14,9 @@ export const config: AppConfig = {
   corsOrigins:
         [
           'http://localhost:3000',
-          'https://ferncot-ams-fe.onrender.com',
           'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:5172',
           'http://localhost:3001',
           'http://localhost:3002',
         ],

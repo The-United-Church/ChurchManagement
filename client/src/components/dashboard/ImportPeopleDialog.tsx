@@ -199,13 +199,13 @@ const ImportPeopleDialog: React.FC<ImportPeopleDialogProps> = ({ open, onOpenCha
             </div>
 
             <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-teal-500 transition-colors"
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-app-accent-border transition-colors"
               onClick={() => fileRef.current?.click()}
             >
               <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
               <FileSpreadsheet className="mx-auto h-10 w-10 text-gray-400 mb-3" />
               {fileName ? (
-                <p className="text-sm font-medium text-teal-700">{fileName} — {rows.length} row(s) parsed</p>
+                <p className="text-sm font-medium text-app-accent-text">{fileName} — {rows.length} row(s) parsed</p>
               ) : (
                 <>
                   <p className="text-sm font-medium text-gray-700">Click to select a CSV file</p>
@@ -247,7 +247,7 @@ const ImportPeopleDialog: React.FC<ImportPeopleDialogProps> = ({ open, onOpenCha
           {result ? (
             <>
               <Button variant="outline" onClick={reset}>Import Another File</Button>
-              <Button onClick={handleClose} className="bg-teal-600 hover:bg-teal-700 text-white">Done</Button>
+              <Button onClick={handleClose} className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground">Done</Button>
             </>
           ) : (
             <>
@@ -255,7 +255,7 @@ const ImportPeopleDialog: React.FC<ImportPeopleDialogProps> = ({ open, onOpenCha
               <Button
                 onClick={handleImport}
                 disabled={saving || rows.length === 0}
-                className="bg-teal-600 hover:bg-teal-700 text-white"
+                className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground"
               >
                 {saving
                   ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing…</>

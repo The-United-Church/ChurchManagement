@@ -199,7 +199,7 @@ const PeopleManagement = () => {
         loading={saving}
         confirmLabel="Convert"
         variant="primary"
-        icon={<UserPlus className="h-6 w-6 text-teal-600" />}
+        icon={<UserPlus className="h-6 w-6 text-app-primary" />}
       />
     </div>
   );
@@ -218,9 +218,9 @@ const HeaderSection: React.FC<{ onAdd: () => void; onImport: () => void; onExpor
       <Button variant="outline" size="sm" onClick={onToggleView} title={viewMode === 'table' ? 'Card view' : 'Table view'}>
         {viewMode === 'table' ? <LayoutGrid className="h-4 w-4" /> : <LayoutList className="h-4 w-4" />}
       </Button>
-      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
-      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
-      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onAdd}><Plus className="mr-2 h-4 w-4" />Add Person</Button>
+      <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onImport}><Upload className="mr-2 h-4 w-4" />Import</Button>
+      <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onExport}><Download className="mr-2 h-4 w-4" />Export</Button>
+      <Button size="sm" className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground" onClick={onAdd}><Plus className="mr-2 h-4 w-4" />Add Person</Button>
     </div>
   </div>
 );
