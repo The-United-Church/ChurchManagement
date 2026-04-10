@@ -306,10 +306,10 @@ export const PersonFormFields: React.FC<{
 );
 
 /* ─── Tiny reusable helpers ───────────────────────────────────────────── */
-const FormInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; required?: boolean }> = ({ label, value, onChange, required }) => (
+export const FormInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; required?: boolean; placeholder?: string }> = ({ label, value, onChange, required, placeholder }) => (
   <div className="space-y-2">
     <Label className="text-xs font-bold text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</Label>
-    <Input value={value} onChange={(e) => onChange(e.target.value)} className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent" />
+    <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent" />
   </div>
 );
 

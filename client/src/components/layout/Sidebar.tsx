@@ -210,9 +210,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
         <div className="flex items-center gap-2">
           {getRoleIcon()}
           <span className="font-semibold text-sm text-gray-900">{user.full_name?.split(' ')[0] || user.email}</span>
-          <Badge variant="secondary" className="text-xs">
+          {/* <Badge variant="secondary" className="text-xs">
             {effectiveRole}
-          </Badge>
+          </Badge> */}
         </div>
       </div>
 

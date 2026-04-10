@@ -206,9 +206,15 @@ export class UserService {
     const existingUser = await this.userRepository.findOne({ where: { id } });
     if (!existingUser) return null;
 
+    // Replace empty strings with null so typed columns (e.g. date) don't
+    // receive an invalid "" value from the client.
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v === "" ? null : v])
+    ) as Partial<User>;
+
     const updatedUser = {
       ...existingUser,
-      ...data,
+      ...sanitized,
     };
 
     const savedUser = await this.userRepository.upsert(updatedUser, ["id"]);

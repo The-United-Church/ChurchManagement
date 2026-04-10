@@ -60,6 +60,9 @@ export class User {
   postal_code: string;
 
   @Column({ nullable: true })
+  country: string;
+
+  @Column({ nullable: true })
   phone_number: string;
 
   @Column({ type: "date", nullable: true })

@@ -1,21 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import MemberSidebar from './MemberSidebar';
 
-interface MobileMemberSidebarProps {
-  activeSection: string;
-  onSectionChange: (section: string) => void;
-}
-
-const MobileMemberSidebar: React.FC<MobileMemberSidebarProps> = ({ activeSection, onSectionChange }) => {
+const MobileMemberSidebar: React.FC = () => {
   const [open, setOpen] = React.useState(false);
+  const { pathname } = useLocation();
 
-  const handleSectionChange = (section: string) => {
-    onSectionChange(section);
-    setOpen(false); // Close sidebar when item is selected
-  };
+  // Close the sheet whenever the route changes (navigation occurred)
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -25,7 +22,7 @@ const MobileMemberSidebar: React.FC<MobileMemberSidebarProps> = ({ activeSection
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-64">
-        <MemberSidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
+        <MemberSidebar />
       </SheetContent>
     </Sheet>
   );

@@ -59,6 +59,17 @@ function AppRoutes() {
             <Route path="/pledges" element={<ProtectedRoute allowedRoles={['admin','super_admin']}><Dashboard /></ProtectedRoute>} />
             <Route path="/contacts" element={<ProtectedRoute allowedRoles={['admin','super_admin']}><Dashboard /></ProtectedRoute>} />
             <Route path="/organisations" element={<ProtectedRoute allowedRoles={['admin','super_admin']}><Dashboard /></ProtectedRoute>} />
+            {/* Member portal — each section gets its own URL */}
+            <Route path="/member" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/profile" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/directory" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/registrations" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/calendar" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/notifications" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/settings/password" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/settings/currency" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/settings/directory" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/superadmin" element={<ProtectedRoute allowedRoles={['super_admin']}><SuperAdmin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

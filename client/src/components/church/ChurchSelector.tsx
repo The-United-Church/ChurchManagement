@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const ChurchSelector: React.FC = () => {
-  const { myBranches, currentBranch, selectBranch, selectBranchGlobal, effectiveRole, isMembershipsReady } = useChurch();
+  const { myBranches, currentBranch, selectBranchGlobal, effectiveRole, isMembershipsReady } = useChurch();
   const { user, isLoading: authLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ const ChurchSelector: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">
-            {currentBranch ? currentBranch.name : 'All Branches'}
+            {currentBranch ? currentBranch.name : myBranches[0]?.name ?? 'Select Branch'}
           </p>
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
             {effectiveRole}
@@ -92,19 +92,6 @@ const ChurchSelector: React.FC = () => {
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider px-2 mb-1">
               Your Branches
             </p>
-            <button
-              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${
-                !currentBranch ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
-              }`}
-              onClick={() => {
-                selectBranch(null);
-                setIsOpen(false);
-              }}
-            >
-              <MapPin className="h-3 w-3" />
-              <span className="flex-1 text-left truncate">All Branches</span>
-              {!currentBranch && <Check className="h-3.5 w-3.5 text-blue-600" />}
-            </button>
             {myBranches.map((branch) => (
               <button
                 key={branch.id}

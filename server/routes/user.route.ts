@@ -68,6 +68,13 @@ router.get(
   userController.getUserChurches.bind(userController)
 );
 
+// Must be before /:id to avoid Express treating "settings" as an id param
+router.put(
+  "/settings",
+  authMiddleware(new UserService()) as RequestHandler,
+  userController.updateSettings.bind(userController)
+);
+
 router.get(
   "/:userId/permissions",
   authMiddleware(new UserService()) as RequestHandler,
@@ -107,12 +114,6 @@ router.put(
   authMiddleware(new UserService()) as RequestHandler,
   adminMiddleware,
   userController.updateUserPermissions.bind(userController)
-);
-
-router.put(
-  "/settings",
-  authMiddleware(new UserService()) as RequestHandler,
-  userController.updateSettings.bind(userController)
 );
 
 router.delete(

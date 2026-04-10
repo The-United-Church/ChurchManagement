@@ -45,14 +45,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginWithResponse = useCallback(
     (data: AuthResponse) => {
-      // Cancel any in-flight profile fetch before setting data to prevent
-      // a stale 401 response from overwriting the just-set auth data.
-      queryClient.cancelQueries({ queryKey: ['auth', 'profile'] });
+      // NOTE: do NOT call cancelQueries here — handleAuthSuccess (mutation-level
+      // onSuccess) already cancelled stale pre-login fetches AND triggered a
+      // background refetch via invalidateQueries. Cancelling again would kill
+      // that refetch, leaving the profile without branchMemberships and causing
+      // the sidebar to show "No branch assigned" until a manual refresh.
       queryClient.setQueryData(['auth', 'profile'], {
         ...data.user,
         role: data.role,
         permissions: data.permissions,
       });
+      // Ensure a background refetch runs to hydrate branchMemberships/branches.
+      queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
     },
     [queryClient]
   );

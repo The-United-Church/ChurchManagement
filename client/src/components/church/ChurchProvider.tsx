@@ -38,7 +38,7 @@ interface ChurchProviderProps {
 
 export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const { data: profile, isFetching: profileFetching } = useProfile();
+  const { data: profile, isFetching: profileFetching, isStale: profileStale } = useProfile();
   const queryClient = useQueryClient();
   const [currentChurch, setCurrentChurch] = useState<Church | null>(null);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
@@ -78,14 +78,16 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
 
   // Derive all branches the user belongs to from profile.branchMemberships
   useEffect(() => {
-    // While the profile query is fetching, mark memberships as not ready
-    if (profileFetching) {
+    // While the profile query is fetching (or stale with no membership data yet),
+    // keep memberships as not ready to avoid a flash of "No branch assigned".
+    const memberships = (profile as any)?.branchMemberships as Array<{ branch?: Branch }> | undefined;
+    const hasMemberships = Array.isArray(memberships) && memberships.length > 0;
+    if (profileFetching || (!hasMemberships && profileStale)) {
       setIsMembershipsReady(false);
       return;
     }
 
     // Query has settled (either with data or null); treat as ready
-    const memberships = (profile as any)?.branchMemberships as Array<{ branch?: Branch }> | undefined;
     const denomBranches = Array.isArray((profile as any)?.denominations)
       ? ((profile as any).denominations as Array<{ branches?: Branch[] }>)
           .flatMap((d) => Array.isArray(d.branches) ? (d.branches as Branch[]) : [])
@@ -109,7 +111,7 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
       setMyBranches([]);
     }
     setIsMembershipsReady(true);
-  }, [profile, profileFetching, userChurches]);
+  }, [profile, profileFetching, profileStale, userChurches]);
 
   // Auto-select active branch after login/profile resolve without refreshing:
   // 1) Prefer saved branch if it belongs to the current user

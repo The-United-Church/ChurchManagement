@@ -287,3 +287,50 @@ export const convertPersonApi = (id: string) =>
   request<{ data: any; status: number; message: string }>(`/people/${id}/convert`, {
     method: 'POST',
   });
+
+// ─── My Profile ───────────────────────────────────────────────────────────────
+export const updateMyProfileApi = (data: Record<string, any>) =>
+  request<{ data: any; status: number; message: string }>('/user/users/me', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+// ─── Change Password ──────────────────────────────────────────────────────────
+export const changePasswordApi = (data: { oldPassword: string; newPassword: string }) =>
+  request<{ data: any; status: number; message: string }>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+// ─── User Settings ────────────────────────────────────────────────────────────
+export interface UserPrivacySettings {
+  isProfileVisible?: 'public' | 'private';
+  showEmail?: boolean;
+  showLocation?: boolean;
+  showActivityStatus?: boolean;
+  allowDirectMessage?: boolean;
+  showOnlineStatus?: boolean;
+}
+
+export interface UserSettings {
+  privacy?: UserPrivacySettings;
+  notifications?: {
+    email?: boolean;
+    push?: boolean;
+    communityUpdates?: boolean;
+    directMessages?: boolean;
+    mentions?: boolean;
+    weeklyDIgest?: boolean;
+  };
+  security?: {
+    '2fa'?: boolean;
+    loginAlerts?: boolean;
+  };
+  currency?: string;
+}
+
+export const updateSettingsApi = (settings: UserSettings) =>
+  request<{ data: UserSettings; status: number; message: string }>('/user/settings', {
+    method: 'PUT',
+    body: JSON.stringify({ settings }),
+  });

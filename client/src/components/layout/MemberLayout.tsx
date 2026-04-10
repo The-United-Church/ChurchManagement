@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import MemberSidebar from './MemberSidebar';
@@ -15,35 +16,42 @@ interface MemberLayoutProps {
   children?: React.ReactNode;
 }
 
+/** Map the current pathname to a section key used by renderContent */
+function sectionFromPath(pathname: string): string {
+  if (pathname === '/member')                         return 'home';
+  if (pathname.startsWith('/member/profile'))         return 'my-profile';
+  if (pathname.startsWith('/member/directory'))       return 'directory';
+  if (pathname.startsWith('/member/registrations'))   return 'my-registrations';
+  if (pathname.startsWith('/member/calendar'))        return 'calendar';
+  if (pathname.startsWith('/member/notifications'))   return 'notifications';
+  if (pathname.startsWith('/member/settings/password'))   return 'change-password';
+  if (pathname.startsWith('/member/settings/currency'))   return 'change-currency';
+  if (pathname.startsWith('/member/settings/directory'))  return 'directory-settings';
+  if (pathname.startsWith('/member/settings'))        return 'general-settings';
+  // Fall back to home for legacy paths like /dashboard
+  return 'home';
+}
+
 const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
-  const [activeSection, setActiveSection] = useState('home');
   const { user } = useAuth();
-  const { currentChurch, effectiveRole } = useChurch();
+  const { currentChurch } = useChurch();
+  const { pathname } = useLocation();
+
+  const activeSection = sectionFromPath(pathname);
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'home':
-        return <MemberHome />;
-      case 'my-profile':
-        return <MemberProfile />;
-      case 'directory':
-        return <MemberDirectory />;
-      case 'my-registrations':
-        return <MemberRegistrations />;
-      case 'calendar':
-        return <MemberCalendar />;
-      case 'notifications':
-        return <MemberNotifications />;
-      case 'general-settings':
-        return <MemberSettings settingType="general" />;
-      case 'change-password':
-        return <MemberSettings settingType="password" />;
-      case 'change-currency':
-        return <MemberSettings settingType="currency" />;
-      case 'directory-settings':
-        return <MemberSettings settingType="directory" />;
-      default:
-        return <MemberHome />;
+      case 'home':               return <MemberHome />;
+      case 'my-profile':         return <MemberProfile />;
+      case 'directory':          return <MemberDirectory />;
+      case 'my-registrations':   return <MemberRegistrations />;
+      case 'calendar':           return <MemberCalendar />;
+      case 'notifications':      return <MemberNotifications />;
+      case 'general-settings':   return <MemberSettings settingType="general" />;
+      case 'change-password':    return <MemberSettings settingType="password" />;
+      case 'change-currency':    return <MemberSettings settingType="currency" />;
+      case 'directory-settings': return <MemberSettings settingType="directory" />;
+      default:                   return <MemberHome />;
     }
   };
 
@@ -51,15 +59,15 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
-        <MemberSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+        <MemberSidebar />
       </div>
-      
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MobileMemberSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+            <MobileMemberSidebar />
             <div>
               <h1 className="text-lg font-bold text-gray-900">
                 {currentChurch?.name || 'Church'}
@@ -72,7 +80,7 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           {renderContent()}

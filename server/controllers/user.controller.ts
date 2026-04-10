@@ -302,6 +302,7 @@ export class UserController {
         status: 400,
         message: "The 'settings' object is required in the request body.",
       });
+      return;
     }
 
     const updatedUser = await this.userService.updateSettings(
@@ -314,6 +315,7 @@ export class UserController {
         status: 404,
         message: "User not found.",
       });
+      return;
     }
 
     res.status(200).json({
