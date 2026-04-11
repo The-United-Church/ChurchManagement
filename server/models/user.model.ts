@@ -16,8 +16,6 @@ import {
 import * as bcrypt from "bcrypt";
 import { Exclude } from "class-transformer";
 import { Gender, UserSettings } from "../types/user";
-import { Department } from "./catalogs/department.model";
-import { Group } from "./role-permission/group.model";
 import { Denomination } from "./church/denomination.model";
 import { BranchMembership } from "./church/branch-membership.model";
 
@@ -113,21 +111,6 @@ export class User {
   last_access: Date;
 
   @Column({ nullable: true })
-  departmentId: Number;
-
-  @ManyToMany(() => Department)
-  @JoinTable({
-    name: "user_departments",
-    joinColumn: { name: "user_id", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "department_id", referencedColumnName: "id" },
-  })
-  departments: Department[];
-
-  @ManyToOne(() => Department, { eager: true, nullable: true, onDelete: "SET NULL" })
-  @JoinColumn()
-  department: Department;
-
-  @Column({ nullable: true })
   reset_password_token: string;
 
   @Column({ nullable: true })
@@ -139,14 +122,6 @@ export class User {
 
   @Column({ nullable: true, default: 'member' })
   role: string;
-
-  @ManyToMany(() => Group, (group) => group.users)
-  @JoinTable({
-    name: "user_groups",
-    joinColumn: { name: "user_id", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "group_id", referencedColumnName: "id" },
-  })
-  groups: Group[];
 
   /** Denominations (churches) this user is a member of */
   @ManyToMany(() => Denomination, (d) => d.members)

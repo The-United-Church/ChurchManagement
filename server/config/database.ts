@@ -2,12 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "../models/user.model";
 import dotenv from "dotenv";
-import { Role } from "../models/role-permission/role.model";
-import { Permission } from "../models/role-permission/permission.model";
-import { Category } from "../models/catalogs/category.model";
-import { Department } from "../models/catalogs/department.model";
 import { ActivityLog } from "../models/activity-log.model";
-import { Group } from "../models/role-permission/group.model";
 import { Denomination, Branch, BranchMembership } from "../models/church";
 import { Person } from "../models/person.model";
 dotenv.config();
@@ -24,11 +19,6 @@ export const AppDataSource = new DataSource({
     synchronize: process.env.NODE_ENV === 'development',
     logging: process.env.NODE_ENV === 'development',
     entities: [ User,
-                Role,
-                Permission,
-                Group,
-                Category,
-                Department,
                 ActivityLog,
                 Denomination,
                 Branch,

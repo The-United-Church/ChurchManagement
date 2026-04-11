@@ -1,21 +1,29 @@
 import app from './app';
 import { AppDataSource } from './config/database';
+import { createServer } from 'http';
+import { initializeSocket } from './services/socket.service';
+import { config } from './config';
+import { Logger } from './utils/logger';
 
-const PORT = process.env.PORT || 9000;
+const PORT = config.port;
+const logger = new Logger({ level: 'info' });
+const httpServer = createServer(app);
+
+initializeSocket(httpServer);
 
 const startServer = async () => {
   try {
-    // Initialize database connection
-    await AppDataSource.initialize();
-    console.log('Database connected successfully');
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+    logger.info('Database connected successfully');
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
+    httpServer.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server:', error);
     process.exit(1);
   }
 };
