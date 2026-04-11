@@ -104,9 +104,20 @@ export class UserController {
       const { role } = req.query;
       const branchId = (req as any).branchId as string | undefined;
       const requesterId = (req as any).user?.id as string | undefined;
+      const requesterRole = (req as any).user?.role as string | undefined;
+      const isAdminLike = requesterRole === 'admin' || requesterRole === 'super_admin';
+
+      // Non-admin users must be scoped to an active branch selected via X-Branch-Id.
+      if (!isAdminLike && !branchId) {
+        res.status(403).json({
+          status: 403,
+          message: 'Branch context required to fetch members.',
+        });
+        return;
+      }
       
       let users;
-      if (role && typeof role === 'string') {
+      if (role && typeof role === 'string' && isAdminLike) {
         users = await this.userService.getUsersByRole(role, branchId, requesterId);
       } else {
         users = await this.userService.getAllUsers(branchId, requesterId);

@@ -95,6 +95,8 @@ export interface MemberDTO {
   full_name?: string;
   first_name?: string;
   last_name?: string;
+  profile_img?: string;
+  profile_image?: string;
   phone_number?: string;
   role: string;
   /** Role within the current branch (from BranchMembership.role) */

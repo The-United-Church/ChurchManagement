@@ -24,7 +24,6 @@ router.post(
 router.get(
   "/",
   authMiddleware(new UserService()) as RequestHandler,
-  adminMiddleware,
   userController.getUsers.bind(userController)
 );
 

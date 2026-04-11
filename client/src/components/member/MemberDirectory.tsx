@@ -1,100 +1,61 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, Mail, Phone, Calendar, Heart, MapPin } from 'lucide-react';
-
-// Mock member directory data
-const members = [
-  {
-    id: 1,
-    name: 'John Smith',
-    email: 'john.smith@email.com',
-    phone: '+1 (555) 123-4567',
-    birthdate: '1980-05-15',
-    maritalStatus: 'Married',
-    address: '123 Oak Street, Springfield, IL 62701',
-    profilePicture: '',
-    role: 'Member'
-  },
-  {
-    id: 2,
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@email.com',
-    phone: '+1 (555) 234-5678',
-    birthdate: '1985-08-22',
-    maritalStatus: 'Single',
-    address: '456 Pine Avenue, Springfield, IL 62702',
-    profilePicture: '',
-    role: 'Member'
-  },
-  {
-    id: 3,
-    name: 'Michael Brown',
-    email: 'michael.brown@email.com',
-    phone: '+1 (555) 345-6789',
-    birthdate: '1975-12-10',
-    maritalStatus: 'Married',
-    address: '789 Elm Street, Springfield, IL 62703',
-    profilePicture: '',
-    role: 'Admin'
-  },
-  {
-    id: 4,
-    name: 'Emily Davis',
-    email: 'emily.davis@email.com',
-    phone: '+1 (555) 456-7890',
-    birthdate: '1990-03-18',
-    maritalStatus: 'Single',
-    address: '321 Maple Drive, Springfield, IL 62704',
-    profilePicture: '',
-    role: 'Member'
-  },
-  {
-    id: 5,
-    name: 'David Wilson',
-    email: 'david.wilson@email.com',
-    phone: '+1 (555) 567-8901',
-    birthdate: '1982-07-25',
-    maritalStatus: 'Married',
-    address: '654 Cedar Lane, Springfield, IL 62705',
-    profilePicture: '',
-    role: 'Member'
-  },
-  {
-    id: 6,
-    name: 'Lisa Anderson',
-    email: 'lisa.anderson@email.com',
-    phone: '+1 (555) 678-9012',
-    birthdate: '1988-11-30',
-    maritalStatus: 'Divorced',
-    address: '987 Birch Road, Springfield, IL 62706',
-    profilePicture: '',
-    role: 'Member'
-  }
-];
+import { Search, Mail, Phone, Shield, Loader2 } from 'lucide-react';
+import { useMemberCrud } from '@/hooks/useMemberCrud';
+import { useChurch } from '@/components/church/ChurchProvider';
+import type { MemberDTO } from '@/lib/api';
 
 const MemberDirectory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null);
+  const { currentBranch } = useChurch();
+  const { members, loading, load } = useMemberCrud();
 
-  const filteredMembers = members.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (!currentBranch?.id) return;
+    load();
+  }, [currentBranch?.id, load]);
+
+  const filteredMembers = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return members;
+
+    return members.filter((member) => {
+      const name = getDisplayName(member).toLowerCase();
+      return name.includes(q) || member.email.toLowerCase().includes(q);
+    });
+  }, [members, searchTerm]);
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  function getDisplayName(member: MemberDTO) {
+    const full = member.full_name?.trim();
+    if (full) return full;
+
+    const first = member.first_name?.trim() || '';
+    const last = member.last_name?.trim() || '';
+    const combined = `${first} ${last}`.trim();
+    return combined || member.email;
+  }
+
+  const getProfileImage = (member: MemberDTO) =>
+    member.profile_img || member.profile_image || '';
+
   const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'Admin':
+    const normalized = role.toLowerCase();
+    switch (normalized) {
+      case 'admin':
         return 'bg-red-100 text-red-800';
-      case 'Owner':
+      case 'super_admin':
+      case 'owner':
         return 'bg-yellow-100 text-yellow-800';
+      case 'coordinator':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-blue-100 text-blue-800';
     }
@@ -107,7 +68,7 @@ const MemberDirectory: React.FC = () => {
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Member Directory</h2>
           <p className="text-muted-foreground text-sm md:text-base">
-            Connect with fellow church members
+            Members in the selected branch
           </p>
         </div>
         <Badge variant="secondary" className="text-xs md:text-sm self-start sm:self-auto">
@@ -115,8 +76,16 @@ const MemberDirectory: React.FC = () => {
         </Badge>
       </div>
 
+      {!currentBranch && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-gray-500">Select a branch to view members.</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search */}
-      <Card>
+      <Card className={!currentBranch ? 'opacity-60 pointer-events-none' : ''}>
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -125,28 +94,42 @@ const MemberDirectory: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
+              disabled={!currentBranch}
             />
           </div>
         </CardContent>
       </Card>
 
+      {loading && currentBranch && (
+        <Card>
+          <CardContent className="p-8 text-center flex items-center justify-center gap-2 text-gray-600">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading members...
+          </CardContent>
+        </Card>
+      )}
+
       {/* Members Grid */}
+      {!loading && currentBranch && (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredMembers.map((member) => (
+        {filteredMembers.map((member) => {
+          const displayName = getDisplayName(member);
+          const displayRole = member.branch_role || member.role || 'member';
+          return (
           <Dialog key={member.id}>
             <DialogTrigger asChild>
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.profilePicture} />
-                      <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                      <AvatarImage src={getProfileImage(member)} />
+                      <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sm truncate">{member.name}</h3>
-                        <Badge className={`text-xs ${getRoleColor(member.role)}`}>
-                          {member.role}
+                        <h3 className="font-semibold text-sm truncate">{displayName}</h3>
+                        <Badge className={`text-xs ${getRoleColor(displayRole)}`}>
+                          {displayRole}
                         </Badge>
                       </div>
                       <p className="text-xs text-gray-600 truncate">{member.email}</p>
@@ -159,19 +142,19 @@ const MemberDirectory: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>Member Details</DialogTitle>
                 <DialogDescription>
-                  Contact information and details for {member.name}
+                  Contact information for {displayName}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={member.profilePicture} />
-                    <AvatarFallback className="text-lg">{getInitials(member.name)}</AvatarFallback>
+                    <AvatarImage src={getProfileImage(member)} />
+                    <AvatarFallback className="text-lg">{getInitials(displayName)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-semibold">{member.name}</h3>
-                    <Badge className={`text-xs ${getRoleColor(member.role)}`}>
-                      {member.role}
+                    <h3 className="text-lg font-semibold">{displayName}</h3>
+                    <Badge className={`text-xs ${getRoleColor(displayRole)}`}>
+                      {displayRole}
                     </Badge>
                   </div>
                 </div>
@@ -189,41 +172,28 @@ const MemberDirectory: React.FC = () => {
                     <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium">Phone</p>
-                      <p className="text-sm text-gray-600">{member.phone}</p>
+                      <p className="text-sm text-gray-600">{member.phone_number || 'Not provided'}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <Shield className="h-4 w-4 text-gray-500 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Birth Date</p>
-                      <p className="text-sm text-gray-600">{member.birthdate}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <Heart className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">Marital Status</p>
-                      <p className="text-sm text-gray-600">{member.maritalStatus}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Address</p>
-                      <p className="text-sm text-gray-600">{member.address}</p>
+                      <p className="text-sm font-medium">Branch Status</p>
+                      <p className="text-sm text-gray-600">
+                        {member.branch_is_active === false ? 'Inactive' : 'Active'}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             </DialogContent>
           </Dialog>
-        ))}
+        );})}
       </div>
+      )}
 
-      {filteredMembers.length === 0 && (
+      {!loading && currentBranch && filteredMembers.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-gray-500">No members found matching your search.</p>

@@ -45,7 +45,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
   const { user, logout } = useAuth();
-  const { effectiveRole, branchRole } = useChurch();
+  const { effectiveRole, branchRole, currentChurch } = useChurch();
   const navigate = useNavigate();
   const [contributionsOpen, setContributionsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -69,6 +69,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
   const canViewAnalytics = effectiveRole === 'super_admin' || effectiveRole === 'admin' || isBranchAdmin;
   const canManageUsers = effectiveRole === 'super_admin' || effectiveRole === 'admin' || isBranchAdmin;
   const isSuperAdmin = effectiveRole === 'super_admin';
+  const isDenominationCreator = Boolean(
+    user?.id && currentChurch?.admin_id && String(user.id) === String(currentChurch.admin_id)
+  );
 
   const menuItems = [
     {
@@ -170,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       id: 'branches',
       label: 'Branches',
       icon: MapPin,
-      visible: canManageUsers
+      visible: isSuperAdmin || isDenominationCreator
     },
     {
       id: 'users-roles',
