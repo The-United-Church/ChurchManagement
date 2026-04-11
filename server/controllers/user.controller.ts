@@ -236,6 +236,28 @@ export class UserController {
     }
   );
 
+  getUserByEmail = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { email } = req.query;
+
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({
+          data: null,
+          status: 400,
+          message: 'email query parameter is required',
+        });
+        return;
+      }
+
+      const user = await this.userService.findActiveUserByEmail(email);
+      res.status(200).json({
+        data: user ? classToPlain(user) : null,
+        status: 200,
+        message: 'User fetched successfully',
+      });
+    }
+  );
+
   addToBranch = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { userId, branchId } = req.params;

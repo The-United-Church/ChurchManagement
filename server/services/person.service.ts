@@ -54,6 +54,14 @@ export class PersonService {
     return qb.orderBy("p.created_at", "DESC").getMany();
   }
 
+  async findByEmail(email: string): Promise<Person[]> {
+    // Search by email across ALL people (no branch filtering)
+    // Case-insensitive search
+    const qb = this.repo.createQueryBuilder("p")
+      .where("LOWER(p.email) = LOWER(:email)", { email });
+    return qb.orderBy("p.created_at", "DESC").getMany();
+  }
+
   async markConverted(id: string, userId: string): Promise<Person | null> {
     const person = await this.repo.findOneBy({ id });
     if (!person) return null;
@@ -61,17 +69,19 @@ export class PersonService {
     return this.repo.save(person);
   }
 
-  /** Returns an error message if email/phone conflicts with another record, else null. */
-  async checkUnique(email?: string, phone?: string, excludeId?: string): Promise<string | null> {
+  /** Returns an error message if email/phone conflicts with another record (scoped to branch when provided), else null. */
+  async checkUnique(email?: string, phone?: string, excludeId?: string, branchId?: string): Promise<string | null> {
     if (email) {
       const qb = this.repo.createQueryBuilder("p")
         .where("LOWER(p.email) = LOWER(:email)", { email });
+      if (branchId) qb.andWhere("p.branch_id = :branchId", { branchId });
       if (excludeId) qb.andWhere("p.id != :excludeId", { excludeId });
       if (await qb.getOne()) return `Email "${email}" is already in use`;
     }
     if (phone) {
       const qb = this.repo.createQueryBuilder("p")
         .where("p.phone = :phone", { phone });
+      if (branchId) qb.andWhere("p.branch_id = :branchId", { branchId });
       if (excludeId) qb.andWhere("p.id != :excludeId", { excludeId });
       if (await qb.getOne()) return `Phone "${phone}" is already in use`;
     }
@@ -100,17 +110,19 @@ export class PersonService {
     const existingPhoneSet = new Set<string>();
 
     if (emails.length > 0) {
-      const found = await this.repo
+      const query = this.repo
         .createQueryBuilder("p")
-        .where("LOWER(p.email) IN (:...emails)", { emails })
-        .getMany();
+        .where("LOWER(p.email) IN (:...emails)", { emails });
+      if (branchId) query.andWhere("p.branch_id = :branchId", { branchId });
+      const found = await query.getMany();
       found.forEach((p) => p.email && existingEmailSet.add(p.email.toLowerCase()));
     }
     if (phones.length > 0) {
-      const found = await this.repo
+      const query = this.repo
         .createQueryBuilder("p")
-        .where("p.phone IN (:...phones)", { phones })
-        .getMany();
+        .where("p.phone IN (:...phones)", { phones });
+      if (branchId) query.andWhere("p.branch_id = :branchId", { branchId });
+      const found = await query.getMany();
       found.forEach((p) => p.phone && existingPhoneSet.add(p.phone));
     }
 

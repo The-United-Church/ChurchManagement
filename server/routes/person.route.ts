@@ -4,6 +4,7 @@ import { UserService } from "../services/user.service";
 import {
   createPerson,
   getPeople,
+  findPersonByEmail,
   getPersonById,
   updatePerson,
   deletePerson,
@@ -17,6 +18,7 @@ const auth = authMiddleware(new UserService());
 router.use(auth as any);
 
 router.post("/", createPerson);
+router.get("/search/by-email", findPersonByEmail);
 router.get("/", getPeople);
 router.get("/:id", getPersonById);
 router.put("/:id", updatePerson);

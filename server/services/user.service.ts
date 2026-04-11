@@ -430,6 +430,37 @@ export class UserService {
     return query.orderBy('user.full_name', 'ASC').limit(100).getMany();
   }
 
+  async findActiveUserByEmail(email: string): Promise<User | null> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.email',
+        'user.first_name',
+        'user.last_name',
+        'user.middle_name',
+        'user.nick_name',
+        'user.dob',
+        'user.gender',
+        'user.address_line',
+        'user.state',
+        'user.city',
+        'user.country',
+        'user.phone_number',
+        'user.profile_img',
+      ])
+      .where('LOWER(user.email) = LOWER(:email)', { email: email.trim() })
+      .andWhere('user.is_active = :active', { active: true })
+      .getOne();
+  }
+
+  async findUserByEmail(email: string): Promise<User | null> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = LOWER(:email)', { email: email.trim() })
+      .getOne();
+  }
+
   // ─── Branch helpers ─────────────────────────────────────────────────────
   async updateMemberBranchRole(userId: string, branchId: string, role: string): Promise<any | null> {
     const { BranchRole } = require('../models/church/branch-membership.model');

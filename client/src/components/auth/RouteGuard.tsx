@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useChurch } from '@/components/church/ChurchProvider';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,19 +13,23 @@ import {
 } from '@/components/ui/alert-dialog';
 
 type Role = 'super_admin' | 'admin' | 'member';
+type BranchRole = 'admin' | 'coordinator' | 'member';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: Role[]; // Omit to allow any authenticated user
+  allowedBranchRoles?: BranchRole[]; // Optional branch-level access override
   requireAuth?: boolean; // Defaults to true
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
+  allowedBranchRoles,
   requireAuth = true,
 }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { branchRole } = useChurch();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -32,8 +37,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const roleName: Role | undefined = React.useMemo(() => {
     const r: any = user?.role;
     if (!r) return undefined;
-    if (typeof r === 'string') return r as Role;
-    if (typeof r === 'object' && typeof r.name === 'string') return r.name as Role;
+
+    // Support role as a plain string or common object payloads.
+    const raw =
+      typeof r === 'string'
+        ? r
+        : typeof r === 'object'
+          ? (r.name ?? r.role ?? r.roleName ?? r.value)
+          : undefined;
+
+    if (typeof raw !== 'string') return undefined;
+    const normalized = raw.trim().toLowerCase();
+
+    if (normalized === 'super_admin' || normalized === 'admin' || normalized === 'member') {
+      return normalized as Role;
+    }
+
     return undefined;
   }, [user?.role]);
 
@@ -45,13 +64,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   const roleAllowed = (): boolean => {
-    if (!allowedRoles || allowedRoles.length === 0) return true;
-    if (!roleName) return false; // role not hydrated yet
-    return allowedRoles.includes(roleName);
+    const hasRoleConstraint = Boolean(allowedRoles && allowedRoles.length > 0);
+    const hasBranchRoleConstraint = Boolean(allowedBranchRoles && allowedBranchRoles.length > 0);
+
+    // If no constraints are supplied, any authenticated user is allowed.
+    if (!hasRoleConstraint && !hasBranchRoleConstraint) return true;
+
+    const globalAllowed = hasRoleConstraint && !!roleName && allowedRoles!.includes(roleName);
+    const branchAllowed = hasBranchRoleConstraint && !!branchRole && allowedBranchRoles!.includes(branchRole as BranchRole);
+
+    return Boolean(globalAllowed || branchAllowed);
   };
 
-  // If roles are enforced but role not ready yet, wait instead of denying
-  if (allowedRoles && allowedRoles.length > 0 && !roleName) {
+  // If constrained by role(s) and both role sources are not ready yet, wait instead of denying.
+  const hasRoleConstraint = Boolean(allowedRoles && allowedRoles.length > 0);
+  const hasBranchRoleConstraint = Boolean(allowedBranchRoles && allowedBranchRoles.length > 0);
+  if ((hasRoleConstraint || hasBranchRoleConstraint) && !roleName && !branchRole) {
     return null;
   }
 

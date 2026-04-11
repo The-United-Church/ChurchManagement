@@ -57,6 +57,12 @@ router.get(
   userController.getDirectory.bind(userController)
 );
 
+router.get(
+  "/lookup/by-email",
+  authMiddleware(new UserService()) as RequestHandler,
+  userController.getUserByEmail.bind(userController)
+);
+
 router.put(
   "/users/me",
   authMiddleware(new UserService()) as RequestHandler,

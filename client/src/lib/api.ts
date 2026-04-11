@@ -272,6 +272,54 @@ export const fetchPeople = (search?: string) => {
   return request<{ data: Person[]; status: number; message: string }>(`/people${qs}`);
 };
 
+interface UserLookupDTO {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  middle_name?: string;
+  nick_name?: string;
+  dob?: string;
+  gender?: 'male' | 'female';
+  address_line?: string;
+  state?: string;
+  city?: string;
+  country?: string;
+  phone_number?: string;
+  profile_img?: string;
+}
+
+export const fetchPersonByEmail = (email: string) =>
+  request<{ data: UserLookupDTO | null; status: number; message: string }>(`/user/lookup/by-email?email=${encodeURIComponent(email)}`)
+    .then((res) => {
+      const u = res.data;
+      if (!u) {
+        return { data: [] as Person[], status: res.status, message: res.message };
+      }
+
+      const personLike: Person = {
+        id: u.id,
+        first_name: u.first_name || '',
+        last_name: u.last_name || '',
+        middle_name: u.middle_name || '',
+        nickname: u.nick_name || '',
+        birthdate: u.dob,
+        gender: u.gender,
+        address: u.address_line || '',
+        state: u.state || '',
+        city: u.city || '',
+        country: u.country || '',
+        email: u.email,
+        phone: u.phone_number || '',
+        profile_image: u.profile_img || '',
+        created_at: '',
+        updated_at: '',
+      };
+
+      return { data: [personLike] as Person[], status: res.status, message: res.message };
+    })
+    .catch(() => ({ data: [] as Person[], status: 200, message: 'No results' }));
+
 export const fetchPersonById = (id: string) =>
   request<{ data: Person; status: number; message: string }>(`/people/${id}`);
 

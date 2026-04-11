@@ -22,10 +22,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
-import { User, Pencil, Calendar as CalendarIcon, Loader2, ChevronDown } from 'lucide-react';
+import { User, Pencil, Calendar as CalendarIcon, Loader2, ChevronDown, AlertCircle, CheckCircle } from 'lucide-react';
 import type { PersonCreateDTO } from '@/types/person';
 import { Country, State } from 'country-state-city';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { fetchPersonByEmail } from '@/lib/api';
+import type { Person } from '@/types/person';
 
 interface AddPersonDialogProps {
   open: boolean;
@@ -40,12 +42,22 @@ const emptyForm: PersonCreateDTO = {
   city: '', country: '', email: '', phone: '',
 };
 
+const normalizeGender = (value?: string): 'male' | 'female' | undefined => {
+  const v = (value || '').toLowerCase();
+  if (v === 'male' || v === 'female') return v;
+  return undefined;
+};
+
 const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, onSave, saving }) => {
   const [form, setForm] = useState<PersonCreateDTO>({ ...emptyForm });
   const [birthdateDate, setBirthdateDate] = useState<Date>();
   const [countries] = useState(() => Country.getAllCountries());
   const [states, setStates] = useState<{ name: string; isoCode: string }[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<Person | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const phoneOptions = React.useMemo(() => countries.map((c) => ({ isoCode: c.isoCode, name: c.name, code: `+${c.phonecode}`, flag: isoToFlag(c.isoCode) })), [countries]);
 
   const onCountryChange = (code: string) => {
@@ -54,6 +66,80 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
     const st = State.getStatesOfCountry(code).map((s) => ({ name: s.name, isoCode: s.isoCode }));
     setStates(st);
     set('state', '');
+  };
+
+  const handleSearchByEmail = async (email: string) => {
+    // Clear previous timeout
+    if (searchTimeout) clearTimeout(searchTimeout);
+    setSearchError(null);
+    setSearchResult(null);
+
+    // Don't search if email is empty or invalid
+    if (!email || !email.includes('@')) {
+      return;
+    }
+
+    // Debounce the search
+    const timeout = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        const result = await fetchPersonByEmail(email);
+        const people = Array.isArray(result.data) ? result.data : [result.data];
+        
+        // Look for an exact email match (case-insensitive)
+        const exactMatch = people.find(p => p.email?.toLowerCase() === email.toLowerCase());
+        
+        if (exactMatch) {
+          setSearchResult(exactMatch);
+          // Auto-populate the form with found data
+          populateFormFromPerson(exactMatch);
+        } else if (people.length > 0) {
+          // If we have partial matches, show info but don't auto-populate
+          setSearchError(`Found similar people but no exact email match. Please select or clear and continue.`);
+        }
+      } catch (error) {
+        console.error('Error searching person:', error);
+        setSearchError(null); // Silently fail on network errors
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500); // 500ms debounce
+
+    setSearchTimeout(timeout);
+  };
+
+  const populateFormFromPerson = (person: Person) => {
+    const countryInput = person.country || '';
+    const matchedCountry = countries.find((c) =>
+      c.name.toLowerCase() === countryInput.toLowerCase() ||
+      c.isoCode.toLowerCase() === countryInput.toLowerCase()
+    );
+    const countryName = matchedCountry?.name || countryInput;
+    const mappedStates = matchedCountry
+      ? State.getStatesOfCountry(matchedCountry.isoCode).map((s) => ({ name: s.name, isoCode: s.isoCode }))
+      : [];
+
+    const parsedBirthdate = person.birthdate ? new Date(person.birthdate) : undefined;
+    const validBirthdate = parsedBirthdate && !Number.isNaN(parsedBirthdate.getTime()) ? parsedBirthdate : undefined;
+
+    setStates(mappedStates);
+    setBirthdateDate(validBirthdate);
+    setForm((prev) => ({
+      ...prev,
+      first_name: person.first_name || '',
+      last_name: person.last_name || '',
+      middle_name: person.middle_name || '',
+      nickname: person.nickname || '',
+      birthdate: validBirthdate ? format(validBirthdate, 'yyyy-MM-dd') : '',
+      gender: normalizeGender(person.gender),
+      address: person.address || '',
+      state: person.state || '',
+      city: person.city || '',
+      country: countryName || '',
+      email: person.email || prev.email,
+      phone: person.phone || '',
+      profile_image: person.profile_image || '',
+    }));
   };
 
   const handleImagePick = async (file: File) => {
@@ -66,8 +152,14 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
     }
   };
 
-  const set = (field: keyof PersonCreateDTO, value: any) =>
+  const set = (field: keyof PersonCreateDTO, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    
+    // Trigger email search when email field changes
+    if (field === 'email') {
+      handleSearchByEmail(value);
+    }
+  };
 
   const handleSave = async () => {
     const normalize = (f: PersonCreateDTO): PersonCreateDTO => {
@@ -90,15 +182,54 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
     };
     const ok = await onSave(normalize(form));
     console.log('Save result:', ok);
-    if (ok) { setForm({ ...emptyForm }); setBirthdateDate(undefined); onOpenChange(false); }
+    if (ok) { 
+      setForm({ ...emptyForm }); 
+      setBirthdateDate(undefined); 
+      setSearchResult(null);
+      setSearchError(null);
+      if (searchTimeout) clearTimeout(searchTimeout);
+      onOpenChange(false); 
+    }
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Cleanup when dialog closes
+      if (searchTimeout) clearTimeout(searchTimeout);
+      setForm({ ...emptyForm });
+      setBirthdateDate(undefined);
+      setStates([]);
+      setSearchResult(null);
+      setSearchError(null);
+      setSearchLoading(false);
+    }
+    onOpenChange(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-50">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Add Person</DialogTitle>
         </DialogHeader>
+        {searchResult && (
+          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">Person Found</p>
+              <p className="text-xs text-blue-700">Details for {searchResult.first_name} {searchResult.last_name} have been pre-filled. You can edit them as needed.</p>
+            </div>
+          </div>
+        )}
+        {searchError && (
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-900">Note</p>
+              <p className="text-xs text-amber-700">{searchError}</p>
+            </div>
+          </div>
+        )}
         <PersonFormFields
           form={form}
           set={set}
@@ -112,6 +243,7 @@ const AddPersonDialog: React.FC<AddPersonDialogProps> = ({ open, onOpenChange, o
           phoneOptions={phoneOptions}
           showAvatar
           showContactLocation
+          emailSearchLoading={searchLoading}
         />
         <DialogFooter className="bg-white p-4 -mx-6 -mb-6 border-t border-gray-100 mt-6">
           <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name} className="bg-app-primary hover:bg-app-primary-hover text-app-primary-foreground font-medium px-8">
@@ -195,7 +327,8 @@ export const PersonFormFields: React.FC<{
   phoneOptions?: { isoCode: string; name: string; code: string; flag: string }[];
   showAvatar?: boolean;
   showContactLocation?: boolean;
-}> = ({ form, set, birthdateDate, setBirthdateDate, uploading, onPickImage, countries = [], states = [], onCountryChange, phoneOptions = [], showAvatar = true, showContactLocation = true }) => (
+  emailSearchLoading?: boolean;
+}> = ({ form, set, birthdateDate, setBirthdateDate, uploading, onPickImage, countries = [], states = [], onCountryChange, phoneOptions = [], showAvatar = true, showContactLocation = true, emailSearchLoading = false }) => (
   <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-4">
     {/* Left Column */}
     <div className="md:col-span-7 space-y-6">
@@ -289,7 +422,16 @@ export const PersonFormFields: React.FC<{
             <div className="pt-4 border-t border-gray-100 mt-4">
               <h4 className="text-sm font-semibold mb-4 text-gray-900">Contact Information</h4>
               <div className="space-y-4">
-                <FormInput label="Email" value={form.email || ''} onChange={(v) => set('email', v)} />
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-gray-700">
+                    Email
+                    {emailSearchLoading && <span className="ml-2 text-xs text-gray-500 animate-pulse">Searching...</span>}
+                  </Label>
+                  <div className="relative">
+                    <Input value={form.email || ''} onChange={(e) => set('email', e.target.value)} placeholder="Email address" className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent pr-8" />
+                    {emailSearchLoading && <Loader2 className="absolute right-0 top-2.5 h-4 w-4 text-gray-400 animate-spin" />}
+                  </div>
+                </div>
                 {showContactLocation && (
                   <PhoneField value={form.phone || ''} onChange={(v) => set('phone', v)} options={phoneOptions} countryName={form.country || ''} />
                 )}
