@@ -3,7 +3,8 @@ import { ActivityAction, EntityType } from '../models/activity-log.model';
 import { Timestamp } from 'firebase-admin/firestore';
 
 const db = firebaseAdmin.firestore();
-const COLLECTION = 'activity_logs';
+const COLLECTION = `${process.env.ACTIVITY_LOG_COLLECTION || 'app'}_activity_logs`;
+// const COLLECTION = 'activity_logs';
 
 /** Shape returned by all read methods */
 export interface ActivityLogDoc {

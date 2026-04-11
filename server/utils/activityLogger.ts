@@ -13,7 +13,8 @@ export const logActivity = async (
 ): Promise<void> => {
 	try {
 		const userEmail: string | undefined = metadata?.email;
-		await db.collection('activity_logs').add({
+		const COLLECTION = `${process.env.ACTIVITY_LOG_COLLECTION || 'app'}_activity_logs`;
+		await db.collection(COLLECTION).add({
 			user_id: userId ?? null,
 			user: userEmail ? { email: userEmail } : null,
 			action,
