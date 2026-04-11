@@ -6,7 +6,6 @@ import {
   ChevronDown,
   ChevronRight,
   Home,
-  User,
   Users,
   Calendar,
   Bell,
@@ -14,10 +13,7 @@ import {
   LogOut,
   Church,
   Shield,
-  Key,
-  Globe,
-  UserCog,
-  DollarSign
+  User,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
@@ -30,7 +26,6 @@ interface MemberSidebarProps {
 
 const menuItems = [
   { id: 'home',             label: 'Home',             icon: Home,     path: '/member' },
-  { id: 'my-profile',       label: 'My Profile',       icon: User,     path: '/member/profile' },
   { id: 'directory',        label: 'Directory',        icon: Users,    path: '/member/directory' },
   { id: 'my-registrations', label: 'My Registrations', icon: Calendar, path: '/member/registrations' },
   { id: 'calendar',         label: 'Calendar',         icon: Calendar, path: '/member/calendar' },
@@ -38,10 +33,8 @@ const menuItems = [
 ];
 
 const settingsItems = [
-  { id: 'general-settings',   label: 'General Settings',   icon: Settings,  path: '/member/settings' },
-  { id: 'change-password',    label: 'Change Password',    icon: Key,       path: '/member/settings/password' },
-  { id: 'change-currency',    label: 'Change Currency',    icon: DollarSign,path: '/member/settings/currency' },
-  { id: 'directory-settings', label: 'Directory Settings', icon: UserCog,   path: '/member/settings/directory' },
+  { id: 'profile', label: 'Profile', icon: User, path: '/member/settings' },
+  { id: 'notifications', label: 'Notifications', icon: Bell, path: '/member/notifications' },
 ];
 
 const MemberSidebar: React.FC<MemberSidebarProps> = ({ onNavigate }) => {

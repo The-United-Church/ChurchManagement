@@ -103,12 +103,13 @@ export class UserController {
     async (req: Request, res: Response): Promise<void> => {
       const { role } = req.query;
       const branchId = (req as any).branchId as string | undefined;
+      const requesterId = (req as any).user?.id as string | undefined;
       
       let users;
       if (role && typeof role === 'string') {
-        users = await this.userService.getUsersByRole(role, branchId);
+        users = await this.userService.getUsersByRole(role, branchId, requesterId);
       } else {
-        users = await this.userService.getAllUsers(branchId);
+        users = await this.userService.getAllUsers(branchId, requesterId);
       }
       
       res.status(200).json({

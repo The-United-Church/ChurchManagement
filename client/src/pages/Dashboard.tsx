@@ -7,7 +7,7 @@ import MemberLayout from '@/components/layout/MemberLayout';
 
 const DashboardPage: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
-  const { effectiveRole } = useChurch();
+  const { effectiveRole, branchRole } = useChurch();
 
   if (isLoading) {
     return null;
@@ -17,10 +17,14 @@ const DashboardPage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Show admin/owner layout for super_admin and admin roles
-  const isAdminOrOwner = effectiveRole === 'super_admin' || effectiveRole === 'admin';
+  // Show admin layout for global admins/super_admins AND for branch-level admins/coordinators
+  const showAdminLayout =
+    effectiveRole === 'super_admin' ||
+    effectiveRole === 'admin' ||
+    branchRole === 'admin' ||
+    branchRole === 'coordinator';
 
-  return isAdminOrOwner ? <MainLayout /> : <MemberLayout />;
+  return showAdminLayout ? <MainLayout /> : <MemberLayout />;
 };
 
 export default DashboardPage;

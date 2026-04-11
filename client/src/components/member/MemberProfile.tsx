@@ -28,6 +28,9 @@ import {
   RefreshCw,
   Loader2,
   Calendar as CalendarIcon,
+  Key,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -35,7 +38,8 @@ import { format } from 'date-fns';
 import { Country, State } from 'country-state-city';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '@/hooks/useAuthQuery';
-import { updateMyProfileApi } from '@/lib/api';
+import { updateMyProfileApi, changePasswordApi } from '@/lib/api';
+import { Separator } from '@/components/ui/separator';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { toast } from 'sonner';
 import { PhoneField, isoToFlag, FormInput } from '@/components/dashboard/AddPersonDialog';
@@ -192,7 +196,7 @@ function ProfileGenderRadio({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const MemberProfile: React.FC = () => {
+const MemberProfile: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const queryClient = useQueryClient();
   const { data: profile, isLoading, isError, refetch } = useProfile();
 
@@ -243,6 +247,36 @@ const MemberProfile: React.FC = () => {
   const [familyForm, setFamilyForm] = useState<Omit<FamilyMember, 'id'>>(EMPTY_FAMILY);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Password change ──────────────────────────────────────────────────────
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await changePasswordApi({ oldPassword: currentPassword, newPassword });
+      toast.success('Password updated successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update password';
+      toast.error(message);
+    } finally {
+      setSavingPassword(false);
+    }
+  };
 
   // ── Populate profile form when dialog opens ──────────────────────────────
   useEffect(() => {
@@ -429,20 +463,21 @@ const MemberProfile: React.FC = () => {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4 md:space-y-6 p-4 md:p-6">
-      {/* Page header */}
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">My Profile</h2>
-        <p className="text-muted-foreground text-sm md:text-base">
-          Manage your personal information and family details
-        </p>
-      </div>
+    <div className={embedded ? '' : 'space-y-4 md:space-y-6 p-4 md:p-6'}>
+      {!embedded && (
+        <div>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">My Profile</h2>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Manage your personal information and family details
+          </p>
+        </div>
+      )}
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="family">Family</TabsTrigger>
+        <TabsList className="h-auto p-0 bg-transparent border-b border-gray-200 rounded-none w-full justify-start gap-0">
+          <TabsTrigger value="profile" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Profile</TabsTrigger>
+          <TabsTrigger value="security" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Security</TabsTrigger>
+          <TabsTrigger value="family" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Family</TabsTrigger>
         </TabsList>
 
         {/* ── Profile Tab ─────────────────────────────────────────────────── */}
@@ -503,7 +538,7 @@ const MemberProfile: React.FC = () => {
         </TabsContent>
 
         {/* ── Security Tab ────────────────────────────────────────────────── */}
-        <TabsContent value="security">
+        <TabsContent value="security" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Two-Factor Authentication</CardTitle>
@@ -518,10 +553,60 @@ const MemberProfile: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Currently disabled</p>
                   </div>
                 </div>
-                <Button className="w-full sm:w-auto">
-                  Enable 2FA
-                </Button>
+                <Button className="w-full sm:w-auto">Enable 2FA</Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Change Password
+              </CardTitle>
+              <CardDescription>Update your account password</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" onSubmit={handlePasswordChange}>
+                <div className="grid gap-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <div className="relative">
+                    <Input id="currentPassword" type={showCurrentPw ? 'text' : 'password'} placeholder="Enter your current password" className="pr-10" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />
+                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowCurrentPw((v) => !v)} tabIndex={-1}>
+                      {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <div className="relative">
+                    <Input id="newPassword" type={showNewPw ? 'text' : 'password'} placeholder="At least 8 characters" className="pr-10" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowNewPw((v) => !v)} tabIndex={-1}>
+                      {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input id="confirmPassword" type={showConfirmPw ? 'text' : 'password'} placeholder="Confirm your new password" className="pr-10" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                    <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setShowConfirmPw((v) => !v)} tabIndex={-1}>
+                      {showConfirmPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {confirmPassword && newPassword !== confirmPassword && (
+                    <p className="text-xs text-red-500">Passwords do not match</p>
+                  )}
+                </div>
+                <Separator />
+                <div className="flex gap-3 pt-2">
+                  <Button type="submit" disabled={savingPassword}>
+                    {savingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Update Password
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => { setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}>Cancel</Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>

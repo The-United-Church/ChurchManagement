@@ -31,6 +31,7 @@ import {
   Crown,
   MapPin,
   Monitor,
+  User,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
@@ -44,9 +45,10 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
   const { user, logout } = useAuth();
-  const { effectiveRole } = useChurch();
+  const { effectiveRole, branchRole } = useChurch();
   const navigate = useNavigate();
   const [contributionsOpen, setContributionsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!user) return null;
 
@@ -61,8 +63,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
     }
   };
 
-  const canViewAnalytics = effectiveRole === 'super_admin' || effectiveRole === 'admin';
-  const canManageUsers = effectiveRole === 'super_admin' || effectiveRole === 'admin';
+  const isBranchAdmin = branchRole === 'admin';
+  const isBranchCoordinator = branchRole === 'coordinator';
+
+  const canViewAnalytics = effectiveRole === 'super_admin' || effectiveRole === 'admin' || isBranchAdmin;
+  const canManageUsers = effectiveRole === 'super_admin' || effectiveRole === 'admin' || isBranchAdmin;
   const isSuperAdmin = effectiveRole === 'super_admin';
 
   const menuItems = [
@@ -94,20 +99,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       id: 'events',
       label: 'Events',
       icon: Calendar,
-      visible: true
+      visible: canViewAnalytics
     },
     {
       id: 'followups',
       label: 'Follow Ups',
       icon: ClipboardList,
-      visible: canViewAnalytics,
+      visible: canViewAnalytics || isBranchCoordinator,
       badge: '15'
     },
     {
       id: 'calendar',
       label: 'Calendar',
       icon: CalendarDays,
-      visible: true
+      visible: canViewAnalytics
     },
     {
       id: 'appointments',
@@ -184,7 +189,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      visible: true
+      visible: true,
+      isDropdown: true
     },
     {
       id: 'help',
@@ -275,17 +281,59 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
 
       {/* Bottom Navigation */}
       <div className="border-t border-gray-200 p-2">
-        {bottomMenuItems.filter(item => item.visible).map((item) => (
-          <Button
-            key={item.id}
-            variant={activeSection === item.id ? "secondary" : "ghost"}
-            className="w-full justify-start mb-1 h-9"
-            onClick={() => (item as any).isExternalRoute ? navigate(`/${item.id}`) : onSectionChange(item.id)}
-          >
-            <item.icon className="h-4 w-4 mr-3" />
-            {item.label}
-          </Button>
-        ))}
+        {bottomMenuItems.filter(item => item.visible).map((item) => {
+          if ((item as any).isDropdown && item.id === 'settings') {
+            const isSettingsActive = activeSection === 'settings' || activeSection === 'notifications';
+            return (
+              <div key={item.id} className="mb-1">
+                <Button
+                  variant={isSettingsActive ? "secondary" : "ghost"}
+                  className="w-full justify-start h-9"
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                >
+                  <item.icon className="h-4 w-4 mr-3" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {settingsOpen
+                    ? <ChevronDown className="h-3 w-3 ml-auto" />
+                    : <ChevronRight className="h-3 w-3 ml-auto" />
+                  }
+                </Button>
+                {settingsOpen && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    <Button
+                      variant={activeSection === 'settings' ? "secondary" : "ghost"}
+                      className="w-full justify-start h-8 text-sm"
+                      onClick={() => onSectionChange('settings')}
+                    >
+                      <User className="h-3 w-3 mr-3" />
+                      Profile
+                    </Button>
+                    <Button
+                      variant={activeSection === 'notifications' ? "secondary" : "ghost"}
+                      className="w-full justify-start h-8 text-sm"
+                      onClick={() => onSectionChange('notifications')}
+                    >
+                      <Bell className="h-3 w-3 mr-3" />
+                      Notifications
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <Button
+              key={item.id}
+              variant={activeSection === item.id ? "secondary" : "ghost"}
+              className="w-full justify-start mb-1 h-9"
+              onClick={() => (item as any).isExternalRoute ? navigate(`/${item.id}`) : onSectionChange(item.id)}
+            >
+              <item.icon className="h-4 w-4 mr-3" />
+              {item.label}
+            </Button>
+          );
+        })}
         
         <Button
           variant="ghost"

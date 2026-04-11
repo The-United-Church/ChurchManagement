@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import {
   DollarSign,
   Eye,
-  EyeOff,
-  Key,
   Loader2,
-  Lock,
   Monitor,
   Moon,
   Palette,
@@ -21,11 +17,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useAuthQuery';
-import { changePasswordApi, updateSettingsApi } from '@/lib/api';
-
-interface MemberSettingsProps {
-  settingType: 'general' | 'password' | 'currency' | 'directory';
-}
+import { updateSettingsApi } from '@/lib/api';
+import MemberProfile from './MemberProfile';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -42,7 +35,7 @@ function applyTheme(theme: Theme) {
   }
 }
 
-const MemberSettings: React.FC<MemberSettingsProps> = ({ settingType }) => {
+const MemberSettings: React.FC = () => {
   const { data: profile } = useProfile();
   const queryClient = useQueryClient();
 
@@ -52,14 +45,6 @@ const MemberSettings: React.FC<MemberSettingsProps> = ({ settingType }) => {
   );
   const [savingTheme, setSavingTheme] = useState(false);
 
-  // ── Password ───────────────────────────────────────────────────────────────
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPw, setShowCurrentPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [savingPassword, setSavingPassword] = useState(false);
 
   // ── Currency ───────────────────────────────────────────────────────────────
   const [currency, setCurrency] = useState('USD');
@@ -112,34 +97,6 @@ const MemberSettings: React.FC<MemberSettingsProps> = ({ settingType }) => {
       toast.success('Theme applied');
     } finally {
       setSavingTheme(false);
-    }
-  };
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all password fields');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return;
-    }
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    setSavingPassword(true);
-    try {
-      await changePasswordApi({ oldPassword: currentPassword, newPassword });
-      toast.success('Password updated successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to update password');
-    } finally {
-      setSavingPassword(false);
     }
   };
 
@@ -260,123 +217,6 @@ const MemberSettings: React.FC<MemberSettingsProps> = ({ settingType }) => {
             </Button>
             <p className="text-sm text-gray-600">Changes will be applied immediately</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderPasswordSettings = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            Change Password
-          </CardTitle>
-          <CardDescription>Update your account password for security</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handlePasswordChange}>
-            <div className="grid gap-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showCurrentPw ? 'text' : 'password'}
-                  placeholder="Enter your current password"
-                  className="pr-10"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowCurrentPw((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showNewPw ? 'text' : 'password'}
-                  placeholder="Enter your new password"
-                  className="pr-10"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowNewPw((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-gray-600">
-                At least 8 characters with uppercase, lowercase, numbers, and special characters.
-              </p>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPw ? 'text' : 'password'}
-                  placeholder="Confirm your new password"
-                  className="pr-10"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setShowConfirmPw((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showConfirmPw ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              {confirmPassword && newPassword !== confirmPassword && (
-                <p className="text-xs text-red-500">Passwords do not match</p>
-              )}
-            </div>
-
-            <Separator />
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button type="submit" disabled={savingPassword} className="w-full sm:w-auto">
-                {savingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Update Password
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  setCurrentPassword('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
         </CardContent>
       </Card>
     </div>
@@ -575,41 +415,37 @@ const MemberSettings: React.FC<MemberSettingsProps> = ({ settingType }) => {
     </div>
   );
 
-  const titles: Record<MemberSettingsProps['settingType'], string> = {
-    general: 'General Settings',
-    password: 'Change Password',
-    currency: 'Currency Settings',
-    directory: 'Directory Settings',
-  };
-
-  const descriptions: Record<MemberSettingsProps['settingType'], string> = {
-    general: 'Customize your app appearance and preferences',
-    password: 'Update your account security credentials',
-    currency: 'Set your preferred currency for financial displays',
-    directory: 'Control your privacy in the member directory',
-  };
-
-  const renderContent = () => {
-    switch (settingType) {
-      case 'general':
-        return renderGeneralSettings();
-      case 'password':
-        return renderPasswordSettings();
-      case 'currency':
-        return renderCurrencySettings();
-      case 'directory':
-        return renderDirectorySettings();
-    }
-  };
-
   return (
     <div className="space-y-4 md:space-y-6 p-4 md:p-6">
       <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">{titles[settingType]}</h2>
-        <p className="text-muted-foreground text-sm md:text-base">{descriptions[settingType]}</p>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h2>
+        <p className="text-muted-foreground text-sm md:text-base">Manage your account and app preferences</p>
       </div>
 
-      {renderContent()}
+      <Tabs defaultValue="account" className="space-y-4">
+        <TabsList className="h-auto p-0 bg-transparent border-b border-gray-200 rounded-none w-full justify-start gap-0">
+          <TabsTrigger value="account" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Account</TabsTrigger>
+          <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">General</TabsTrigger>
+          <TabsTrigger value="currency" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Currency</TabsTrigger>
+          <TabsTrigger value="privacy" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Privacy</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="account">
+          <MemberProfile embedded />
+        </TabsContent>
+
+        <TabsContent value="general">
+          {renderGeneralSettings()}
+        </TabsContent>
+
+        <TabsContent value="currency">
+          {renderCurrencySettings()}
+        </TabsContent>
+
+        <TabsContent value="privacy">
+          {renderDirectorySettings()}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

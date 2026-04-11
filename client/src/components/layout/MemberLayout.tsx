@@ -5,7 +5,6 @@ import { useChurch } from '@/components/church/ChurchProvider';
 import MemberSidebar from './MemberSidebar';
 import MobileMemberSidebar from './MobileMemberSidebar';
 import MemberHome from '../member/MemberHome';
-import MemberProfile from '../member/MemberProfile';
 import MemberDirectory from '../member/MemberDirectory';
 import MemberRegistrations from '../member/MemberRegistrations';
 import MemberCalendar from '../member/MemberCalendar';
@@ -19,16 +18,12 @@ interface MemberLayoutProps {
 /** Map the current pathname to a section key used by renderContent */
 function sectionFromPath(pathname: string): string {
   if (pathname === '/member')                         return 'home';
-  if (pathname.startsWith('/member/profile'))         return 'my-profile';
   if (pathname.startsWith('/member/directory'))       return 'directory';
   if (pathname.startsWith('/member/registrations'))   return 'my-registrations';
   if (pathname.startsWith('/member/calendar'))        return 'calendar';
   if (pathname.startsWith('/member/notifications'))   return 'notifications';
-  if (pathname.startsWith('/member/settings/password'))   return 'change-password';
-  if (pathname.startsWith('/member/settings/currency'))   return 'change-currency';
-  if (pathname.startsWith('/member/settings/directory'))  return 'directory-settings';
-  if (pathname.startsWith('/member/settings'))        return 'general-settings';
-  // Fall back to home for legacy paths like /dashboard
+  if (pathname.startsWith('/member/settings'))        return 'settings';
+  if (pathname.startsWith('/member/profile'))         return 'settings';
   return 'home';
 }
 
@@ -42,28 +37,24 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
   const renderContent = () => {
     switch (activeSection) {
       case 'home':               return <MemberHome />;
-      case 'my-profile':         return <MemberProfile />;
       case 'directory':          return <MemberDirectory />;
       case 'my-registrations':   return <MemberRegistrations />;
       case 'calendar':           return <MemberCalendar />;
       case 'notifications':      return <MemberNotifications />;
-      case 'general-settings':   return <MemberSettings settingType="general" />;
-      case 'change-password':    return <MemberSettings settingType="password" />;
-      case 'change-currency':    return <MemberSettings settingType="currency" />;
-      case 'directory-settings': return <MemberSettings settingType="directory" />;
+      case 'settings':           return <MemberSettings />;
       default:                   return <MemberHome />;
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-[100dvh] bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex md:flex-shrink-0">
         <MemberSidebar />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">

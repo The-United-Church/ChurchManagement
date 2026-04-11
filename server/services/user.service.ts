@@ -132,19 +132,24 @@ export class UserService {
     };
   }
 
-  async getAllUsers(branchId?: string): Promise<any[]> {
+  async getAllUsers(branchId?: string, excludeUserId?: string): Promise<any[]> {
     if (!branchId) {
       return this.userRepository.find({
         relations: ["groups", "department"],
         order: { createdAt: "DESC" },
       });
     }
-    const users = await this.userRepository.createQueryBuilder('user')
+    let qb = this.userRepository.createQueryBuilder('user')
       .leftJoinAndSelect('user.groups', 'groups')
       .leftJoinAndSelect('user.department', 'department')
       .innerJoinAndSelect('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId })
-      .orderBy('user.createdAt', 'DESC')
-      .getMany();
+      .orderBy('user.createdAt', 'DESC');
+
+    if (excludeUserId) {
+      qb = qb.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    const users = await qb.getMany();
 
     // Attach branch-level active flag and role from the membership row
     return users.map((u) => ({
@@ -154,7 +159,7 @@ export class UserService {
     }));
   }
 
-  async getUsersByRole(roleName: string, branchId?: string): Promise<User[]> {
+  async getUsersByRole(roleName: string, branchId?: string, excludeUserId?: string): Promise<User[]> {
     if (!branchId) {
       return this.userRepository.find({
         where: { role: roleName },
@@ -162,13 +167,17 @@ export class UserService {
         order: { createdAt: "DESC" },
       });
     }
-    return this.userRepository.createQueryBuilder('user')
+    let qb = this.userRepository.createQueryBuilder('user')
       .leftJoinAndSelect('user.groups', 'groups')
       .leftJoinAndSelect('user.department', 'department')
       .innerJoin('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId })
-      .where('user.role = :roleName', { roleName })
-      .orderBy('user.createdAt', 'DESC')
-      .getMany();
+      .where('user.role = :roleName', { roleName });
+
+    if (excludeUserId) {
+      qb = qb.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    return qb.orderBy('user.createdAt', 'DESC').getMany();
   }
 
   async getUserById(id: string): Promise<any> {

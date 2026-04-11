@@ -13,6 +13,7 @@ interface ChurchContextType {
   userChurches: Church[];
   isMembershipsReady: boolean; // profile.branchMemberships has been resolved from server
   effectiveRole: 'super_admin' | 'admin' | 'member';
+  branchRole: 'admin' | 'coordinator' | 'member' | null; // role within the current branch
   selectChurch: (churchId: string) => void;
   selectBranch: (branchId: string | null) => void;
   selectBranchGlobal: (branch: Branch) => Promise<void>;
@@ -283,6 +284,13 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
     effectiveRole = 'admin';
   }
 
+  // Derive branch-level role from the current branch's membership metadata
+  const rawBranchRole = currentBranch?.membership_role;
+  const branchRole: 'admin' | 'coordinator' | 'member' | null =
+    rawBranchRole === 'admin' || rawBranchRole === 'coordinator' || rawBranchRole === 'member'
+      ? rawBranchRole
+      : null;
+
   const value: ChurchContextType = {
     currentChurch,
     currentBranch,
@@ -291,6 +299,7 @@ export const ChurchProvider: React.FC<ChurchProviderProps> = ({ children }) => {
     userChurches,
     isMembershipsReady,
     effectiveRole,
+    branchRole,
     selectChurch,
     selectBranch,
     selectBranchGlobal,

@@ -9,6 +9,7 @@ import PeopleManagement from '../dashboard/PeopleManagement';
 import ChurchManagement from '../dashboard/ChurchManagement';
 import BranchManagement from '../dashboard/BranchManagement';
 import ChurchMemberManagement from '../dashboard/ChurchMemberManagement';
+import MemberSettings from '../member/MemberSettings';
 
 interface MainLayoutProps {
   children?: React.ReactNode;
@@ -151,12 +152,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         );
       case 'settings':
-        return (
-          <div className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-4">Settings</h2>
-            <p className="text-gray-600">Application settings will be implemented here.</p>
-          </div>
-        );
+        return <MemberSettings />;
       case 'help':
         return (
           <div className="p-4 md:p-6">
@@ -177,14 +173,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-[100dvh] bg-gray-50">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex md:flex-shrink-0">
         <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
       </div>
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
