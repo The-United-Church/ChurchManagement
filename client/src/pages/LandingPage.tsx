@@ -32,7 +32,7 @@ const LandingPage: React.FC = () => {
         <FeaturesSection />
         <HowItWorksSection />
         <TestimonialsSection />
-        <PricingSection />
+        {/* <PricingSection /> */}
         <CTASection onGetStarted={handleGetStarted} />
       </main>
       <LandingFooter />
