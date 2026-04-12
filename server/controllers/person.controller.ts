@@ -93,11 +93,20 @@ export const getPeople = asyncHandler(async (req: Request, res: Response) => {
   const denominationIds = authReq.user?.denominationIds;
   // Super admins see everything; all others are scoped to their denomination when no branch selected
   const scopedDenomIds = role !== 'super_admin' ? denominationIds : undefined;
-  const { search } = req.query;
-  const people = search
-    ? await personService.search(String(search), branchId, scopedDenomIds)
-    : await personService.findAll(branchId, scopedDenomIds);
-  res.status(200).json({ data: people, status: 200, message: "People fetched" });
+
+  const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+  const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '25'), 10)));
+  const search = req.query.search ? String(req.query.search) : undefined;
+
+  const { data, total } = await personService.findPaginated({
+    page,
+    limit,
+    search,
+    branchId,
+    denominationIds: scopedDenomIds,
+  });
+
+  res.status(200).json({ data, total, page, limit, status: 200, message: "People fetched" });
 });
 
 export const findPersonByEmail = asyncHandler(async (req: Request, res: Response) => {

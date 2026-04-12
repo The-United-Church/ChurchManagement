@@ -129,15 +129,25 @@ export class UserController {
       // Super admins see all; others are scoped to their denomination when no branch selected
       const scopedDenomIds = !isSuperAdmin ? denominationIds : undefined;
 
-      let users;
-      if (role && typeof role === 'string' && isAdminLike) {
-        users = await this.userService.getUsersByRole(role, branchId, requesterId, scopedDenomIds);
-      } else {
-        users = await this.userService.getAllUsers(branchId, requesterId, scopedDenomIds);
-      }
-      
+      const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '25'), 10)));
+      const search = req.query.search ? String(req.query.search) : undefined;
+
+      const { data, total } = await this.userService.getUsersPaginated({
+        page,
+        limit,
+        search,
+        branchId,
+        excludeUserId: requesterId,
+        denominationIds: scopedDenomIds,
+        role: (role && typeof role === 'string' && isAdminLike) ? role : undefined,
+      });
+
       res.status(200).json({
-        data: users.map((u) => classToPlain(u)),
+        data,
+        total,
+        page,
+        limit,
         status: 200,
         message: "Users fetched successfully",
       });

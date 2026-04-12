@@ -30,6 +30,8 @@ import {
   UsersRound,
   Link2,
   ClipboardList,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useChurch } from '@/components/church/ChurchProvider';
 import { useMemberCrud } from '@/hooks/useMemberCrud';
@@ -38,7 +40,7 @@ import { usePeopleCrud } from '@/hooks/usePeopleCrud';
 import AddMemberDialog from './AddMemberDialog';
 import ImportMembersDialog from './ImportMembersDialog';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
-import { fetchUsersDirectoryApi, addUserToBranchApi } from '@/lib/api';
+import { fetchUsersDirectoryApi, addUserToBranchApi, fetchMembersApi } from '@/lib/api';
 import type { DirectoryUserDTO } from '@/lib/api';
 import { toast } from 'sonner';
 import MemberDetailsDialog from '@/components/member/MemberDetailsDialog';
@@ -538,10 +540,9 @@ const AddFromUsersDialog: React.FC<AddFromUsersDialogProps> = ({
 // ── Main Component ─────────────────────────────────────────────────────────
 const ChurchMemberManagement: React.FC = () => {
   const { currentChurch, currentBranch, effectiveRole, branchRole } = useChurch();
-  const { members, loading, saving, load, create, update, setBranchStatus, remove, removeMany, importMembers } = useMemberCrud();
+  const { members, loading, saving, load, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, create, update, setBranchStatus, remove, removeMany, importMembers } = useMemberCrud();
   const { people, load: loadPeople } = usePeopleCrud();
 
-  const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [addOpen, setAddOpen] = useState(false);
   const [addFromUsersOpen, setAddFromUsersOpen] = useState(false);
@@ -555,20 +556,13 @@ const ChurchMemberManagement: React.FC = () => {
   // Data is loaded automatically by useQuery; load people lazily for import dialog
   useEffect(() => { if (importOpen) loadPeople(); }, [importOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = members.filter((m) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    const name = (m.full_name || `${m.first_name ?? ''} ${m.last_name ?? ''}`).toLowerCase();
-    return name.includes(term) || m.email.toLowerCase().includes(term) || (m.phone_number || '').includes(term);
-  });
-
   const toggleSelect = (id: string) =>
     setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const toggleSelectAll = () =>
-    setSelectedIds(filtered.every((m) => selectedIds.has(m.id))
+    setSelectedIds(members.every((m) => selectedIds.has(m.id))
       ? new Set()
-      : new Set(filtered.map((m) => m.id)));
+      : new Set(members.map((m) => m.id)));
 
   const handleBulkDelete = async () => {
     const ok = await removeMany(Array.from(selectedIds));
@@ -597,8 +591,6 @@ const ChurchMemberManagement: React.FC = () => {
   const adminCount = members.filter((m) => m.role === 'admin' || m.role === 'super_admin').length;
   const activeCount = members.filter((m) => m.branch_is_active !== false).length;
 
-  console.log("admin count", adminCount, "active count", activeCount);
-
   if (!currentChurch) {
     return (
       <div className="p-4 md:p-6">
@@ -625,7 +617,10 @@ const ChurchMemberManagement: React.FC = () => {
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />Import
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => exportToCSV(members)}>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={async () => {
+              const res = await fetchMembersApi({ page: 1, limit: 10000 });
+              exportToCSV(res.data ?? []);
+            }}>
               <Download className="mr-2 h-4 w-4" />Export
             </Button>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setAddOpen(true)}>
@@ -645,7 +640,7 @@ const ChurchMemberManagement: React.FC = () => {
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Users className="h-5 w-5 text-blue-600" />
             </div>
-            <div><p className="text-2xl font-bold">{members.length}</p><p className="text-xs text-gray-500">Total</p></div>
+            <div><p className="text-2xl font-bold">{total}</p><p className="text-xs text-gray-500">Total</p></div>
           </CardContent>
         </Card>
         <Card>
@@ -686,8 +681,8 @@ const ChurchMemberManagement: React.FC = () => {
 
         {/* ── Members tab ─────────────────────────────────────────── */}
         <TabsContent value="members">
-      {/* List Card — matches PeopleManagement h-[600px] */}
-      <Card className="flex flex-col h-[600px]">
+      {/* List Card */}
+      <Card className="flex flex-col">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -706,15 +701,15 @@ const ChurchMemberManagement: React.FC = () => {
               <Input
                 placeholder="Search by name, email, phone..."
                 className="pl-8"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-y-auto">
+        <CardContent>
           <MemberList
-            members={filtered}
+            members={members}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             onToggleSelectAll={toggleSelectAll}
@@ -724,6 +719,23 @@ const ChurchMemberManagement: React.FC = () => {
             viewMode={viewMode}
           />
         </CardContent>
+        {/* Pagination */}
+        <div className="flex items-center justify-between border-t px-4 py-3 text-sm text-gray-500">
+          <span>
+            {total > 0
+              ? `Showing ${(page - 1) * limit + 1}–${Math.min(page * limit, total)} of ${total}`
+              : loading ? '' : 'No results'}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page <= 1 || loading}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-2 text-xs">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages || loading}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </Card>
         </TabsContent>
 

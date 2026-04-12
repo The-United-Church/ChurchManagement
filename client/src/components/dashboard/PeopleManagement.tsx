@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Download, Upload, Search, Loader2, UserPlus, Trash2, LayoutGrid, LayoutList } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Upload, Plus, Search, Loader2, UserPlus, Trash2, LayoutGrid, LayoutList } from 'lucide-react';
+import { fetchPeople } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePeopleCrud } from '@/hooks/usePeopleCrud';
 import type { Person } from '@/types/person';
@@ -15,9 +16,8 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import PersonDetailsDialog from './PersonDetailsDialog';
 
 const PeopleManagement = () => {
-  const { people, loading, saving, load, create, update, remove, removeMany, importPeople, convert } = usePeopleCrud();
+  const { people, loading, saving, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, load, create, update, remove, removeMany, importPeople, convert } = usePeopleCrud();
   const { members, load: loadMembers } = useMemberCrud();
-  const [searchTerm, setSearchTerm] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Person | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Person | null>(null);
@@ -106,10 +106,10 @@ const PeopleManagement = () => {
   };
 
   const handleToggleSelectAll = () => {
-    if (filteredPeople.every((p) => selectedIds.has(p.id))) {
+    if (people.every((p) => selectedIds.has(p.id))) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredPeople.map((p) => p.id)));
+      setSelectedIds(new Set(people.map((p) => p.id)));
     }
   };
 
@@ -122,7 +122,7 @@ const PeopleManagement = () => {
     <div className="p-4 sm:p-6 space-y-6">
       <HeaderSection onAdd={() => setAddOpen(true)} onImport={() => setImportOpen(true)} onExport={handleExport} viewMode={viewMode} onToggleView={() => setViewMode((v) => v === 'table' ? 'card' : 'table')} />
 
-      <Card className="flex flex-col h-[600px]">
+      <Card className="flex flex-col">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -155,9 +155,9 @@ const PeopleManagement = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-y-auto">
+        <CardContent>
           <PeopleList
-            people={filteredPeople}
+            people={people}
             onView={setViewTarget}
             onEdit={setEditTarget}
             onDelete={setDeleteTarget}
@@ -168,6 +168,23 @@ const PeopleManagement = () => {
             viewMode={viewMode}
           />
         </CardContent>
+        {/* Pagination */}
+        <div className="flex items-center justify-between border-t px-4 py-3 text-sm text-gray-500">
+          <span>
+            {total > 0
+              ? `Showing ${(page - 1) * limit + 1}–${Math.min(page * limit, total)} of ${total}`
+              : loading ? '' : 'No results'}
+          </span>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page <= 1 || loading}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-2 text-xs">{page} / {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages || loading}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </Card>
 
        {/* Dialogs */}

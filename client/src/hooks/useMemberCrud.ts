@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { MemberDTO } from '@/lib/api';
 import {
@@ -25,23 +25,46 @@ export interface ImportMembersResult {
   convertedCount: number;
 }
 
+const PAGE_SIZE = 25;
+
 export function useMemberCrud() {
   const { currentChurch, currentBranch } = useChurch();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [page, setPageState] = useState(1);
+  const limit = PAGE_SIZE;
+  const [searchTerm, setSearchTermState] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search and reset to page 1 on new search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPageState(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   const branchId = currentBranch?.id;
-  const { data: members = [], isLoading: loading } = useQuery({
-    queryKey: queryKeys.members(branchId),
+
+  const { data: result = { data: [] as MemberDTO[], total: 0 }, isLoading: loading } = useQuery({
+    queryKey: queryKeys.members(branchId, page, limit, debouncedSearch),
     queryFn: async () => {
-      const res = await fetchMembersApi();
-      return res.data ?? [];
+      const res = await fetchMembersApi({ page, limit, search: debouncedSearch || undefined });
+      return { data: res.data ?? [], total: res.total ?? 0 };
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
+  const members = result.data;
+  const total = result.total;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const setPage = (p: number) => setPageState(Math.max(1, Math.min(p, totalPages)));
+  const setSearchTerm = (s: string) => setSearchTermState(s);
+
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.members(branchId) });
+    queryClient.invalidateQueries({ queryKey: ['members', branchId ?? 'all'] });
     queryClient.invalidateQueries({ queryKey: queryKeys.directory(branchId) });
   };
 
@@ -162,5 +185,23 @@ export function useMemberCrud() {
     }
   };
 
-  return { members, loading, saving, load, create, update, setBranchStatus, remove, removeMany, importMembers };
+  return {
+    members,
+    loading,
+    saving,
+    total,
+    page,
+    totalPages,
+    limit,
+    searchTerm,
+    setPage,
+    setSearchTerm,
+    load,
+    create,
+    update,
+    setBranchStatus,
+    remove,
+    removeMany,
+    importMembers,
+  };
 }

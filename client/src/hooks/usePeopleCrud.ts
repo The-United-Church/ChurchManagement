@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Person, PersonCreateDTO, PersonUpdateDTO, ImportPeopleResult } from '@/types/person';
 import {
   fetchPeople,
@@ -13,24 +13,48 @@ import { toast } from 'sonner';
 import { useChurch } from '@/components/church/ChurchProvider';
 import { queryKeys } from '@/lib/queryKeys';
 
+const PAGE_SIZE = 25;
+
 export function usePeopleCrud() {
   const { currentBranch } = useChurch();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
+  const [page, setPageState] = useState(1);
+  const limit = PAGE_SIZE;
+  const [searchTerm, setSearchTermState] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search and reset to page 1 on new search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPageState(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   const branchId = currentBranch?.id;
-  const { data: people = [], isLoading: loading } = useQuery({
-    queryKey: queryKeys.people(branchId),
+
+  const { data: result = { data: [] as Person[], total: 0 }, isLoading: loading } = useQuery({
+    queryKey: queryKeys.people(branchId, page, limit, debouncedSearch),
     queryFn: async () => {
-      const res = await fetchPeople();
-      return res.data ?? [];
+      const res = await fetchPeople({ page, limit, search: debouncedSearch || undefined });
+      return { data: res.data ?? [], total: res.total ?? 0 };
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.people(branchId) });
+  const people = result.data;
+  const total = result.total;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  // Keep load() for backward compatibility with components calling it directly
+  const setPage = (p: number) => setPageState(Math.max(1, Math.min(p, totalPages)));
+  const setSearchTerm = (s: string) => setSearchTermState(s);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ['people', branchId ?? 'all'] });
+
+  // Keep load() for backward compatibility
   const load = invalidate;
 
   const create = async (data: PersonCreateDTO) => {
@@ -128,5 +152,23 @@ export function usePeopleCrud() {
     }
   };
 
-  return { people, loading, saving, load, create, update, remove, removeMany, importPeople, convert };
+  return {
+    people,
+    loading,
+    saving,
+    total,
+    page,
+    totalPages,
+    limit,
+    searchTerm,
+    setPage,
+    setSearchTerm,
+    load,
+    create,
+    update,
+    remove,
+    removeMany,
+    importPeople,
+    convert,
+  };
 }

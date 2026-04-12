@@ -37,6 +37,41 @@ export class PersonService {
     return this.repo.find({ order: { created_at: "DESC" } });
   }
 
+  async findPaginated(opts: {
+    page: number;
+    limit: number;
+    search?: string;
+    branchId?: string;
+    denominationIds?: string[];
+  }): Promise<{ data: Person[]; total: number }> {
+    const { page, limit, search, branchId, denominationIds } = opts;
+    const skip = (page - 1) * limit;
+
+    const qb = this.repo.createQueryBuilder("p");
+
+    if (branchId) {
+      qb.where("p.branch_id = :branchId", { branchId });
+    } else if (denominationIds && denominationIds.length > 0) {
+      qb.innerJoin("p.branch", "b")
+        .where("b.denomination_id IN (:...denominationIds)", { denominationIds });
+    }
+
+    if (search?.trim()) {
+      qb.andWhere(
+        "(p.first_name ILIKE :t OR p.last_name ILIKE :t OR p.email ILIKE :t OR p.phone ILIKE :t)",
+        { t: `%${search.trim()}%` }
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy("p.created_at", "DESC")
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    return { data, total };
+  }
+
   async findById(id: string): Promise<Person | null> {
     return this.repo.findOne({ where: { id }, relations: ["branch"] });
   }

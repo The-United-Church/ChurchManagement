@@ -106,8 +106,14 @@ export interface MemberDTO {
   branch_is_active?: boolean;
 }
 
-export const fetchMembersApi = () =>
-  request<{ data: MemberDTO[]; status: number; message: string }>('/user');
+export const fetchMembersApi = (params?: { page?: number; limit?: number; search?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.page) p.set('page', String(params.page));
+  if (params?.limit) p.set('limit', String(params.limit));
+  if (params?.search) p.set('search', params.search);
+  const qs = p.toString() ? `?${p.toString()}` : '';
+  return request<{ data: MemberDTO[]; total: number; page: number; limit: number; status: number; message: string }>(`/user${qs}`);
+};
 
 export const createMemberApi = (data: {
   first_name: string;
@@ -268,9 +274,13 @@ export const deleteBranchApi = (denominationId: string, branchId: string) =>
 // ─── People ───────────────────────────────────────────────────────────────
 import type { Person, PersonCreateDTO, PersonUpdateDTO, ImportPeopleResult } from '@/types/person';
 
-export const fetchPeople = (search?: string) => {
-  const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-  return request<{ data: Person[]; status: number; message: string }>(`/people${qs}`);
+export const fetchPeople = (params?: { page?: number; limit?: number; search?: string }) => {
+  const p = new URLSearchParams();
+  if (params?.page) p.set('page', String(params.page));
+  if (params?.limit) p.set('limit', String(params.limit));
+  if (params?.search) p.set('search', params.search);
+  const qs = p.toString() ? `?${p.toString()}` : '';
+  return request<{ data: Person[]; total: number; page: number; limit: number; status: number; message: string }>(`/people${qs}`);
 };
 
 interface UserLookupDTO {

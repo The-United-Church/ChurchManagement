@@ -160,6 +160,67 @@ export class UserService {
     };
   }
 
+  async getUsersPaginated(opts: {
+    page: number;
+    limit: number;
+    search?: string;
+    branchId?: string;
+    excludeUserId?: string;
+    denominationIds?: string[];
+    role?: string;
+  }): Promise<{ data: any[]; total: number }> {
+    const { page, limit, search, branchId, excludeUserId, denominationIds, role } = opts;
+    const skip = (page - 1) * limit;
+
+    const applyCommonFilters = (qb: any) => {
+      if (role) qb.andWhere('user.role = :role', { role });
+      if (excludeUserId) qb.andWhere('user.id != :excludeUserId', { excludeUserId });
+      if (search?.trim()) {
+        qb.andWhere(
+          '(user.first_name ILIKE :t OR user.last_name ILIKE :t OR user.email ILIKE :t)',
+          { t: `%${search.trim()}%` }
+        );
+      }
+    };
+
+    if (branchId) {
+      const qb = this.userRepository.createQueryBuilder('user')
+        .innerJoinAndSelect('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId });
+      applyCommonFilters(qb);
+      const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+      const data = users.map((u) => ({
+        ...classToPlain(u),
+        branch_is_active: (u as any).branchMemberships?.[0]?.is_active ?? true,
+        branch_role: (u as any).branchMemberships?.[0]?.role ?? null,
+      }));
+      return { data, total };
+    }
+
+    if (denominationIds && denominationIds.length > 0) {
+      const rawIds = await this.userRepository
+        .createQueryBuilder('user')
+        .select('DISTINCT user.id', 'id')
+        .leftJoin('user.denominations', 'ud')
+        .leftJoin('user.branchMemberships', 'bm')
+        .leftJoin('bm.branch', 'bmb')
+        .where('ud.id IN (:...denominationIds) OR bmb.denomination_id IN (:...denominationIds)', { denominationIds })
+        .getRawMany();
+      const ids = rawIds.map((r: any) => r.id).filter(Boolean);
+      if (ids.length === 0) return { data: [], total: 0 };
+      const qb = this.userRepository.createQueryBuilder('user')
+        .where('user.id IN (:...ids)', { ids });
+      applyCommonFilters(qb);
+      const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+      return { data: users.map((u) => classToPlain(u)), total };
+    }
+
+    // super_admin — all users
+    const qb = this.userRepository.createQueryBuilder('user');
+    applyCommonFilters(qb);
+    const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
+    return { data: users.map((u) => classToPlain(u)), total };
+  }
+
   async getAllUsers(branchId?: string, excludeUserId?: string, denominationIds?: string[]): Promise<any[]> {
     if (!branchId) {
       if (denominationIds && denominationIds.length > 0) {
