@@ -21,6 +21,21 @@ export class ChurchService {
     return this.denomRepo.save(denom);
   }
 
+  async findByName(name: string): Promise<Denomination | null> {
+    return this.denomRepo
+      .createQueryBuilder('d')
+      .where('LOWER(d.denomination_name) = LOWER(:name)', { name: name.trim() })
+      .getOne();
+  }
+
+  async checkNameAvailable(name: string, excludeId?: string): Promise<boolean> {
+    const qb = this.denomRepo
+      .createQueryBuilder('d')
+      .where('LOWER(d.denomination_name) = LOWER(:name)', { name: name.trim() });
+    if (excludeId) qb.andWhere('d.id != :excludeId', { excludeId });
+    return (await qb.getCount()) === 0;
+  }
+
   async findAll(): Promise<Denomination[]> {
     return this.denomRepo.find({
       relations: ["admin", "branches"],

@@ -88,6 +88,15 @@ export class AuthService {
       throw new Error("User with this email already exists");
     }
 
+    // Check for duplicate denomination name (case-insensitive)
+    const existingDenom = await this.churchRepository
+      .createQueryBuilder('d')
+      .where('LOWER(d.denomination_name) = LOWER(:name)', { name: church.denomination_name.trim() })
+      .getOne();
+    if (existingDenom) {
+      throw new Error(`A denomination named "${church.denomination_name.trim()}" is already registered. If this is your church, please log in instead.`);
+    }
+
     const isFirst = await this.isFirstUser();
 
     const user = this.userRepository.create({

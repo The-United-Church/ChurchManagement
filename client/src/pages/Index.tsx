@@ -196,7 +196,7 @@ export default function IndexPage() {
           <RegisterForm onSwitchToLogin={() => go('login')} />
         )}
         {mode === 'register-church' && (
-          <ChurchRegistrationForm onSwitchToLogin={() => go('login')} />
+          <ChurchRegistrationForm onSwitchToLogin={() => go('login')} onSwitchToRegister={() => go('register')} /> 
         )}
         {mode === 'forgot-password' && (
           <ForgotPasswordForm onSwitchToLogin={() => go('login')} />

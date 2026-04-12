@@ -18,6 +18,12 @@ export const createChurch = asyncHandler(
       return;
     }
 
+    const available = await churchService.checkNameAvailable(denomination_name.trim());
+    if (!available) {
+      res.status(409).json({ status: 409, message: `A denomination named "${denomination_name.trim()}" is already registered.` });
+      return;
+    }
+
     const church = await churchService.create({
       denomination_name: denomination_name.trim(),
       description: description?.trim(),
@@ -43,6 +49,18 @@ export const getChurches = asyncHandler(
   async (_req: Request, res: Response): Promise<void> => {
     const churches = await churchService.findAll();
     res.json({ data: churches, status: 200, message: "Churches fetched" });
+  }
+);
+
+export const checkDenominationName = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const name = (req.query.name as string | undefined)?.trim();
+    if (!name) {
+      res.status(400).json({ status: 400, message: "name query parameter is required" });
+      return;
+    }
+    const available = await churchService.checkNameAvailable(name);
+    res.json({ status: 200, available, message: available ? 'Name is available' : 'Name is already taken' });
   }
 );
 

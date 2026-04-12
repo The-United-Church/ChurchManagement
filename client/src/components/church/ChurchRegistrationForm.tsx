@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRegister } from '@/hooks/useAuthQuery';
 import { Country } from 'country-state-city';
 import { PhoneField, isoToFlag } from '@/components/dashboard/AddPersonDialog';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:7777/api';
+
+type NameCheckStatus = 'idle' | 'checking' | 'taken' | 'available';
+
 interface ChurchRegistrationFormProps {
   onSwitchToLogin: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ onSwitchToLogin }) => {
+export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ onSwitchToLogin, onSwitchToRegister }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     denominationName: '',
@@ -21,6 +26,8 @@ export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ 
     confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [nameCheck, setNameCheck] = useState<NameCheckStatus>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { loginWithResponse } = useAuth();
   const registerMutation = useRegister();
   const phoneOptions = React.useMemo(() =>
@@ -37,11 +44,43 @@ export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  useEffect(() => {
+    const trimmed = formData.denominationName.trim();
+    if (!trimmed) {
+      setNameCheck('idle');
+      return;
+    }
+    setNameCheck('checking');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/churches/check-name?name=${encodeURIComponent(trimmed)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setNameCheck(data.available ? 'available' : 'taken');
+        } else {
+          setNameCheck('idle');
+        }
+      } catch {
+        setNameCheck('idle');
+      }
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [formData.denominationName]);
+
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!formData.denominationName.trim()) {
       setError('Denomination name is required');
+      return;
+    }
+    if (nameCheck === 'checking') {
+      setError('Please wait while we verify the denomination name.');
+      return;
+    }
+    if (nameCheck === 'taken') {
+      setError('This denomination is already registered. If this is your church, please sign in instead.');
       return;
     }
     setStep(2);
@@ -119,8 +158,30 @@ export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ 
                 value={formData.denominationName}
                 onChange={(e) => handleInputChange('denominationName', e.target.value)}
                 required
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  borderColor: nameCheck === 'taken' ? '#f97316' : nameCheck === 'available' ? '#22c55e' : undefined,
+                }}
               />
+              {nameCheck === 'checking' && (
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>Checking availability…</p>
+              )}
+              {nameCheck === 'taken' && (
+                <div style={{ padding: '8px 12px', backgroundColor: '#fff7ed', border: '1px solid #fdba74', borderRadius: '6px' }}>
+                  <p style={{ fontSize: '13px', color: '#c2410c', margin: 0 }}>
+                    ⚠️ A denomination with this name is already registered. If this is your church, please{' '}
+                    <button type="button" style={{ ...styles.link, fontSize: '13px' }} onClick={onSwitchToLogin}>sign in</button>.
+                    {onSwitchToRegister && (
+                      <> Don't have an account?{' '}
+                        <button type="button" style={{ ...styles.link, fontSize: '13px' }} onClick={onSwitchToRegister}>Sign up</button>.
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
+              {nameCheck === 'available' && (
+                <p style={{ fontSize: '12px', color: '#16a34a', margin: 0 }}>✓ Name is available</p>
+              )}
             </div>
 
             <div style={styles.formGroup}>
@@ -135,8 +196,15 @@ export const ChurchRegistrationForm: React.FC<ChurchRegistrationFormProps> = ({ 
               />
             </div>
 
-            <button type="submit" style={styles.button}>
-              Continue
+            <button
+              type="submit"
+              style={{
+                ...styles.button,
+                ...((nameCheck === 'taken' || nameCheck === 'checking') ? styles.buttonDisabled : {}),
+              }}
+              disabled={nameCheck === 'taken' || nameCheck === 'checking'}
+            >
+              {nameCheck === 'checking' ? 'Checking…' : 'Continue'}
             </button>
 
             <div style={styles.footer}>

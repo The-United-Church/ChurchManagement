@@ -10,6 +10,7 @@ import {
   updateBranch,
   deleteBranch,
   removeBranchMembers,
+  checkDenominationName,
 } from "../controllers/church.controller";
 import { UserController } from "../controllers/user.controller";
 import { authMiddleware, adminMiddleware } from "../middleware/auth.middleware";
@@ -21,6 +22,7 @@ const auth = authMiddleware(new UserService()) as RequestHandler;
 const userController = new UserController();
 
 // ─── Denomination routes ──────────────────────────────────────────────────
+router.get("/check-name", checkDenominationName);
 router.get("/", auth, adminMiddleware, getChurches);
 router.get("/:id", auth, adminMiddleware, getChurchById);
 router.post("/", auth, adminMiddleware, createChurch);
