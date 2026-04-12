@@ -18,6 +18,29 @@ function normalizePersonInput(body: any, branchId?: string): Partial<Person> {
     if (typeof v === 'string' && v.trim() === '') return undefined;
     return v;
   };
+
+  // Strip duplicate dial code prefix (e.g. "+2342349069577255" → "+2349069577255")
+  const normalizePhone = (raw: any): string | undefined => {
+    if (!raw || typeof raw !== 'string') return undefined;
+    const v = raw.trim();
+    if (!v) return undefined;
+    // If it starts with '+', extract the dial code (1-3 digits) then check if the
+    // remaining local portion starts with those same digits again.
+    const match = v.match(/^(\+(\d{1,3}))(\d+)$/);
+    if (match) {
+      const dialCode = match[2]; // e.g. "234"
+      const rest = match[3];     // everything after the '+'
+      // rest already includes dialCode, so rest = dialCode + localNumber
+      // Check if localNumber itself starts with dialCode again
+      const localPart = rest.slice(dialCode.length); // strip dial code once
+      if (localPart.startsWith(dialCode)) {
+        // User included dial code in the local part — strip it
+        return `+${dialCode}${localPart.slice(dialCode.length)}`;
+      }
+    }
+    return v;
+  };
+
   const birthRaw = typeof body.birthdate === 'string' ? body.birthdate.trim() : undefined;
   const birthdate = birthRaw && /^\d{4}-\d{2}-\d{2}$/.test(birthRaw) ? birthRaw : undefined;
   const genderRaw = typeof body.gender === 'string' ? body.gender.trim().toLowerCase() : undefined;
@@ -35,7 +58,7 @@ function normalizePersonInput(body: any, branchId?: string): Partial<Person> {
     city: nz(trim(body.city)),
     country: nz(trim(body.country)),
     email: nz(trim(body.email)),
-    phone: nz(trim(body.phone)),
+    phone: nz(normalizePhone(body.phone)),
     profile_image: nz(trim(body.profile_image)),
     branch_id: branchId || nz(trim(body.branch_id)),
   };

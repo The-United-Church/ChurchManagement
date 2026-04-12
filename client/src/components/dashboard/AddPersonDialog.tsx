@@ -285,14 +285,26 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
     const byCountry = options.find((o) => o.name === countryName);
     return byCountry || options.find((o) => o.code === '+234') || options[0];
   };
-  const [cc, setCc] = React.useState(findDefault().code);
-  const [local, setLocal] = React.useState(value.replace(cc, ''));
+
+  // Strip the dial code prefix and any duplicate dial code digits from a raw phone value
+  const extractLocal = (raw: string, dialCode: string) => {
+    // Remove the '+xxx' prefix if present
+    let local = raw.startsWith(dialCode) ? raw.slice(dialCode.length) : raw;
+    // If the remaining digits still start with the bare dial code (e.g. stored as +2342349...), strip once more
+    const ccDigits = dialCode.replace(/\D/g, '');
+    if (local.startsWith(ccDigits)) local = local.slice(ccDigits.length);
+    return local;
+  };
+
+  const initialCc = findDefault().code;
+  const [cc, setCc] = React.useState(initialCc);
+  const [local, setLocal] = React.useState(extractLocal(value, initialCc));
 
   React.useEffect(() => {
     const opt = options.find((o) => value.startsWith(o.code));
     const current = opt ? opt.code : cc;
     setCc(current);
-    setLocal(value.replace(current, ''));
+    setLocal(extractLocal(value, current));
   }, [value]);
 
   const countryCodes = options.map((o) => ({ code: o.code, flag: o.flag }));
