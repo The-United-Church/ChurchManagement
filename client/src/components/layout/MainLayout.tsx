@@ -11,6 +11,7 @@ import BranchManagement from '../dashboard/BranchManagement';
 import ChurchMemberManagement from '../dashboard/ChurchMemberManagement';
 import MemberDirectory from '../member/MemberDirectory';
 import MemberSettings from '../member/MemberSettings';
+import { EventListPage } from '../event/EventListPage';
 
 interface MainLayoutProps {
   children?: React.ReactNode;
@@ -52,8 +53,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       case 'events':
         return (
           <div className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-4">Events</h2>
-            <p className="text-gray-600">Events management features will be implemented here.</p>
+            <EventListPage />
           </div>
         );
       case 'followups':

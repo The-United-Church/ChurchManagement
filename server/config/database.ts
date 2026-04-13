@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { ActivityLog } from "../models/activity-log.model";
 import { Denomination, Branch, BranchMembership, BranchJoinRequest, BranchInvite } from "../models/church";
 import { Person } from "../models/person.model";
+import { Event, EventAttendance } from "../models/event";
 dotenv.config();
 
 export const AppDataSource = new DataSource({
@@ -25,7 +26,9 @@ export const AppDataSource = new DataSource({
                 BranchMembership,
                 BranchJoinRequest,
                 BranchInvite,
-                Person
+                Person,
+                Event,
+                EventAttendance
             ],
     migrations: ["./migrations/*.ts"],
     subscribers: ['./subscribers/*.ts'],

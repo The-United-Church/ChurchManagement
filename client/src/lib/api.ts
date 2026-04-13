@@ -525,3 +525,47 @@ export const deactivateInviteLinkApi = (churchId: string, branchId: string, invi
     method: 'DELETE',
   });
 
+// ─── Events ─────────────────────────────────────────────────────────────────
+import type { EventDTO, CreateEventInput, UpdateEventInput, EventAttendanceDTO, AttendanceSummaryItem } from '@/types/event';
+
+export const fetchEventsApi = (params?: { page?: number; limit?: number; category?: string; from_date?: string; to_date?: string }) => {
+  const qs = params ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString() : '';
+  return request<{ data: EventDTO[]; total: number; status: number }>(`/events${qs}`);
+};
+
+export const fetchEventByIdApi = (id: string) =>
+  request<{ data: EventDTO; status: number }>(`/events/${id}`);
+
+export const createEventApi = (data: CreateEventInput) =>
+  request<{ data: EventDTO; status: number; message: string }>('/events', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateEventApi = (id: string, data: UpdateEventInput) =>
+  request<{ data: EventDTO; status: number; message: string }>(`/events/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+export const deleteEventApi = (id: string) =>
+  request<{ status: number; message: string }>(`/events/${id}`, { method: 'DELETE' });
+
+// ─── Event Attendance ────────────────────────────────────────────────────────
+export const markAttendanceApi = (eventId: string, body: { event_date: string; user_id?: string; check_in_lat?: number; check_in_lng?: number }) =>
+  request<{ data: EventAttendanceDTO; status: number; message: string }>(`/events/${eventId}/attendance`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+
+export const fetchEventAttendanceApi = (eventId: string, eventDate: string) =>
+  request<{ data: EventAttendanceDTO[]; status: number }>(`/events/${eventId}/attendance?event_date=${eventDate}`);
+
+export const fetchAttendanceSummaryApi = (eventId: string) =>
+  request<{ data: AttendanceSummaryItem[]; status: number }>(`/events/${eventId}/attendance/summary`);
+
+export const removeAttendanceApi = (eventId: string, userId: string, eventDate: string) =>
+  request<{ status: number; message: string }>(`/events/${eventId}/attendance/${userId}?event_date=${eventDate}`, {
+    method: 'DELETE',
+  });
+

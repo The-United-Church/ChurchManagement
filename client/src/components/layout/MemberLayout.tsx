@@ -10,6 +10,7 @@ import MemberRegistrations from '../member/MemberRegistrations';
 import MemberCalendar from '../member/MemberCalendar';
 import MemberNotifications from '../member/MemberNotifications';
 import MemberSettings from '../member/MemberSettings';
+import { EventListPage } from '../event/EventListPage';
 
 interface MemberLayoutProps {
   children?: React.ReactNode;
@@ -24,6 +25,7 @@ function sectionFromPath(pathname: string): string {
   if (pathname.startsWith('/member/notifications'))   return 'notifications';
   if (pathname.startsWith('/member/settings'))        return 'settings';
   if (pathname.startsWith('/member/profile'))         return 'settings';
+  if (pathname.startsWith('/member/events'))          return 'events';
   return 'home';
 }
 
@@ -42,6 +44,7 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
       case 'calendar':           return <MemberCalendar />;
       case 'notifications':      return <MemberNotifications />;
       case 'settings':           return <MemberSettings />;
+      case 'events':             return <div className="p-4 md:p-6"><EventListPage /></div>;
       default:                   return <MemberHome />;
     }
   };

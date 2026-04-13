@@ -72,6 +72,7 @@ function AppRoutes() {
             <Route path="/member/calendar" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/member/notifications" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/member/settings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member/events" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/member/settings/password" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/member/settings/currency" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/member/settings/directory" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

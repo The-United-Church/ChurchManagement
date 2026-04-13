@@ -27,6 +27,7 @@ interface MemberSidebarProps {
 const menuItems = [
   { id: 'home',             label: 'Home',             icon: Home,     path: '/member' },
   { id: 'directory',        label: 'Directory',        icon: Users,    path: '/member/directory' },
+  { id: 'events',           label: 'Events',           icon: Calendar, path: '/member/events' },
   { id: 'my-registrations', label: 'My Registrations', icon: Calendar, path: '/member/registrations' },
   { id: 'calendar',         label: 'Calendar',         icon: Calendar, path: '/member/calendar' },
   { id: 'notifications',    label: 'Notifications',    icon: Bell,     path: '/member/notifications', badge: '2' },

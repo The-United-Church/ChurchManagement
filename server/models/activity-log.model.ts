@@ -42,6 +42,8 @@ export enum EntityType {
   CHURCH = "church",
   BRANCH = "branch",
   AUTH = "auth",
+  EVENT = "event",
+  ATTENDANCE = "attendance",
 }
 
 @Entity("activity_logs")
