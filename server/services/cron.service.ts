@@ -234,7 +234,7 @@ export async function scheduleRecurringEvents(): Promise<void> {
       is_published: true,
       publish_at: null,
       date: () =>
-        `CASE id ${updates.map((u) => `WHEN '${u.id}' THEN '${u.date}'`).join(" ")} END`,
+        `(CASE id ${updates.map((u) => `WHEN '${u.id}' THEN '${u.date}'`).join(" ")} END)::date`,
     })
     .whereInIds(updates.map((u) => u.id))
     .execute();
