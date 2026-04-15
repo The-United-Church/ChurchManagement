@@ -4,21 +4,41 @@ services:
     name: otuobiri-be
     env: node
     region: oregon
-    buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_OPTIONS
         value: --max-old-space-size=4096
+      - key: DB_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
 
-  # Frontend Service (Next.js)
+  # Frontend Service
   - type: web
     name: church-management-fe
     env: node
     region: oregon
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm start
+    buildCommand: cd client && npm install && npm run build
+    startCommand: cd client && npm start
     envVars:
       - key: NODE_ENV
         value: production
+
+  # Cron Job — updates event statuses (ongoing / closed)
+  - type: cron
+    name: update-event-status
+    env: node
+    region: oregon
+    schedule: "*/5 * * * *"
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && node dist/jobs/updateEventStatus.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
