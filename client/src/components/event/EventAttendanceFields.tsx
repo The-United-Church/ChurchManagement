@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import type { CreateEventInput } from "@/types/event";
 import { LocationMapPicker } from "./LocationMapPicker";
+import { GuestFieldsEditor } from "./GuestFieldsEditor";
 
 interface Props {
   form: CreateEventInput;
@@ -80,6 +81,26 @@ export const EventAttendanceFields: React.FC<Props> = ({ form, update }) => {
               onChangeRadius={(r) => update("location_radius", r)}
             />
           )}
+
+          {/* Guest check-in form fields (QR code) */}
+          <GuestFieldsEditor
+            value={form.guest_checkin_fields}
+            onChange={(fields) => update("guest_checkin_fields", fields)}
+          />
+
+          {/* Allow multiple check-ins per device */}
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              <Label>Allow multiple submissions</Label>
+              <p className="text-xs text-muted-foreground">
+                When on, the same device can submit the QR form more than once
+              </p>
+            </div>
+            <Switch
+              checked={form.allow_multiple_checkins}
+              onCheckedChange={(v) => update("allow_multiple_checkins", v)}
+            />
+          </div>
         </>
       )}
     </div>

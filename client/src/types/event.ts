@@ -71,6 +71,26 @@ export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
 
 export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
+export interface GuestCheckInField {
+  id: string;
+  label: string;
+  type: "text" | "email" | "tel" | "textarea" | "select";
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
+export const DEFAULT_GUEST_FIELDS: GuestCheckInField[] = [
+  { id: "first_name", label: "First Name", type: "text", required: true, placeholder: "John" },
+  { id: "last_name", label: "Last Name", type: "text", required: true, placeholder: "Doe" },
+  { id: "email", label: "Email", type: "email", required: false, placeholder: "john@example.com" },
+  { id: "phone", label: "Phone", type: "tel", required: false, placeholder: "+1 555 000 0000" },
+  { id: "country", label: "Country", type: "text", required: false, placeholder: "Nigeria" },
+  { id: "state", label: "State", type: "text", required: false, placeholder: "Lagos" },
+  { id: "address", label: "Address", type: "text", required: false, placeholder: "123 Main St" },
+  { id: "comments", label: "Comments", type: "textarea", required: false, placeholder: "First time? Let us know…" },
+];
+
 export interface EventDTO {
   id: string;
   title: string;
@@ -99,6 +119,10 @@ export interface EventDTO {
   attendance_opens_at: string | null;
   /** ISO datetime string – used when attendance_status = "scheduled" */
   attendance_closes_at: string | null;
+  /** Custom guest check-in form fields; null = default template */
+  guest_checkin_fields: GuestCheckInField[] | null;
+  /** When true, guests may submit the QR form more than once from the same device */
+  allow_multiple_checkins: boolean;
   visibility: EventVisibility;
   visible_to_member_ids: string[] | null;
   publish_at: string | null;

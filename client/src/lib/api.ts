@@ -584,6 +584,8 @@ export interface PublicEventInfo {
   attendance_status: string | null;
   attendance_opens_at: string | null;
   attendance_closes_at: string | null;
+  guest_checkin_fields: import('@/types/event').GuestCheckInField[] | null;
+  allow_multiple_checkins: boolean;
 }
 
 export interface GuestCheckInInput {
@@ -596,6 +598,7 @@ export interface GuestCheckInInput {
   state?: string;
   address?: string;
   comments?: string;
+  custom_responses?: Record<string, string>;
   check_in_lat?: number;
   check_in_lng?: number;
 }
@@ -630,6 +633,7 @@ export interface GuestAttendeeRecord {
   state: string | null;
   address: string | null;
   comments: string | null;
+  custom_responses: Record<string, string> | null;
   checked_in_at: string;
 }
 

@@ -166,6 +166,7 @@ const PeopleManagement = () => {
             onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll}
             viewMode={viewMode}
+            loading={loading}
           />
         </CardContent>
         {/* Pagination */}

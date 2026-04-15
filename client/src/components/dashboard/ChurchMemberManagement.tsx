@@ -215,9 +215,11 @@ interface MemberListProps {
   onEdit: (m: MemberDTO) => void;
   onDelete: (m: MemberDTO) => void;
   viewMode: 'table' | 'card';
+  loading?: boolean;
 }
 
-const MemberList: React.FC<MemberListProps> = ({ members, selectedIds, onToggleSelect, onToggleSelectAll, onView, onEdit, onDelete, viewMode }) => {
+const MemberList: React.FC<MemberListProps> = ({ members, selectedIds, onToggleSelect, onToggleSelectAll, onView, onEdit, onDelete, viewMode, loading }) => {
+  if (loading) return <div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   if (members.length === 0) return <p className="p-4 text-center text-gray-500">No members found.</p>;
 
   const allSelected = members.length > 0 && members.every((m) => selectedIds.has(m.id));
@@ -717,6 +719,7 @@ const ChurchMemberManagement: React.FC = () => {
             onEdit={setEditTarget}
             onDelete={setDeleteTarget}
             viewMode={viewMode}
+            loading={loading}
           />
         </CardContent>
         {/* Pagination */}

@@ -26,6 +26,7 @@ export interface GuestAttendanceDTO {
   state?: string;
   address?: string;
   comments?: string;
+  custom_responses?: Record<string, string>;
   check_in_lat?: number;
   check_in_lng?: number;
 }
@@ -143,7 +144,7 @@ export class AttendanceService {
 
   // ── Guest attendance (QR code check-in) ───────────────────────
 
-  async getPublicEventInfo(eventId: string): Promise<{ id: string; title: string; date: string; time_from: string; time_to: string; location: string; accept_attendance: boolean; require_location: boolean; attendance_status: string | null; attendance_opens_at: Date | null; attendance_closes_at: Date | null } | null> {
+  async getPublicEventInfo(eventId: string): Promise<{ id: string; title: string; date: string; time_from: string; time_to: string; location: string; accept_attendance: boolean; require_location: boolean; attendance_status: string | null; attendance_opens_at: Date | null; attendance_closes_at: Date | null; guest_checkin_fields: any[] | null; allow_multiple_checkins: boolean } | null> {
     const event = await this.eventRepo.findOneBy({ id: eventId });
     if (!event) return null;
     return {
@@ -158,6 +159,8 @@ export class AttendanceService {
       attendance_status: event.attendance_status,
       attendance_opens_at: event.attendance_opens_at,
       attendance_closes_at: event.attendance_closes_at,
+      guest_checkin_fields: event.guest_checkin_fields,
+      allow_multiple_checkins: event.allow_multiple_checkins,
     };
   }
 

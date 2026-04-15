@@ -2,7 +2,7 @@ import React from 'react';
 import type { Person } from '@/types/person';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Edit, Trash2, Mail, Phone, UserPlus } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, UserPlus, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -16,13 +16,17 @@ interface PeopleListProps {
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
   viewMode?: 'table' | 'card';
+  loading?: boolean;
 }
 
 function fullName(p: Person) {
   return `${p.first_name} ${p.last_name}`;
 }
 
-const PeopleList: React.FC<PeopleListProps> = ({ people, onView, onEdit, onDelete, onConvert, selectedIds, onToggleSelect, onToggleSelectAll, viewMode }) => {
+const PeopleList: React.FC<PeopleListProps> = ({ people, onView, onEdit, onDelete, onConvert, selectedIds, onToggleSelect, onToggleSelectAll, viewMode, loading }) => {
+  if (loading) {
+    return <div className="flex items-center justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
+  }
   if (people.length === 0) {
     return <p className="p-4 text-center text-gray-500">No people found.</p>;
   }

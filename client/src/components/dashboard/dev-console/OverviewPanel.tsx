@@ -24,7 +24,7 @@ const OverviewPanel: React.FC<OverviewPanelProps> = ({
     <StatCards stats={stats} userCount={userCount} roleCount={roles.length} />
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <RecentActivityFeed activities={recentActivities} loading={loading} />
-      <UsersByRole stats={stats} />
+      <UsersByRole stats={stats} loading={loading} />
     </div>
   </div>
 );
@@ -103,7 +103,7 @@ const RecentActivityFeed: React.FC<{ activities: ActivityLog[]; loading: boolean
   </Card>
 );
 
-const UsersByRole: React.FC<{ stats: UserStats | null }> = ({ stats }) => (
+const UsersByRole: React.FC<{ stats: UserStats | null; loading?: boolean }> = ({ stats, loading }) => (
   <Card>
     <CardHeader>
       <CardTitle className="text-base flex items-center gap-2">
@@ -129,7 +129,7 @@ const UsersByRole: React.FC<{ stats: UserStats | null }> = ({ stats }) => (
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground py-4 text-center">No data</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">{loading ? 'Loading...' : 'No data'}</p>
       )}
     </CardContent>
   </Card>

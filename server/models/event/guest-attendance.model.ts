@@ -47,6 +47,10 @@ export class GuestAttendance {
   @Column({ type: "text", nullable: true })
   comments: string | null;
 
+  /** Responses to custom check-in fields (key = field id, value = response) */
+  @Column({ type: "jsonb", nullable: true })
+  custom_responses: Record<string, string> | null;
+
   @Column({ type: "float", nullable: true })
   check_in_lat: number | null;
 

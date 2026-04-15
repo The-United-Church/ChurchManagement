@@ -87,7 +87,7 @@ const SuperAdmin = () => {
             <OverviewPanel stats={stats} userCount={displayUsers.length} roles={roles} recentActivities={recentActivities} loading={loading} />
           )}
           {section === 'analytics' && <AnalyticsPanel />}
-          {section === 'users' && <UsersPanel users={displayUsers} />}
+          {section === 'users' && <UsersPanel users={displayUsers} loading={loading} />}
           {section === 'activity' && <ActivityPanel />}
           {section === 'system' && (
             <SystemPanel roles={roles} health={health} stats={stats} userCount={displayUsers.length} activityTotal={0} loading={loading} onRefresh={loadBackendData} />

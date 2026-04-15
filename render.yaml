@@ -15,6 +15,8 @@ services:
         sync: false
       - key: DB_SSL
         value: "true"
+      - key: DB_SYNC
+        value: "true"   # Set to "false" after first successful deploy (schema already applied)
 
   # Frontend Service
   - type: web

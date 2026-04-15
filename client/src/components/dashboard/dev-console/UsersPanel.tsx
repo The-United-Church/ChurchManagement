@@ -3,15 +3,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { DisplayUser } from './types';
 
 interface UsersPanelProps {
   users: DisplayUser[];
+  loading?: boolean;
 }
 
-const UsersPanel: React.FC<UsersPanelProps> = ({ users }) => {
+const UsersPanel: React.FC<UsersPanelProps> = ({ users, loading }) => {
   const [search, setSearch] = useState('');
 
   const filtered = users.filter((u) => {
@@ -42,11 +43,15 @@ const UsersPanel: React.FC<UsersPanelProps> = ({ users }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" /></TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No users found</TableCell>
                 </TableRow>
-              )}
+              ) : null}
               {filtered.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name || '—'}</TableCell>

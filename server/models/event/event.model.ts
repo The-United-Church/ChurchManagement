@@ -48,6 +48,15 @@ export enum EventStatus {
   CLOSED = "closed",
 }
 
+export interface GuestCheckInField {
+  id: string;
+  label: string;
+  type: "text" | "email" | "tel" | "textarea" | "select";
+  required: boolean;
+  placeholder?: string;
+  options?: string[];      // for select type
+}
+
 @Entity("events")
 export class Event {
   @PrimaryGeneratedColumn("uuid")
@@ -136,6 +145,20 @@ export class Event {
   /** ISO datetime – when attendance closes (used when attendance_status = "scheduled") */
   @Column({ type: "timestamp with time zone", nullable: true })
   attendance_closes_at: Date | null;
+
+  /**
+   * When true, guests can submit the QR check-in form multiple times from the same device.
+   * Default false = one submission per device (localStorage guard on the client).
+   */
+  @Column({ default: false })
+  allow_multiple_checkins: boolean;
+
+  /**
+   * Custom guest check-in form fields (QR code flow).
+   * null = use default template (first_name, last_name, email, phone, country, state, address, comments).
+   */
+  @Column({ type: "jsonb", nullable: true })
+  guest_checkin_fields: GuestCheckInField[] | null;
 
   // ── Visibility / Publishing ───────────────────────────────────
   @Column({ type: "enum", enum: EventVisibility, default: EventVisibility.PUBLIC })

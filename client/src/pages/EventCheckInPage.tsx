@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchPublicEventApi, guestCheckInApi, type PublicEventInfo } from "@/lib/api";
 import { CheckCircle, Loader2, MapPin, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { DEFAULT_GUEST_FIELDS, type GuestCheckInField } from "@/types/event";
 
 function formatTime(t: string) {
   const [h, m] = t.split(":");
@@ -26,22 +27,16 @@ function isAttendanceOpen(event: PublicEventInfo): { open: boolean; reason?: str
   return { open: true };
 }
 
-const EMPTY_FORM = {
-  first_name: "",
-  last_name: "",
-  email: "",
-  phone: "",
-  country: "",
-  state: "",
-  address: "",
-  comments: "",
-};
+/** Built-in field IDs that map to dedicated DB columns on guest_attendance */
+const BUILTIN_FIELD_IDS = new Set([
+  "first_name", "last_name", "email", "phone", "country", "state", "address", "comments",
+]);
 
 export const EventCheckInPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<PublicEventInfo | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -53,9 +48,15 @@ export const EventCheckInPage: React.FC = () => {
 
   useEffect(() => {
     if (!eventId) return;
-    if (localStorage.getItem(`checkin_${eventId}`)) setAlreadySubmitted(true);
     fetchPublicEventApi(eventId)
-      .then((res) => setEvent(res.data))
+      .then((res) => {
+        const ev = res.data;
+        setEvent(ev);
+        // Only block re-submission when the creator has NOT enabled multiple check-ins
+        if (!ev.allow_multiple_checkins && localStorage.getItem(`checkin_${eventId}`)) {
+          setAlreadySubmitted(true);
+        }
+      })
       .catch((err) => setLoadError(err.message || "Failed to load event"));
   }, [eventId]);
 
@@ -96,8 +97,8 @@ export const EventCheckInPage: React.FC = () => {
     }
   }, [event?.require_location]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const update = (key: keyof typeof EMPTY_FORM, value: string) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const updateField = (key: string, value: string) =>
+    setFormValues((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,22 +129,37 @@ export const EventCheckInPage: React.FC = () => {
   };
 
   const submitWithCoords = async (position?: { lat: number; lng: number } | null) => {
+    // Split form values into built-in columns vs custom responses
+    const builtIn: Record<string, string> = {};
+    const custom: Record<string, string> = {};
+    for (const [key, val] of Object.entries(formValues)) {
+      const trimmed = val.trim();
+      if (!trimmed) continue;
+      if (BUILTIN_FIELD_IDS.has(key)) {
+        builtIn[key] = trimmed;
+      } else {
+        custom[key] = trimmed;
+      }
+    }
+
     try {
       await guestCheckInApi(eventId!, {
         event_date: event!.date,
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        email: form.email.trim() || undefined,
-        phone: form.phone.trim() || undefined,
-        country: form.country.trim() || undefined,
-        state: form.state.trim() || undefined,
-        address: form.address.trim() || undefined,
-        comments: form.comments.trim() || undefined,
+        first_name: builtIn.first_name || "",
+        last_name: builtIn.last_name || "",
+        email: builtIn.email || undefined,
+        phone: builtIn.phone || undefined,
+        country: builtIn.country || undefined,
+        state: builtIn.state || undefined,
+        address: builtIn.address || undefined,
+        comments: builtIn.comments || undefined,
+        custom_responses: Object.keys(custom).length > 0 ? custom : undefined,
         check_in_lat: position?.lat,
         check_in_lng: position?.lng,
       });
       localStorage.setItem(`checkin_${eventId!}`, "1");
       setSuccess(true);
+      setFormValues({});
     } catch (err: any) {
       setSubmitError(err.message || "Check-in failed. Please try again.");
     } finally {
@@ -173,6 +189,7 @@ export const EventCheckInPage: React.FC = () => {
   const { open: attendanceOpen, reason: closedReason } = isAttendanceOpen(event);
 
   if (success || alreadySubmitted) {
+    const canSubmitAgain = event.allow_multiple_checkins && success;
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="bg-white rounded-2xl shadow-sm border p-8 max-w-sm w-full text-center space-y-4">
@@ -187,6 +204,11 @@ export const EventCheckInPage: React.FC = () => {
               ? `You have already submitted attendance for ${event?.title ?? "this event"} from this device.`
               : <>Your attendance for <strong>{event!.title}</strong> has been recorded. Welcome!</>}
           </p>
+          {canSubmitAgain && (
+            <Button variant="outline" size="sm" onClick={() => setSuccess(false)} className="w-full">
+              Submit another response
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -240,47 +262,49 @@ export const EventCheckInPage: React.FC = () => {
                 </div>
               )
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="ci-first">First Name *</Label>
-                <Input id="ci-first" required value={form.first_name} onChange={(e) => update("first_name", e.target.value)} placeholder="John" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="ci-last">Last Name *</Label>
-                <Input id="ci-last" required value={form.last_name} onChange={(e) => update("last_name", e.target.value)} placeholder="Doe" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="ci-email">Email (optional)</Label>
-              <Input id="ci-email" type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="john@example.com" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="ci-phone">Phone (optional)</Label>
-              <Input id="ci-phone" type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+1 555 000 0000" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="ci-country">Country</Label>
-                <Input id="ci-country" value={form.country} onChange={(e) => update("country", e.target.value)} placeholder="Nigeria" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="ci-state">State</Label>
-                <Input id="ci-state" value={form.state} onChange={(e) => update("state", e.target.value)} placeholder="Lagos" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="ci-address">Address (optional)</Label>
-              <Input id="ci-address" value={form.address} onChange={(e) => update("address", e.target.value)} placeholder="123 Main St" />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="ci-comments">Comments (optional)</Label>
-              <Textarea id="ci-comments" value={form.comments} onChange={(e) => update("comments", e.target.value)} placeholder="First time? Let us know…" rows={2} />
-            </div>
+            {/* Dynamic form fields */}
+            {(() => {
+              const fields: GuestCheckInField[] = event.guest_checkin_fields ?? DEFAULT_GUEST_FIELDS;
+              return fields.map((field) => (
+                <div key={field.id} className="space-y-1.5">
+                  <Label htmlFor={`ci-${field.id}`}>
+                    {field.label}{field.required ? " *" : " (optional)"}
+                  </Label>
+                  {field.type === "textarea" ? (
+                    <Textarea
+                      id={`ci-${field.id}`}
+                      required={field.required}
+                      value={formValues[field.id] ?? ""}
+                      onChange={(e) => updateField(field.id, e.target.value)}
+                      placeholder={field.placeholder}
+                      rows={2}
+                    />
+                  ) : field.type === "select" ? (
+                    <select
+                      id={`ci-${field.id}`}
+                      required={field.required}
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      value={formValues[field.id] ?? ""}
+                      onChange={(e) => updateField(field.id, e.target.value)}
+                    >
+                      <option value="">{field.placeholder || "Select…"}</option>
+                      {(field.options ?? []).map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id={`ci-${field.id}`}
+                      type={field.type}
+                      required={field.required}
+                      value={formValues[field.id] ?? ""}
+                      onChange={(e) => updateField(field.id, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                </div>
+              ));
+            })()}
 
             {submitError && (
               <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

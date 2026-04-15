@@ -160,7 +160,7 @@ export const getPublicEventInfo = asyncHandler(async (req, res) => {
 });
 
 export const guestCheckIn = asyncHandler(async (req, res) => {
-  const { event_date, first_name, last_name, email, phone, country, state, address, comments, check_in_lat, check_in_lng } = req.body;
+  const { event_date, first_name, last_name, email, phone, country, state, address, comments, custom_responses, check_in_lat, check_in_lng } = req.body;
   const eventId = req.params.eventId;
   if (!first_name || !last_name) throw new CustomError("First name and last name are required", 400);
   if (!event_date) throw new CustomError("Event date is required", 400);
@@ -176,6 +176,7 @@ export const guestCheckIn = asyncHandler(async (req, res) => {
     state: state?.trim() || undefined,
     address: address?.trim() || undefined,
     comments: comments?.trim() || undefined,
+    custom_responses: custom_responses || undefined,
     check_in_lat,
     check_in_lng,
   });

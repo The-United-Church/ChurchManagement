@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Users, Plus, Trash2, Crown, Shield, User, UserCheck } from 'lucide-react';
+import { Users, Plus, Trash2, Crown, Shield, User, UserCheck, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import AddMemberDialog from './AddMemberDialog';
@@ -22,6 +22,7 @@ export const UserManagement: React.FC = () => {
   const { user } = useAuth();
   const { currentBranch, currentChurch } = useChurch();
   const [users, setUsers] = useState<UserType[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [message, setMessage] = useState('');
@@ -34,11 +35,14 @@ export const UserManagement: React.FC = () => {
   }, [user, currentBranch?.id]);
 
   const loadUsers = async () => {
+    setLoadingUsers(true);
     try {
       const res = await fetchUsers();
       setUsers(res.data || []);
     } catch {
       setUsers([]);
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -261,12 +265,16 @@ export const UserManagement: React.FC = () => {
               </div>
             ))}
             
-            {users.length === 0 && (
+            {loadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : users.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No users found.</p>
               </div>
-            )}
+            ) : null}
           </div>
         </CardContent>
       </Card>
