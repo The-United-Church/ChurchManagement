@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   ChevronDown, 
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   BarChart3,
   Users,
   UserCheck,
@@ -41,9 +44,11 @@ import ChurchSelector from '@/components/church/ChurchSelector';
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, collapsed = false, onToggleCollapse }) => {
   const { user, logout } = useAuth();
   const { effectiveRole, branchRole, currentChurch } = useChurch();
   const navigate = useNavigate();
@@ -216,73 +221,124 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
     }
   ];
 
+  // Helper: wraps a nav button in a tooltip when sidebar is collapsed
+  const NavBtn = ({ id, icon: Icon, label, badge, isActive, onClick }: {
+    id: string; icon: React.ElementType; label: string; badge?: string;
+    isActive: boolean; onClick: () => void;
+  }) => {
+    const btn = (
+      <Button
+        key={id}
+        variant={isActive ? "secondary" : "ghost"}
+        className={`w-full mb-1 h-9 ${collapsed ? 'justify-center px-0' : 'justify-start'}`}
+        onClick={onClick}
+      >
+        <Icon className={`h-4 w-4 shrink-0 ${collapsed ? '' : 'mr-3'}`} />
+        {!collapsed && <span className="flex-1 text-left">{label}</span>}
+        {!collapsed && badge && (
+          <Badge variant="destructive" className="ml-auto text-xs h-5 px-1.5">{badge}</Badge>
+        )}
+      </Button>
+    );
+    if (collapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{btn}</TooltipTrigger>
+          <TooltipContent side="right">{label}{badge ? ` (${badge})` : ''}</TooltipContent>
+        </Tooltip>
+      );
+    }
+    return btn;
+  };
+
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      {/* Church Switcher */}
-      <ChurchSelector />
+    <TooltipProvider delayDuration={100}>
+    <div className={`bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-200 ${collapsed ? 'w-16' : 'w-64'}`}>
+      {/* Header: church selector + collapse toggle */}
+      <div className="flex items-center border-b border-gray-200">
+        {!collapsed && <div className="flex-1 min-w-0"><ChurchSelector /></div>}
+        <button
+          onClick={onToggleCollapse}
+          className={`shrink-0 flex items-center justify-center h-10 w-10 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors ${collapsed ? 'mx-auto my-2' : 'mr-1'}`}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+        </button>
+      </div>
 
       {/* User Info */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          {getRoleIcon()}
-          <span className="font-semibold text-sm text-gray-900">{user.full_name?.split(' ')[0] || user.email}</span>
-          {/* <Badge variant="secondary" className="text-xs">
-            {effectiveRole}
-          </Badge> */}
+      {!collapsed && (
+        <div className="px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            {getRoleIcon()}
+            <span className="font-semibold text-sm text-gray-900">{user.full_name?.split(' ')[0] || user.email}</span>
+          </div>
         </div>
-      </div>
+      )}
+      {collapsed && (
+        <div className="flex justify-center py-2 border-b border-gray-200">
+          {getRoleIcon()}
+        </div>
+      )}
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto">
         <nav className="p-2">
           {menuItems.filter(item => item.visible).map((item) => (
-            <Button
+            <NavBtn
               key={item.id}
-              variant={activeSection === item.id ? "secondary" : "ghost"}
-              className="w-full justify-start mb-1 h-9"
+              id={item.id}
+              icon={item.icon}
+              label={item.label}
+              badge={(item as any).badge}
+              isActive={activeSection === item.id}
               onClick={() => onSectionChange(item.id)}
-            >
-              <item.icon className="h-4 w-4 mr-3" />
-              <span className="flex-1 text-left">{item.label}</span>
-              {item.badge && (
-                <Badge variant="destructive" className="ml-auto text-xs h-5 px-1.5">
-                  {item.badge}
-                </Badge>
-              )}
-            </Button>
+            />
           ))}
 
           {/* Contributions Dropdown */}
           {canViewAnalytics && (
             <div className="mb-1">
-              <Button
-                variant={isContributionActive ? "secondary" : "ghost"}
-                className="w-full justify-start h-9"
-                onClick={() => setContributionsOpen(!contributionsOpen)}
-              >
-                <DollarSign className="h-4 w-4 mr-3" />
-                <span className="flex-1 text-left">Contributions</span>
-                {contributionsOpen ? (
-                  <ChevronDown className="h-3 w-3 ml-auto" />
-                ) : (
-                  <ChevronRight className="h-3 w-3 ml-auto" />
-                )}
-              </Button>
-              
-              {contributionsOpen && (
-                <div className="ml-4 mt-1 space-y-1">
-                  {contributionItems.map((item) => (
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button
-                      key={item.id}
-                      variant={activeSection === item.id ? "secondary" : "ghost"}
-                      className="w-full justify-start h-8 text-sm"
-                      onClick={() => onSectionChange(item.id)}
+                      variant={isContributionActive ? "secondary" : "ghost"}
+                      className="w-full justify-center h-9 px-0 mb-1"
+                      onClick={() => setContributionsOpen(!contributionsOpen)}
                     >
-                      <item.icon className="h-3 w-3 mr-3" />
-                      {item.label}
+                      <DollarSign className="h-4 w-4 shrink-0" />
                     </Button>
-                  ))}
-                </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Contributions</TooltipContent>
+                </Tooltip>
+              ) : (
+                <>
+                  <Button
+                    variant={isContributionActive ? "secondary" : "ghost"}
+                    className="w-full justify-start h-9"
+                    onClick={() => setContributionsOpen(!contributionsOpen)}
+                  >
+                    <DollarSign className="h-4 w-4 mr-3" />
+                    <span className="flex-1 text-left">Contributions</span>
+                    {contributionsOpen ? <ChevronDown className="h-3 w-3 ml-auto" /> : <ChevronRight className="h-3 w-3 ml-auto" />}
+                  </Button>
+                  {contributionsOpen && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {contributionItems.map((item) => (
+                        <Button
+                          key={item.id}
+                          variant={activeSection === item.id ? "secondary" : "ghost"}
+                          className="w-full justify-start h-8 text-sm"
+                          onClick={() => onSectionChange(item.id)}
+                        >
+                          <item.icon className="h-3 w-3 mr-3" />
+                          {item.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -294,6 +350,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
         {bottomMenuItems.filter(item => item.visible).map((item) => {
           if ((item as any).isDropdown && item.id === 'settings') {
             const isSettingsActive = activeSection === 'settings' || activeSection === 'notifications';
+            if (collapsed) {
+              return (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={isSettingsActive ? "secondary" : "ghost"}
+                      className="w-full justify-center h-9 px-0 mb-1"
+                      onClick={() => onSectionChange('settings')}
+                    >
+                      <Settings className="h-4 w-4 shrink-0" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Settings</TooltipContent>
+                </Tooltip>
+              );
+            }
             return (
               <div key={item.id} className="mb-1">
                 <Button
@@ -303,10 +375,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
                 >
                   <item.icon className="h-4 w-4 mr-3" />
                   <span className="flex-1 text-left">{item.label}</span>
-                  {settingsOpen
-                    ? <ChevronDown className="h-3 w-3 ml-auto" />
-                    : <ChevronRight className="h-3 w-3 ml-auto" />
-                  }
+                  {settingsOpen ? <ChevronDown className="h-3 w-3 ml-auto" /> : <ChevronRight className="h-3 w-3 ml-auto" />}
                 </Button>
                 {settingsOpen && (
                   <div className="ml-4 mt-1 space-y-1">
@@ -333,28 +402,44 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange }) => 
           }
 
           return (
-            <Button
+            <NavBtn
               key={item.id}
-              variant={activeSection === item.id ? "secondary" : "ghost"}
-              className="w-full justify-start mb-1 h-9"
+              id={item.id}
+              icon={item.icon}
+              label={item.label}
+              isActive={activeSection === item.id}
               onClick={() => (item as any).isExternalRoute ? navigate(`/${item.id}`) : onSectionChange(item.id)}
-            >
-              <item.icon className="h-4 w-4 mr-3" />
-              {item.label}
-            </Button>
+            />
           );
         })}
-        
-        <Button
-          variant="ghost"
-          className="w-full justify-start h-9 text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4 mr-3" />
-          Logout
-        </Button>
+
+        {/* Logout */}
+        {collapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-center h-9 px-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={logout}
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Logout</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            className="w-full justify-start h-9 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={logout}
+          >
+            <LogOut className="h-4 w-4 mr-3" />
+            Logout
+          </Button>
+        )}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

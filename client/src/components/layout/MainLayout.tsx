@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
@@ -22,6 +22,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { currentChurch, effectiveRole } = useChurch();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      localStorage.setItem('sidebarCollapsed', String(!prev));
+      return !prev;
+    });
+  };
 
   const activeSection = location.pathname.substring(1) || 'dashboard';
 
@@ -179,7 +189,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className="flex h-[100dvh] bg-gray-50">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
-        <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
+        <Sidebar
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleCollapse}
+        />
       </div>
       
       {/* Main Content Area */}
