@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Church, Menu, X } from 'lucide-react';
+import { Church, Menu, X, PartyPopper } from 'lucide-react';
 
 interface LandingHeaderProps {
   onGetStarted: () => void;
@@ -9,6 +9,7 @@ interface LandingHeaderProps {
 
 const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [bannerVisible, setBannerVisible] = useState(true);
 
   const navLinks = [
     { label: 'Features', href: '#features' },
@@ -23,8 +24,56 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) 
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const tickerMessage = (
+    <span className="inline-flex items-center gap-2">
+      <PartyPopper className="h-3.5 w-3.5 shrink-0" />
+      <span>
+        <strong>ChurchFlow is completely free to use right now</strong> — try every feature at no cost.
+        Add your church, set up branches, and start adding your members today.
+      </span>
+      <span className="mx-8 opacity-40">✦</span>
+      <PartyPopper className="h-3.5 w-3.5 shrink-0" />
+      <span>
+        <strong>No subscription needed.</strong> Sign up, explore the platform, and see how it works for your congregation.
+      </span>
+      <span className="mx-8 opacity-40">✦</span>
+    </span>
+  );
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+      {/* ── Announcement banner ── */}
+      {bannerVisible && (
+        <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 overflow-hidden">
+          <style>{`
+            @keyframes churchflow-ticker {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .churchflow-ticker-track {
+              display: inline-flex;
+              white-space: nowrap;
+              animation: churchflow-ticker 32s linear infinite;
+            }
+            .churchflow-ticker-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div className="overflow-hidden py-2 pr-8">
+            <div className="churchflow-ticker-track text-white text-xs font-medium">
+              {tickerMessage}{tickerMessage}
+            </div>
+          </div>
+          {/* Dismiss button */}
+          <button
+            onClick={() => setBannerVisible(false)}
+            aria-label="Dismiss announcement"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
