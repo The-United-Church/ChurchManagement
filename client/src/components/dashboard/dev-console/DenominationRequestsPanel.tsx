@@ -19,6 +19,7 @@ import {
   DialogOverlay,
 } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/confirm-dialog';
+import { toast } from '@/hooks/use-toast';
 import {
   Search,
   Loader2,
@@ -85,7 +86,7 @@ const DenominationRequestsPanel: React.FC = () => {
       await approveDenominationRequestApi(approveTarget.id);
       await loadRequests();
     } catch (err: any) {
-      alert(err.message || 'Failed to approve request');
+      toast({ title: 'Failed to approve request', description: err.message, variant: 'destructive' });
     } finally {
       setActionLoading(null);
     }
@@ -106,7 +107,7 @@ const DenominationRequestsPanel: React.FC = () => {
       await rejectDenominationRequestApi(target.id, rejectReason.trim());
       await loadRequests();
     } catch (err: any) {
-      alert(err.message || 'Failed to reject request');
+      toast({ title: 'Failed to reject request', description: err.message, variant: 'destructive' });
     } finally {
       setActionLoading(null);
     }

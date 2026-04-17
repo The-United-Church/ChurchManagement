@@ -226,13 +226,13 @@ export class DenominationRequestService {
     request.reviewed_at = new Date();
     await this.requestRepo.save(request);
 
-    // Send credentials email
-    await sendDenominationApprovedEmail(
+    // Send credentials email (fire-and-forget — don't fail the approval if email fails)
+    sendDenominationApprovedEmail(
       request.email,
       request.first_name,
       request.denomination_name,
       tempPassword
-    );
+    ).catch(() => {});
 
     return { user: savedUser, denomination: savedDenom };
   }
@@ -253,13 +253,13 @@ export class DenominationRequestService {
     request.rejection_reason = rejectionReason.trim();
     const saved = await this.requestRepo.save(request);
 
-    // Send rejection email to requester
-    await sendDenominationRejectedEmail(
+    // Send rejection email to requester (fire-and-forget — don't fail the rejection if email fails)
+    sendDenominationRejectedEmail(
       request.email,
       request.first_name,
       request.denomination_name,
       rejectionReason.trim()
-    );
+    ).catch(() => {});
 
     return saved;
   }
