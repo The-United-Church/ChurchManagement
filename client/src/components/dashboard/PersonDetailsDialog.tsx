@@ -71,7 +71,7 @@ const PersonDetailsDialog: React.FC<PersonDetailsDialogProps> = ({ open, onOpenC
                 {person.converted_user_id ? (
                   <Badge className="border-transparent bg-app-primary text-app-primary-foreground hover:bg-app-primary">Member</Badge>
                 ) : (
-                  <Badge variant="outline" className="border-app-primary-light text-app-selected-text">Person</Badge>
+                  <Badge variant="outline" className="border-app-primary-light pr-5 text-app-selected-text">Person</Badge>
                 )}
               </div>
             </div>
