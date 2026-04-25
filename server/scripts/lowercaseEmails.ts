@@ -81,12 +81,12 @@ async function run(): Promise<void> {
     for (const table of ["users", "people"] as const) {
       const conflicts = await detectConflicts(table);
       if (conflicts.length > 0) {
-        logger.warn(
+        logger.info(
           `[lowercaseEmails] ${table}: ${conflicts.length} email(s) cannot be lowercased ` +
             `because doing so would create a duplicate. Reconcile and re-run.`
         );
         for (const c of conflicts) {
-          logger.warn(`  • ${c.email} → ids: ${c.ids.join(", ")}`);
+          logger.info(`  • ${c.email} → ids: ${c.ids.join(", ")}`);
         }
       }
 
