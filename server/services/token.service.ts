@@ -4,7 +4,7 @@ import { User } from "../models/user.model";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your-refresh-secret-key";
-const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || "1m";
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || "900000000m";
 const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || "7d";
 
 export interface TokenPayload {
