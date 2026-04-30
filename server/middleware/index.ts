@@ -16,6 +16,7 @@ export const setupMiddleware = (app: Express) => {
   //   - Also allows any *.localhost:* origin so that custom-domain previews
   //     (e.g. http://slbcyenagoa.localhost:5173) work during local development.
   const LOCALHOST_RE = /^https?:\/\/[^/]+\.localhost(:\d+)?$/i;
+  const CUSTOM_DOMAIN_RE = /^https:\/\/[^/]+\.theunitedchurch\.online$/i;
   const corsOriginFn = (
     origin: string | undefined,
     callback: (err: Error | null, allow?: boolean) => void,
@@ -27,7 +28,8 @@ export const setupMiddleware = (app: Express) => {
     }
     if (
       (config.corsOrigins as string[]).includes(origin) ||
-      LOCALHOST_RE.test(origin)
+      LOCALHOST_RE.test(origin) ||
+      CUSTOM_DOMAIN_RE.test(origin)
     ) {
       callback(null, true);
     } else {
