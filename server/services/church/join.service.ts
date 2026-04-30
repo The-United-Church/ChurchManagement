@@ -196,25 +196,10 @@ export class JoinService {
     const qb = this.requestRepo
       .createQueryBuilder("r")
       .where("r.branch_id = :branchId", { branchId })
-      .leftJoin("users", "u", "u.id = r.user_id::uuid")
-      .addSelect(["u.id", "u.email", "u.first_name", "u.last_name", "u.full_name"])
+      .leftJoinAndMapOne("r.user", User, "u", "u.id = r.user_id::uuid")
       .orderBy("r.created_at", "ASC");
     if (status) qb.andWhere("r.status = :status", { status });
-
-    const raw = await qb.getRawAndEntities();
-
-    // Manually attach user data from the raw rows to each entity
-    return raw.entities.map((entity, i) => {
-      const row = raw.raw[i];
-      (entity as any).user = {
-        id: row.u_id,
-        email: row.u_email,
-        first_name: row.u_first_name,
-        last_name: row.u_last_name,
-        full_name: row.u_full_name,
-      };
-      return entity;
-    });
+    return qb.getMany();
   }
 
   // ─── Admin: approve or reject a join request ─────────────────────────────
@@ -254,7 +239,13 @@ export class JoinService {
     // Notify the requesting user of the outcome (fire-and-forget)
     this.notifyRequester(req.user_id, decision, req.branch?.name ?? "the branch").catch(() => {});
 
-    return req;
+    // Re-fetch with user populated so the client gets full user info
+    const updated = await this.requestRepo
+      .createQueryBuilder("r")
+      .where("r.id = :id", { id: requestId })
+      .leftJoinAndMapOne("r.user", User, "u", "u.id = r.user_id::uuid")
+      .getOne();
+    return updated ?? req;
   }
 
   // ─── Admin: bulk approve / reject ─────────────────────────────────────────

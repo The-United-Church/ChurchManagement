@@ -155,8 +155,10 @@ export const firebaseLogin = asyncHandler(
       { email: result.user.email, method: 'firebase' }
     );
 
+    const customDomain = await autoJoinFromCustomDomain(req, result.user.id).catch(() => null);
+
     res.status(200).json({
-      data: buildAuthResponse(result),
+      data: { ...buildAuthResponse(result), customDomain },
       status: 200,
       message: "Login successful",
     });
@@ -290,7 +292,13 @@ export const googleAuthCallback = asyncHandler(
         { email: result.user.email, method: "google_code_flow" }
       );
 
-      // Auto-join custom-domain branch if applicable
+      // Auto-join custom-domain branch if applicable.
+      // The request here comes from Google's redirect (Host: api server), so we
+      // inject the custom domain from returnTo so the service can resolve it.
+      try {
+        const returnUrl = new URL(returnTo);
+        (req.headers as Record<string, string>)['x-custom-domain'] = returnUrl.hostname;
+      } catch { /* invalid URL — no-op */ }
       await autoJoinFromCustomDomain(req, result.user.id).catch(() => null);
 
       // Pass tokens via URL fragment (`#`) — never sent to servers.

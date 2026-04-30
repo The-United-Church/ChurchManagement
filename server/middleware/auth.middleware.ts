@@ -81,7 +81,13 @@ export const authMiddleware = (userService: UserService) => {
 
             // Optional branch scoping via header
             const requestedBranchId = (req.headers['x-branch-id'] as string | undefined) || undefined;
-            if (requestedBranchId) {
+            // Endpoints where the caller is allowed to send X-Branch-Id even
+            // though they are not (yet) a member of that branch — e.g. the
+            // join-request submission, which is by definition pre-membership.
+            const isPreMembershipEndpoint =
+                req.method === 'POST' &&
+                /^\/api\/join\/request\/?$/.test(req.originalUrl.split('?')[0]);
+            if (requestedBranchId && !isPreMembershipEndpoint) {
                 // Super admins can scope to any branch
                 if (req.user.role === 'super_admin') {
                     req.branchId = requestedBranchId;
@@ -91,7 +97,13 @@ export const authMiddleware = (userService: UserService) => {
                         const membershipRepo = AppDataSource.getRepository(BranchMembership);
                         const membership = await membershipRepo.findOne({ where: { user_id: req.user.id, branch_id: requestedBranchId } });
                         if (!membership) {
-                            res.status(403).json({ statusCode: 403, message: 'You are not a member of the selected branch' });
+                            // User has no membership in this branch yet (e.g. pending join
+                            // request on a custom domain).  Rather than 403-ing every API
+                            // call, silently ignore the branch-scope hint so the request
+                            // proceeds unscoped.  Controllers already gate branch-specific
+                            // data on req.branchId being non-null.
+                            req.branchId = null;
+                            next();
                             return;
                         }
                         if (!membership.is_active) {

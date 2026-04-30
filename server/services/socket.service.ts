@@ -8,9 +8,30 @@ const tokenService = new TokenService();
 let io: Server | null = null;
 
 export function initializeSocket(httpServer: HttpServer): Server {
+  // Match the HTTP CORS policy: allow configured origins plus any
+  // *.localhost:* subdomain (used for custom-domain previews in dev).
+  const LOCALHOST_RE = /^https?:\/\/[^/]+\.localhost(:\d+)?$/i;
+  const allowOrigin = (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (
+      (config.corsOrigins as string[]).includes(origin) ||
+      LOCALHOST_RE.test(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Socket.IO CORS: origin '${origin}' is not allowed.`));
+    }
+  };
+
   io = new Server(httpServer, {
     cors: {
-      origin: config.corsOrigins,
+      origin: allowOrigin,
       credentials: true,
     },
   });

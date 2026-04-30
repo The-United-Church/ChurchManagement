@@ -185,12 +185,37 @@ function customDomainHeader(): Record<string, string> {
   return host ? { 'X-Custom-Domain': host } : {};
 }
 
+function mapFirebaseAuthError(code: string): string {
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-email':
+      return 'Incorrect email or password. Please try again.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Please contact support.';
+    case 'auth/too-many-requests':
+      return 'Too many failed login attempts. Please wait a moment and try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection and try again.';
+    default:
+      return 'Login failed. Please check your credentials and try again.';
+  }
+}
+
 export async function apiLogin(
   email: string,
   password: string
 ): Promise<AuthResponse> {
   // Authenticate with Firebase first — Firebase owns the password.
-  const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  let credential: import('firebase/auth').UserCredential;
+  try {
+    credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  } catch (err: any) {
+    const code: string = err?.code ?? '';
+    throw new Error(mapFirebaseAuthError(code));
+  }
+
   const idToken = await credential.user.getIdToken();
 
   // Exchange the Firebase ID token for JWT tokens.
