@@ -42,14 +42,21 @@ export function useRealtimeSync({ socket, branchId }: UseRealtimeSyncOptions) {
       queryClient.invalidateQueries({ queryKey: queryKeys.churches() });
     };
 
+    const onPresenceChanged = () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.members(branchId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.directory(branchId) });
+    };
+
     socket.on('people:changed', onPeopleChanged);
     socket.on('members:changed', onMembersChanged);
     socket.on('churches:changed', onChurchesChanged);
+    socket.on('presence:changed', onPresenceChanged);
 
     return () => {
       socket.off('people:changed', onPeopleChanged);
       socket.off('members:changed', onMembersChanged);
       socket.off('churches:changed', onChurchesChanged);
+      socket.off('presence:changed', onPresenceChanged);
     };
   }, [socket, branchId, queryClient]);
 }

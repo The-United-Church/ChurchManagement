@@ -9,7 +9,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CalendarDays, Mail, MapPin, Phone, Shield, User } from 'lucide-react';
+import { Activity, CalendarDays, Mail, MapPin, Phone, Shield, User } from 'lucide-react';
 
 interface MemberDetailsDialogProps {
   open: boolean;
@@ -22,6 +22,13 @@ const formatDate = (value?: string) => {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return 'N/A';
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 };
 
 const displayName = (m: MemberDTO) => {
@@ -55,6 +62,14 @@ const MemberDetailsDialog: React.FC<MemberDetailsDialogProps> = ({ open, onOpenC
   const name = displayName(member);
   const roleLabel = member.branch_role || member.role || 'member';
   const joinedDate = ((member as any).created_at || (member as any).createdAt || '') as string;
+  const hasSharedPresence = typeof member.is_online === 'boolean';
+  const presenceText = !hasSharedPresence
+    ? 'Not shared'
+    : member.is_online
+      ? 'Online now'
+      : formatDateTime(member.last_access)
+        ? `Last seen ${formatDateTime(member.last_access)}`
+        : 'Offline';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,6 +107,7 @@ const MemberDetailsDialog: React.FC<MemberDetailsDialogProps> = ({ open, onOpenC
                 <Field label="Phone" value={member.phone_number || ''} icon={<Phone className="h-4 w-4 text-app-primary" />} />
                 <Field label="Branch Role" value={roleLabel} icon={<Shield className="h-4 w-4 text-app-primary" />} />
                 <Field label="Branch Status" value={member.branch_is_active === false ? 'Inactive' : 'Active'} icon={<Shield className="h-4 w-4 text-app-primary" />} />
+                <Field label="Presence" value={presenceText} icon={<Activity className={`h-4 w-4 ${member.is_online ? 'text-emerald-500' : 'text-app-primary'}`} />} />
                 <Field label="Location" value={[ (member as any).city, (member as any).state, (member as any).country ].filter(Boolean).join(', ')} icon={<MapPin className="h-4 w-4 text-app-primary" />} />
                 <Field label="Joined Date" value={formatDate(joinedDate)} icon={<CalendarDays className="h-4 w-4 text-app-primary" />} />
               </div>

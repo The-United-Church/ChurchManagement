@@ -10,6 +10,7 @@ import {
   deletePerson,
   importPeople,
   convertToMember,
+  bulkConvertToMember,
 } from "../controllers/person.controller";
 
 const router = Router();
@@ -24,6 +25,7 @@ router.get("/:id", getPersonById);
 router.put("/:id", updatePerson);
 router.delete("/", deletePerson);
 router.post("/import", importPeople);
+router.post("/bulk-convert", bulkConvertToMember);
 router.post("/:id/convert", convertToMember);
 
 export default router;

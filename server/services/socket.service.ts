@@ -2,10 +2,13 @@ import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { TokenService } from "./auth/token.service";
 import { config } from "../config";
+import { AppDataSource } from "../config/database";
+import { User } from "../models/user.model";
 
 const tokenService = new TokenService();
 
 let io: Server | null = null;
+const activeUserSockets = new Map<string, Set<string>>();
 
 export function initializeSocket(httpServer: HttpServer): Server {
   // Match the HTTP CORS policy: allow configured origins plus any
@@ -60,6 +63,9 @@ function authenticateSocket(socket: Socket, next: (err?: Error) => void) {
 
 function handleConnection(socket: Socket) {
   const userId = socket.data.userId;
+  if (typeof userId !== "string" || !userId) return;
+
+  void markUserOnline(userId, socket.id);
   socket.join(`user:${userId}`);
 
   socket.on("join:branch", (branchId: string) => {
@@ -79,7 +85,61 @@ function handleConnection(socket: Socket) {
 
   socket.on("disconnect", () => {
     socket.leave(`user:${userId}`);
+    void markUserOffline(userId, socket.id);
   });
+}
+
+async function markUserOnline(userId: string, socketId: string): Promise<void> {
+  const sockets = activeUserSockets.get(userId) ?? new Set<string>();
+  const wasOnline = sockets.size > 0;
+  sockets.add(socketId);
+  activeUserSockets.set(userId, sockets);
+
+  if (!wasOnline) {
+    await touchLastAccess(userId);
+    emitPresenceChanged();
+  }
+}
+
+async function markUserOffline(userId: string, socketId: string): Promise<void> {
+  const sockets = activeUserSockets.get(userId);
+  if (!sockets) return;
+
+  sockets.delete(socketId);
+  if (sockets.size > 0) return;
+
+  activeUserSockets.delete(userId);
+  await touchLastAccess(userId);
+  emitPresenceChanged();
+}
+
+async function touchLastAccess(userId: string): Promise<void> {
+  try {
+    if (!AppDataSource.isInitialized) return;
+    await AppDataSource.getRepository(User).update(
+      { id: userId },
+      { last_access: new Date() },
+    );
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Failed to update socket presence timestamp", error);
+    }
+  }
+}
+
+function emitPresenceChanged(): void {
+  if (io) {
+    io.emit("presence:changed", { at: new Date().toISOString() });
+  }
+}
+
+export function isUserOnline(userId: string | null | undefined): boolean {
+  if (!userId) return false;
+  return (activeUserSockets.get(userId)?.size ?? 0) > 0;
+}
+
+export function getOnlineUserIds(): string[] {
+  return [...activeUserSockets.keys()];
 }
 
 export function getIO(): Server {

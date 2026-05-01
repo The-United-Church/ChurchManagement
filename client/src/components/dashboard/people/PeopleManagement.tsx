@@ -16,7 +16,7 @@ import ConfirmDialog from '@/components/ui/confirm-dialog';
 import PersonDetailsDialog from './PersonDetailsDialog';
 
 const PeopleManagement = () => {
-  const { people, loading, saving, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, load, create, update, remove, removeMany, importPeople, convert } = usePeopleCrud();
+  const { people, loading, saving, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, load, create, update, remove, removeMany, importPeople, convert, convertMany } = usePeopleCrud();
   const { members, load: loadMembers } = useMemberCrud();
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Person | null>(null);
@@ -26,6 +26,7 @@ const PeopleManagement = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   // Members are loaded automatically by useQuery; trigger when import/add dialog opens
@@ -118,6 +119,11 @@ const PeopleManagement = () => {
     if (ok) { setSelectedIds(new Set()); setBulkDeleteOpen(false); }
   };
 
+  const handleBulkConvert = async () => {
+    const ok = await convertMany(Array.from(selectedIds));
+    if (ok) { setSelectedIds(new Set()); setBulkConvertOpen(false); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <HeaderSection onAdd={() => setAddOpen(true)} onImport={() => setImportOpen(true)} onExport={handleExport} viewMode={viewMode} onToggleView={() => setViewMode((v) => v === 'table' ? 'card' : 'table')} />
@@ -128,15 +134,27 @@ const PeopleManagement = () => {
             <div className="flex items-center gap-3">
               <CardTitle className="text-lg font-medium">All People {loading && <Loader2 className="inline h-4 w-4 animate-spin ml-2" />}</CardTitle>
               {selectedIds.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setBulkDeleteOpen(true)}
-                  disabled={saving}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete {selectedIds.size} selected
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkConvertOpen(true)}
+                    disabled={saving}
+                    className="border-app-primary text-app-primary hover:bg-app-primary/10"
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Convert {selectedIds.size} to member{selectedIds.size !== 1 ? 's' : ''}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBulkDeleteOpen(true)}
+                    disabled={saving}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete {selectedIds.size} selected
+                  </Button>
+                </div>
               )}
             </div>
             <div className="relative w-full sm:w-72">
@@ -213,6 +231,18 @@ const PeopleManagement = () => {
         confirmLabel="Delete All"
         variant="danger"
         icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
+
+      <ConfirmDialog
+        open={bulkConvertOpen}
+        onOpenChange={(o) => { if (!o) setBulkConvertOpen(false); }}
+        title="Convert to Members"
+        description={`Convert ${selectedIds.size} ${selectedIds.size === 1 ? 'person' : 'people'} to members? A user account will be created for each and a password sent to their email. People without an email will be skipped.`}
+        onConfirm={handleBulkConvert}
+        loading={saving}
+        confirmLabel="Convert All"
+        variant="primary"
+        icon={<UserPlus className="h-6 w-6 text-app-primary" />}
       />
 
       <ConfirmDialog

@@ -29,7 +29,6 @@ const formatDate = (iso?: string): string => {
  */
 const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
   const [activeTitle, setActiveTitle] = useState<string>('all');
-  const [activeDate, setActiveDate] = useState<string>('all');
   const [expanded, setExpanded] = useState<{
     highlight: LandingHighlight;
     imageIndex: number;
@@ -48,11 +47,10 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
     return out;
   }, [highlights]);
 
-  const dateOptions = useMemo(() => {
-    const set = new Set<string>();
-    highlights.forEach((h) => h.date && set.add(h.date));
-    return Array.from(set).sort((a, b) => (a < b ? 1 : -1));
-  }, [highlights]);
+  const [activeDate, setActiveDate] = useState<string>('all');
+
+  /** Whether the data has any dated highlights (shows the date picker). */
+  const hasDates = useMemo(() => highlights.some((h) => !!h.date), [highlights]);
 
   const visible = useMemo(
     () =>
@@ -89,54 +87,61 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
 
         {/* Filter bar */}
         <div className="flex items-start gap-3 mb-8">
-          {/* Title chips — horizontally scrollable, deduplicated */}
+          {/* Title filter — chips when ≤5 titles, dropdown when more */}
           <div className="flex-1 min-w-0">
-            <div
-              className="flex gap-2 overflow-x-auto pb-1"
-              style={{ scrollbarWidth: 'none' }}
-            >
-              <Button
-                type="button"
-                size="sm"
-                variant={activeTitle === 'all' ? 'default' : 'outline'}
-                onClick={() => setActiveTitle('all')}
-                className={`shrink-0 ${activeTitle === 'all' ? 'text-white' : ''}`}
-                style={activeTitle === 'all' ? { background: 'var(--brand)' } : undefined}
+            {uniqueTitles.length <= 5 ? (
+              <div
+                className="flex gap-2 overflow-x-auto pb-1"
+                style={{ scrollbarWidth: 'none' }}
               >
-                All
-              </Button>
-              {uniqueTitles.map((title) => (
                 <Button
-                  key={title}
                   type="button"
                   size="sm"
-                  variant={activeTitle === title ? 'default' : 'outline'}
-                  onClick={() => setActiveTitle(activeTitle === title ? 'all' : title)}
-                  className={`shrink-0 ${activeTitle === title ? 'text-white' : ''}`}
-                  style={activeTitle === title ? { background: 'var(--brand)' } : undefined}
+                  variant={activeTitle === 'all' ? 'default' : 'outline'}
+                  onClick={() => setActiveTitle('all')}
+                  className={`shrink-0 ${activeTitle === 'all' ? 'text-white' : ''}`}
+                  style={activeTitle === 'all' ? { background: 'var(--brand)' } : undefined}
                 >
-                  {title}
+                  All
                 </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Date dropdown */}
-          {dateOptions.length > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <Calendar className="h-4 w-4 text-slate-400" />
+                {uniqueTitles.map((title) => (
+                  <Button
+                    key={title}
+                    type="button"
+                    size="sm"
+                    variant={activeTitle === title ? 'default' : 'outline'}
+                    onClick={() => setActiveTitle(activeTitle === title ? 'all' : title)}
+                    className={`shrink-0 ${activeTitle === title ? 'text-white' : ''}`}
+                    style={activeTitle === title ? { background: 'var(--brand)' } : undefined}
+                  >
+                    {title}
+                  </Button>
+                ))}
+              </div>
+            ) : (
               <select
-                value={activeDate}
-                onChange={(e) => setActiveDate(e.target.value)}
-                className="text-sm rounded-md border border-slate-200 bg-white px-2 py-1.5"
+                value={activeTitle}
+                onChange={(e) => setActiveTitle(e.target.value)}
+                className="w-full sm:w-auto text-sm rounded-md border border-slate-200 bg-white px-2 py-1.5"
               >
-                <option value="all">All dates</option>
-                {dateOptions.map((d) => (
-                  <option key={d} value={d}>
-                    {formatDate(d)}
-                  </option>
+                <option value="all">All categories</option>
+                {uniqueTitles.map((title) => (
+                  <option key={title} value={title}>{title}</option>
                 ))}
               </select>
+            )}
+          </div>
+
+          {/* Date picker — no min/max so every date is clickable */}
+          {hasDates && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Calendar className="h-4 w-4 text-slate-400" />
+              <input
+                type="date"
+                value={activeDate === 'all' ? '' : activeDate}
+                onChange={(e) => setActiveDate(e.target.value || 'all')}
+                className="text-sm rounded-md border border-slate-200 bg-white px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
+              />
             </div>
           )}
 

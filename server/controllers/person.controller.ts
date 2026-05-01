@@ -238,3 +238,55 @@ export const convertToMember = asyncHandler(async (req: Request, res: Response) 
       : "Person linked to existing member account and added to branch.",
   });
 });
+
+export const bulkConvertToMember = asyncHandler(async (req: Request, res: Response) => {
+  const { ids } = req.body as { ids: string[] };
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ status: 400, message: "ids must be a non-empty array" });
+    return;
+  }
+
+  const results: { id: string; status: "converted" | "skipped" | "failed"; message: string }[] = [];
+
+  for (const id of ids) {
+    try {
+      const person = await personService.findById(id);
+      if (!person) { results.push({ id, status: "skipped", message: "Not found" }); continue; }
+      if (person.converted_user_id) { results.push({ id, status: "skipped", message: "Already a member" }); continue; }
+      if (!person.email) { results.push({ id, status: "skipped", message: "No email address" }); continue; }
+
+      let user = await userService.findUserByEmail(person.email);
+      if (!user) {
+        user = await userService.createUserWithGeneratedPassword(
+          person.email, "member", person.first_name, person.last_name, person.phone,
+        );
+      }
+      if (!user) { results.push({ id, status: "failed", message: "Failed to create user" }); continue; }
+
+      if (person.branch_id) {
+        try { await userService.addUserToBranch(user.id, person.branch_id, "member"); } catch {}
+      }
+      await personService.markConverted(person.id, user.id);
+      results.push({ id, status: "converted", message: "OK" });
+    } catch (e: any) {
+      results.push({ id, status: "failed", message: e?.message || "Unknown error" });
+    }
+  }
+
+  const converted = results.filter((r) => r.status === "converted").length;
+  const skipped  = results.filter((r) => r.status === "skipped").length;
+  const failed   = results.filter((r) => r.status === "failed").length;
+
+  // Emit socket events once after batch
+  emitToAll("people:changed", { action: "bulk-converted" });
+  emitToAll("members:changed", { action: "bulk-converted" });
+
+  res.status(200).json({
+    status: 200,
+    message: `${converted} converted, ${skipped} skipped, ${failed} failed`,
+    converted,
+    skipped,
+    failed,
+    results,
+  });
+});

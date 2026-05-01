@@ -17,7 +17,9 @@
     "fix:enums": "ts-node scripts/fix-enums.ts",
     "delete:users": "ts-node scripts/deleteUsers.ts",
     "delete:users:all": "ts-node scripts/deleteUsers.ts --all --force",
-    "script:lowercase-emails": "ts-node scripts/lowercaseEmails.ts"
+    "script:lowercase-emails": "ts-node scripts/lowercaseEmails.ts",
+    "seed:people": "ts-node scripts/seedPeople.ts",
+    "seed:members": "ts-node scripts/seedMembers.ts"
   },
   "keywords": [],
   "author": "",

@@ -12,6 +12,8 @@ import {
   googleAuthCallback,
   refreshToken,
   logout,
+  verifyTwoFactor,
+  resendTwoFactor,
 } from "../controllers/auth.controller";
 import { UserService } from "../services/user/user.service";
 import { authMiddleware } from "../middleware/auth.middleware";
@@ -31,6 +33,8 @@ router.post("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-reset-otp", verifyResetOtp);
 router.post("/set-new-password", setNewPassword);
+router.post("/verify-2fa", verifyTwoFactor);
+router.post("/resend-2fa", resendTwoFactor);
 router.post(
   "/change-password",
   authMiddleware(new UserService()) as RequestHandler,

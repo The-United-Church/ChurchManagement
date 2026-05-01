@@ -4,6 +4,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import MemberSidebar from './MemberSidebar';
 import MobileMemberSidebar from './MobileMemberSidebar';
+import TopHeader from './TopHeader';
 import MemberHome from '../member/MemberHome';
 import MemberDirectory from '../member/MemberDirectory';
 import MemberRegistrations from '../member/MemberRegistrations';
@@ -80,6 +81,8 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
             </div>
           </div>
         </div>
+
+        <TopHeader />
 
         {/* Content */}
         <div className="flex-1 overflow-auto">

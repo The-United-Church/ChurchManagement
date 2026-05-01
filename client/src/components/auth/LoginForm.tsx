@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { useLogin } from '../../hooks/useAuthQuery';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { apiVerify2FA, apiResend2FA } from '@/services/auth.service';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -15,6 +16,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [twoFAStep, setTwoFAStep] = useState(false);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [resendNote, setResendNote] = useState<string | null>(null);
   const { isAuthenticated, loginWithResponse } = useAuth();
   const loginMutation = useLogin();
   const navigate = useNavigate();
@@ -34,11 +40,101 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       { email, password },
       {
         onSuccess: (data) => {
+          if ((data as any)?.requires2FA) {
+            setTwoFAStep(true);
+            setResendNote('A code has been sent to your email');
+            return;
+          }
           loginWithResponse(data);
         },
       }
     );
   };
+
+  const handleVerify2FA = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      const data = await apiVerify2FA(email, code);
+      loginWithResponse(data);
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Verification failed');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend2FA = async () => {
+    try {
+      await apiResend2FA(email);
+      setResendNote('A new code has been sent');
+    } catch {
+      setResendNote('Failed to resend code');
+    }
+  };
+
+  if (twoFAStep) {
+    return (
+      <div style={styles.card}>
+        <div style={styles.cardHeader}>
+          <h2 style={styles.cardTitle}>Two-Factor Verification</h2>
+          <p style={styles.cardDescription}>
+            Enter the 6-digit code we just emailed to {email}
+          </p>
+        </div>
+        <div style={styles.cardContent}>
+          <form onSubmit={handleVerify2FA} style={styles.form}>
+            {verifyError && (
+              <div style={styles.alert}>
+                <p style={styles.alertText}>{verifyError}</p>
+              </div>
+            )}
+            {resendNote && !verifyError && (
+              <div style={{ ...styles.alert, background: '#ecfdf5', borderColor: '#a7f3d0' }}>
+                <p style={{ ...styles.alertText, color: '#065f46' }}>{resendNote}</p>
+              </div>
+            )}
+            <div style={styles.formGroup}>
+              <label htmlFor="code" style={styles.label}>Verification Code</label>
+              <input
+                id="code"
+                inputMode="numeric"
+                autoFocus
+                maxLength={6}
+                placeholder="123456"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                required
+                style={{ ...styles.input, letterSpacing: '0.4em', textAlign: 'center' as const }}
+              />
+            </div>
+            <button
+              type="submit"
+              style={{ ...styles.button, ...(verifying ? styles.buttonDisabled : {}) }}
+              disabled={verifying || code.length < 6}
+            >
+              {verifying ? 'Verifying…' : 'Verify & Sign In'}
+            </button>
+            <div style={styles.footer}>
+              <button type="button" style={styles.link} onClick={handleResend2FA}>
+                Resend code
+              </button>
+              <span style={styles.footerText}> · </span>
+              <button
+                type="button"
+                style={styles.link}
+                onClick={() => { setTwoFAStep(false); setCode(''); setVerifyError(null); }}
+              >
+                Back to login
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.card}>

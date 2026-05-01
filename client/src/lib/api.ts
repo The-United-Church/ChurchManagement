@@ -89,6 +89,20 @@ export const deleteUserById = (id: string) =>
   request<{ status: number; message: string }>(`/user/${id}`, { method: 'DELETE' });
 
 // ─── Members (users scoped to branch/church) ──────────────────────────────
+export interface FamilyMemberDTO {
+  id: string;
+  first_name: string;
+  last_name: string;
+  relationship: string;
+  birthdate?: string;
+  gender?: string;
+  phone?: string;
+  marital_status?: string;
+  email?: string;
+  /** If this family member matches an existing application user. */
+  linked_user_id?: string;
+}
+
 export interface MemberDTO {
   id: string;
   email: string;
@@ -97,22 +111,37 @@ export interface MemberDTO {
   last_name?: string;
   middle_name?: string;
   nick_name?: string;
+  username?: string;
   profile_img?: string;
   profile_image?: string;
   phone_number?: string;
+  phone_is_whatsapp?: boolean;
   dob?: string | null;
   gender?: string | null;
+  marital_status?: string | null;
+  date_married?: string | null;
   address_line?: string | null;
   city?: string | null;
   state?: string | null;
   country?: string | null;
   postal_code?: string | null;
+  job_title?: string | null;
+  employer?: string | null;
+  facebook_link?: string | null;
+  is_display_email?: boolean;
+  is_accept_text?: boolean;
+  grade?: string | null;
+  baptism_date?: string | null;
+  baptism_location?: string | null;
+  member_status?: string | null;
   role: string;
   /** Role within the current branch (from BranchMembership.role) */
   branch_role?: string;
   is_active?: boolean;
   /** Active flag scoped to the current branch (from BranchMembership) */
   branch_is_active?: boolean;
+  last_access?: string | null;
+  is_online?: boolean;
 }
 
 export const fetchMembersApi = (params?: { page?: number; limit?: number; search?: string }) => {
@@ -121,7 +150,7 @@ export const fetchMembersApi = (params?: { page?: number; limit?: number; search
   if (params?.limit) p.set('limit', String(params.limit));
   if (params?.search) p.set('search', params.search);
   const qs = p.toString() ? `?${p.toString()}` : '';
-  return request<{ data: MemberDTO[]; total: number; page: number; limit: number; status: number; message: string }>(`/user${qs}`);
+  return request<{ data: MemberDTO[]; total: number; activeCount: number; adminCount: number; page: number; limit: number; status: number; message: string }>(`/user${qs}`);
 };
 
 export const createMemberApi = (data: {
@@ -144,14 +173,27 @@ export type UpdateMemberPayload = Partial<{
   last_name: string;
   middle_name: string;
   nick_name: string;
+  username: string;
   phone_number: string;
+  phone_is_whatsapp: boolean;
   dob: string | null;
   gender: string | null;
+  marital_status: string | null;
+  date_married: string | null;
   address_line: string | null;
   city: string | null;
   state: string | null;
   country: string | null;
   postal_code: string | null;
+  job_title: string | null;
+  employer: string | null;
+  facebook_link: string | null;
+  is_display_email: boolean;
+  is_accept_text: boolean;
+  grade: string | null;
+  baptism_date: string | null;
+  baptism_location: string | null;
+  member_status: string | null;
 }>;
 
 export const updateMemberApi = (id: string, data: UpdateMemberPayload) =>
@@ -315,6 +357,7 @@ interface UserLookupDTO {
   nick_name?: string;
   dob?: string;
   gender?: 'male' | 'female';
+  marital_status?: string;
   address_line?: string;
   state?: string;
   city?: string;
@@ -346,6 +389,7 @@ export const fetchPersonByEmail = (email: string) =>
         email: u.email,
         phone: u.phone_number || '',
         profile_image: u.profile_img || '',
+        marital_status: u.marital_status,
         created_at: '',
         updated_at: '',
       };
@@ -384,6 +428,12 @@ export const importPeopleApi = (rows: Partial<PersonCreateDTO>[]) =>
 export const convertPersonApi = (id: string) =>
   request<{ data: any; status: number; message: string }>(`/people/${id}/convert`, {
     method: 'POST',
+  });
+
+export const bulkConvertPersonsApi = (ids: string[]) =>
+  request<{ status: number; message: string; converted: number; skipped: number; failed: number }>('/people/bulk-convert', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
   });
 
 // ─── My Profile ───────────────────────────────────────────────────────────────
@@ -425,7 +475,23 @@ export interface UserSettings {
     loginAlerts?: boolean;
   };
   currency?: string;
+  appearance?: {
+    theme?: 'light' | 'dark' | 'system';
+  };
 }
+
+// ─── 2FA ──────────────────────────────────────────────────────────────────
+export const verify2FACodeApi = (email: string, code: string) =>
+  request<{ data: any; status: number; message: string }>(`/auth/verify-2fa`, {
+    method: 'POST',
+    body: JSON.stringify({ email, code }),
+  });
+
+export const resend2FACodeApi = (email: string) =>
+  request<{ status: number; message: string }>(`/auth/resend-2fa`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
 
 export const updateSettingsApi = (settings: UserSettings) =>
   request<{ data: UserSettings; status: number; message: string }>('/user/settings', {
@@ -442,10 +508,13 @@ export interface DirectoryUserDTO {
   last_name?: string;
   role: string;
   is_active?: boolean;
+  profile_img?: string;
   state?: string;
   city?: string;
   country?: string;
   phone_number?: string;
+  last_access?: string | null;
+  is_online?: boolean;
 }
 
 export const fetchUsersDirectoryApi = (search?: string) => {

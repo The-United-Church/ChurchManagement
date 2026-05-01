@@ -47,17 +47,19 @@ export function useMemberCrud() {
 
   const branchId = currentBranch?.id;
 
-  const { data: result = { data: [] as MemberDTO[], total: 0 }, isLoading: loading } = useQuery({
+  const { data: result = { data: [] as MemberDTO[], total: 0, activeCount: 0, adminCount: 0 }, isLoading: loading } = useQuery({
     queryKey: queryKeys.members(branchId, page, limit, debouncedSearch),
     queryFn: async () => {
       const res = await fetchMembersApi({ page, limit, search: debouncedSearch || undefined });
-      return { data: res.data ?? [], total: res.total ?? 0 };
+      return { data: res.data ?? [], total: res.total ?? 0, activeCount: res.activeCount ?? 0, adminCount: res.adminCount ?? 0 };
     },
     staleTime: 30 * 1000,
   });
 
   const members = result.data;
   const total = result.total;
+  const activeCount = result.activeCount;
+  const adminCount = result.adminCount;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const setPage = (p: number) => setPageState(Math.max(1, Math.min(p, totalPages)));
@@ -190,6 +192,8 @@ export function useMemberCrud() {
     loading,
     saving,
     total,
+    activeCount,
+    adminCount,
     page,
     totalPages,
     limit,

@@ -147,6 +147,16 @@ export const firebaseLogin = asyncHandler(
     }
 
     const result = await authService.firebaseLogin(idToken);
+
+    if (result.requires2FA) {
+      res.status(200).json({
+        data: { requires2FA: true, email: result.user.email },
+        status: 200,
+        message: 'A verification code has been sent to your email.',
+      });
+      return;
+    }
+
     setTokenHeaders(res, result.tokens);
 
     logActivity(
@@ -177,6 +187,16 @@ export const login = asyncHandler(
     }
 
     const result = await authService.login(email, password);
+
+    if (result.requires2FA) {
+      res.status(200).json({
+        data: { requires2FA: true, email: result.user.email },
+        status: 200,
+        message: 'A verification code has been sent to your email.',
+      });
+      return;
+    }
+
     setTokenHeaders(res, result.tokens);
 
     logActivity(
@@ -192,6 +212,41 @@ export const login = asyncHandler(
       status: 200,
       message: "Login successful",
     });
+  }
+);
+
+export const verifyTwoFactor = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res.status(400).json({ status: 400, message: 'Email and code are required.' });
+      return;
+    }
+    const result = await authService.verifyTwoFactorCode(email, code);
+    setTokenHeaders(res, result.tokens);
+    logActivity(
+      result.user.id, ActivityAction.LOGIN, EntityType.AUTH, result.user.id,
+      `User "${result.user.full_name || result.user.email}" verified 2FA`,
+      { email: result.user.email, method: '2fa' }
+    );
+    const customDomain = await autoJoinFromCustomDomain(req, result.user.id).catch(() => null);
+    res.status(200).json({
+      data: { ...buildAuthResponse(result), customDomain },
+      status: 200,
+      message: '2FA verification successful',
+    });
+  }
+);
+
+export const resendTwoFactor = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ status: 400, message: 'Email is required.' });
+      return;
+    }
+    await authService.resendTwoFactorCode(email);
+    res.status(200).json({ status: 200, message: 'A new code has been sent if applicable.' });
   }
 );
 

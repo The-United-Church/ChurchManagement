@@ -4,6 +4,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import Sidebar from './Sidebar';
 import MobileSidebar from './MobileSidebar';
+import TopHeader from './TopHeader';
 import AdminDashboard from '../dashboard/admin/AdminDashboard';
 import PeopleManagement from '../dashboard/people/PeopleManagement';
 import ChurchManagement from '../dashboard/admin/ChurchManagement';
@@ -216,6 +217,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </div>
         
+        <TopHeader />
+
         {/* Content */}
         <div className="flex-1 overflow-auto">
           {renderContent()}

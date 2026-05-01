@@ -10,6 +10,7 @@ import { ChurchProvider } from '@/components/church/ChurchProvider';
 import DomainProvider from '@/components/domain/DomainProvider';
 import RealtimeSyncProvider from '@/components/auth/RealtimeSyncProvider';
 import { ReloadPrompt } from '@/components/pwa/ReloadPrompt';
+import ThemeBootstrap from '@/components/layout/ThemeBootstrap';
 import Index from './pages/Index';
 import LandingPage from './pages/LandingPage';
 import CustomDomainLanding from './components/domain/CustomDomainLanding';
@@ -24,6 +25,7 @@ import NotFound from './pages/NotFound';
 import JoinPage from './pages/JoinPage';
 import DenominationsPage from './pages/DenominationsPage';
 import EventCheckInPage from './pages/EventCheckInPage';
+import MessagesPage from './pages/Messages';
 import AboutUs from './pages/marketing/AboutUs';
 import Blog from './pages/marketing/Blog';
 import Careers from './pages/marketing/Careers';
@@ -74,6 +76,7 @@ function AppRoutes() {
     <SocketProvider isAuthenticated={isAuthenticated}>
       <ChurchProvider>
         <RealtimeSyncProvider>
+        <ThemeBootstrap />
         <Toaster />
         <BrowserRouter>
           <ScrollToTop />
@@ -99,6 +102,7 @@ function AppRoutes() {
             <Route path="/calendar" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/appointments" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><MessagesPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/accounting" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/users-roles" element={<ProtectedRoute allowedRoles={['admin','super_admin']}><Dashboard /></ProtectedRoute>} />

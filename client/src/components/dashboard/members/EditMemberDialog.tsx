@@ -39,14 +39,27 @@ interface FormState {
   last_name: string;
   middle_name: string;
   nick_name: string;
+  username: string;
   phone_number: string;
+  phone_is_whatsapp: boolean;
   dob: string;
   gender: string;
+  marital_status: string;
+  date_married: string;
   address_line: string;
   city: string;
   state: string;
   country: string;
   postal_code: string;
+  job_title: string;
+  employer: string;
+  facebook_link: string;
+  is_display_email: boolean;
+  is_accept_text: boolean;
+  grade: string;
+  baptism_date: string;
+  baptism_location: string;
+  member_status: string;
   role: string;
   is_active: boolean;
 }
@@ -56,14 +69,27 @@ const EMPTY_FORM: FormState = {
   last_name: '',
   middle_name: '',
   nick_name: '',
+  username: '',
   phone_number: '',
+  phone_is_whatsapp: false,
   dob: '',
   gender: '',
+  marital_status: '',
+  date_married: '',
   address_line: '',
   city: '',
   state: '',
   country: '',
   postal_code: '',
+  job_title: '',
+  employer: '',
+  facebook_link: '',
+  is_display_email: false,
+  is_accept_text: false,
+  grade: '',
+  baptism_date: '',
+  baptism_location: '',
+  member_status: '',
   role: 'member',
   is_active: true,
 };
@@ -78,15 +104,28 @@ function memberToForm(member: MemberDTO): FormState {
     last_name: norm(member.last_name),
     middle_name: norm(member.middle_name),
     nick_name: norm(member.nick_name),
+    username: norm(member.username),
     phone_number: norm(member.phone_number),
+    phone_is_whatsapp: member.phone_is_whatsapp ?? false,
     // The API returns ISO timestamps for dob; the <input type="date"> needs YYYY-MM-DD.
     dob: member.dob ? String(member.dob).slice(0, 10) : '',
     gender: norm(member.gender).toLowerCase(),
+    marital_status: norm(member.marital_status),
+    date_married: member.date_married ? String(member.date_married).slice(0, 10) : '',
     address_line: norm(member.address_line),
     city: norm(member.city),
     state: norm(member.state),
     country: norm(member.country),
     postal_code: norm(member.postal_code),
+    job_title: norm(member.job_title),
+    employer: norm(member.employer),
+    facebook_link: norm(member.facebook_link),
+    is_display_email: member.is_display_email ?? false,
+    is_accept_text: member.is_accept_text ?? false,
+    grade: norm(member.grade),
+    baptism_date: member.baptism_date ? String(member.baptism_date).slice(0, 10) : '',
+    baptism_location: norm(member.baptism_location),
+    member_status: norm(member.member_status),
     role: member.branch_role || member.role || 'member',
     is_active: member.branch_is_active !== false,
   };
@@ -103,21 +142,27 @@ function buildDiff(member: MemberDTO, form: FormState): UpdateMemberPayload {
   const original = memberToForm(member);
   const payload: UpdateMemberPayload = {};
 
-  const stringFields: Array<keyof FormState & keyof UpdateMemberPayload> = [
+  const stringFields = [
     'first_name',
     'last_name',
     'middle_name',
     'nick_name',
+    'username',
     'phone_number',
     'address_line',
     'city',
     'state',
     'country',
     'postal_code',
-  ];
+    'job_title',
+    'employer',
+    'facebook_link',
+    'baptism_location',
+    'grade',
+  ] as const;
   for (const f of stringFields) {
     if (form[f].trim() !== original[f].trim()) {
-      (payload as any)[f] = form[f].trim();
+      (payload as any)[f] = form[f].trim() || null;
     }
   }
 
@@ -126,6 +171,27 @@ function buildDiff(member: MemberDTO, form: FormState): UpdateMemberPayload {
   }
   if (form.gender !== original.gender) {
     payload.gender = form.gender || null;
+  }
+  if (form.phone_is_whatsapp !== original.phone_is_whatsapp) {
+    payload.phone_is_whatsapp = form.phone_is_whatsapp;
+  }
+  if (form.marital_status !== original.marital_status) {
+    payload.marital_status = form.marital_status || null;
+  }
+  if (form.date_married !== original.date_married) {
+    payload.date_married = form.date_married ? form.date_married : null;
+  }
+  if (form.is_display_email !== original.is_display_email) {
+    payload.is_display_email = form.is_display_email;
+  }
+  if (form.is_accept_text !== original.is_accept_text) {
+    payload.is_accept_text = form.is_accept_text;
+  }
+  if (form.baptism_date !== original.baptism_date) {
+    payload.baptism_date = form.baptism_date ? form.baptism_date : null;
+  }
+  if (form.member_status !== original.member_status) {
+    payload.member_status = form.member_status || null;
   }
   return payload;
 }
@@ -241,6 +307,34 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Marital status</Label>
+              <Select value={form.marital_status || 'unspecified'} onValueChange={(v) => update('marital_status', v === 'unspecified' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="unspecified">—</SelectItem>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="married">Married</SelectItem>
+                  <SelectItem value="engaged">Engaged</SelectItem>
+                  <SelectItem value="widowed">Widowed</SelectItem>
+                  <SelectItem value="divorced">Divorced</SelectItem>
+                  <SelectItem value="separated">Separated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.marital_status === 'married' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-date-married">Date married</Label>
+                <Input
+                  id="edit-date-married"
+                  type="date"
+                  value={form.date_married}
+                  onChange={(e) => update('date_married', e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="edit-phone">Phone</Label>
               <Input
@@ -248,6 +342,16 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
                 value={form.phone_number}
                 onChange={(e) => update('phone_number', e.target.value)}
               />
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="edit-whatsapp"
+                  checked={form.phone_is_whatsapp}
+                  onCheckedChange={(v) => update('phone_is_whatsapp', Boolean(v))}
+                />
+                <Label htmlFor="edit-whatsapp" className="cursor-pointer font-normal text-sm text-gray-600">
+                  This number is on WhatsApp
+                </Label>
+              </div>
             </div>
           </div>
 
@@ -292,6 +396,117 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
                 value={form.postal_code}
                 onChange={(e) => update('postal_code', e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Work */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <p className="sm:col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Work</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-job-title">Job title</Label>
+              <Input
+                id="edit-job-title"
+                value={form.job_title}
+                onChange={(e) => update('job_title', e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-employer">Employer</Label>
+              <Input
+                id="edit-employer"
+                value={form.employer}
+                onChange={(e) => update('employer', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Church membership */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <p className="sm:col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Church membership</p>
+            <div className="space-y-1.5">
+              <Label>Member status</Label>
+              <Select value={form.member_status || 'unspecified'} onValueChange={(v) => update('member_status', v === 'unspecified' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="unspecified">—</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="attender">Attender</SelectItem>
+                  <SelectItem value="visitor">Visitor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-grade">Grade / Class</Label>
+              <Input
+                id="edit-grade"
+                value={form.grade}
+                onChange={(e) => update('grade', e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-baptism-date">Baptism date</Label>
+              <Input
+                id="edit-baptism-date"
+                type="date"
+                value={form.baptism_date}
+                onChange={(e) => update('baptism_date', e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-baptism-location">Baptism location</Label>
+              <Input
+                id="edit-baptism-location"
+                value={form.baptism_location}
+                onChange={(e) => update('baptism_location', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Online / Social */}
+          <div className="grid grid-cols-1 gap-3 pt-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Social</p>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-username">Username</Label>
+              <Input
+                id="edit-username"
+                value={form.username}
+                onChange={(e) => update('username', e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-facebook">Facebook link</Label>
+              <Input
+                id="edit-facebook"
+                value={form.facebook_link}
+                onChange={(e) => update('facebook_link', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Privacy / Communication */}
+          <div className="space-y-2 pt-2">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Privacy &amp; Communication</p>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="edit-display-email"
+                checked={form.is_display_email}
+                onCheckedChange={(v) => update('is_display_email', Boolean(v))}
+              />
+              <Label htmlFor="edit-display-email" className="cursor-pointer font-normal text-sm text-gray-600">
+                Display email to other members
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="edit-accept-text"
+                checked={form.is_accept_text}
+                onCheckedChange={(v) => update('is_accept_text', Boolean(v))}
+              />
+              <Label htmlFor="edit-accept-text" className="cursor-pointer font-normal text-sm text-gray-600">
+                Accept text messages
+              </Label>
             </div>
           </div>
 

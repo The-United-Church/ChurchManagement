@@ -6,6 +6,7 @@ export interface Person {
   nickname?: string;
   birthdate?: string;
   gender?: 'male' | 'female';
+  marital_status?: string;
   address?: string;
   state?: string;
   city?: string;

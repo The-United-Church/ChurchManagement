@@ -7,6 +7,7 @@ import emailService from "../../email/email.service";
 import { sendMemberAddedEmail } from "../../email/templates/email.member_added";
 import { firebaseAuth } from "../../config/firebase.admin";
 import { normalizeEmail } from "../../utils/email";
+import { isUserOnline } from "../socket.service";
 
 import { In } from "typeorm";
 import { Person } from "../../models/person.model";
@@ -15,6 +16,20 @@ export class UserService {
   private readonly userRepository = AppDataSource.getRepository(User);
   private readonly membershipRepository = AppDataSource.getRepository(require('../../models/church/branch-membership.model').BranchMembership);
   private readonly personRepository = AppDataSource.getRepository(Person);
+
+  private serializeUserWithPresence(user: User): any {
+    const serialized = classToPlain(user) as any;
+    const showOnlineStatus = serialized.settings?.privacy?.showOnlineStatus !== false;
+
+    if (!showOnlineStatus) {
+      serialized.last_access = undefined;
+      serialized.is_online = undefined;
+      return serialized;
+    }
+
+    serialized.is_online = isUserOnline(serialized.id);
+    return serialized;
+  }
 
   async createUserWithGeneratedPassword(
     rawEmail: string,
@@ -174,7 +189,7 @@ export class UserService {
     excludeUserId?: string;
     denominationIds?: string[];
     role?: string;
-  }): Promise<{ data: any[]; total: number }> {
+  }): Promise<{ data: any[]; total: number; activeCount: number; adminCount: number }> {
     const { page, limit, search, branchId, excludeUserId, denominationIds, role } = opts;
     const skip = (page - 1) * limit;
 
@@ -195,11 +210,21 @@ export class UserService {
       applyCommonFilters(qb);
       const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
       const data = users.map((u) => ({
-        ...classToPlain(u),
+        ...this.serializeUserWithPresence(u),
         branch_is_active: (u as any).branchMemberships?.[0]?.is_active ?? true,
         branch_role: (u as any).branchMemberships?.[0]?.role ?? null,
       }));
-      return { data, total };
+
+      const statsQb = this.userRepository.createQueryBuilder('user')
+        .innerJoin('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId });
+      if (excludeUserId) statsQb.andWhere('user.id != :excludeUserId', { excludeUserId });
+      const allBranchUsers = await statsQb
+        .select(['user.id', 'user.role', 'bm.is_active'])
+        .getMany();
+      const activeCount = allBranchUsers.filter((u) => (u as any).branchMemberships?.[0]?.is_active !== false).length;
+      const adminCount = allBranchUsers.filter((u) => u.role === 'admin' || u.role === 'super_admin').length;
+
+      return { data, total, activeCount, adminCount };
     }
 
     if (denominationIds && denominationIds.length > 0) {
@@ -212,19 +237,34 @@ export class UserService {
         .where('ud.id IN (:...denominationIds) OR bmb.denomination_id IN (:...denominationIds)', { denominationIds })
         .getRawMany();
       const ids = rawIds.map((r: any) => r.id).filter(Boolean);
-      if (ids.length === 0) return { data: [], total: 0 };
+      if (ids.length === 0) return { data: [], total: 0, activeCount: 0, adminCount: 0 };
       const qb = this.userRepository.createQueryBuilder('user')
         .where('user.id IN (:...ids)', { ids });
       applyCommonFilters(qb);
       const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
-      return { data: users.map((u) => classToPlain(u)), total };
+
+      const statsQb = this.userRepository.createQueryBuilder('user')
+        .where('user.id IN (:...ids)', { ids });
+      if (excludeUserId) statsQb.andWhere('user.id != :excludeUserId', { excludeUserId });
+      const allUsers = await statsQb.select(['user.id', 'user.role']).getMany();
+      const activeCount = total; // no branch_is_active concept here
+      const adminCount = allUsers.filter((u) => u.role === 'admin' || u.role === 'super_admin').length;
+
+      return { data: users.map((u) => this.serializeUserWithPresence(u)), total, activeCount, adminCount };
     }
 
     // super_admin — all users
     const qb = this.userRepository.createQueryBuilder('user');
     applyCommonFilters(qb);
     const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
-    return { data: users.map((u) => classToPlain(u)), total };
+
+    const statsQb = this.userRepository.createQueryBuilder('user');
+    if (excludeUserId) statsQb.andWhere('user.id != :excludeUserId', { excludeUserId });
+    const allUsers = await statsQb.select(['user.id', 'user.role']).getMany();
+    const activeCount = total;
+    const adminCount = allUsers.filter((u) => u.role === 'admin' || u.role === 'super_admin').length;
+
+    return { data: users.map((u) => this.serializeUserWithPresence(u)), total, activeCount, adminCount };
   }
 
   async getAllUsers(branchId?: string, excludeUserId?: string, denominationIds?: string[]): Promise<any[]> {
@@ -246,11 +286,12 @@ export class UserService {
           .orderBy('user.createdAt', 'DESC');
         if (excludeUserId) qb = qb.andWhere('user.id != :excludeUserId', { excludeUserId });
         const users = await qb.getMany();
-        return users.map((u) => classToPlain(u));
+        return users.map((u) => this.serializeUserWithPresence(u));
       }
-      return this.userRepository.find({
+      const users = await this.userRepository.find({
         order: { createdAt: "DESC" },
       });
+      return users.map((u) => this.serializeUserWithPresence(u));
     }
     let qb = this.userRepository.createQueryBuilder('user')
       .innerJoinAndSelect('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId })
@@ -264,7 +305,7 @@ export class UserService {
 
     // Attach branch-level active flag and role from the membership row
     return users.map((u) => ({
-      ...classToPlain(u),
+      ...this.serializeUserWithPresence(u),
       branch_is_active: (u as any).branchMemberships?.[0]?.is_active ?? true,
       branch_role: (u as any).branchMemberships?.[0]?.role ?? null,
     }));
@@ -373,18 +414,61 @@ export class UserService {
     const existingUser = await this.userRepository.findOne({ where: { id } });
     if (!existingUser) return null;
 
+    const editableFields: Array<keyof User> = [
+      "first_name",
+      "last_name",
+      "middle_name",
+      "nick_name",
+      "username",
+      "full_name",
+      "address_line",
+      "state",
+      "city",
+      "postal_code",
+      "country",
+      "phone_number",
+      "phone_is_whatsapp",
+      "dob",
+      "job_title",
+      "employer",
+      "facebook_link",
+      "is_display_email",
+      "is_accept_text",
+      "marital_status",
+      "date_married",
+      "grade",
+      "baptism_date",
+      "baptism_location",
+      "member_status",
+      "family_members",
+      "gender",
+      "profile_img",
+    ];
+
     // Replace empty strings with null so typed columns (e.g. date) don't
     // receive an invalid "" value from the client.
     const sanitized = Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, v === "" ? null : v])
+      Object.entries(data)
+        .filter(([k]) => editableFields.includes(k as keyof User))
+        .map(([k, v]) => [k, v === "" ? null : v])
     ) as Partial<User>;
+
+    if (
+      sanitized.full_name === undefined &&
+      (sanitized.first_name !== undefined || sanitized.last_name !== undefined)
+    ) {
+      const first = sanitized.first_name ?? existingUser.first_name;
+      const last = sanitized.last_name ?? existingUser.last_name;
+      const composed = [first, last].filter(Boolean).join(" ").trim();
+      if (composed) sanitized.full_name = composed;
+    }
 
     const updatedUser = {
       ...existingUser,
       ...sanitized,
     };
 
-    const savedUser = await this.userRepository.upsert(updatedUser, ["id"]);
+    const savedUser = await this.userRepository.save(updatedUser);
 
     const { password, ...userWithoutPassword } = classToPlain(savedUser) as any;
     return userWithoutPassword;
@@ -415,13 +499,26 @@ export class UserService {
       middle_name?: string;
       nick_name?: string;
       phone_number?: string;
+      phone_is_whatsapp?: boolean;
       dob?: string | Date | null;
       gender?: string;
+      marital_status?: string | null;
+      date_married?: string | Date | null;
       address_line?: string;
       city?: string;
       state?: string;
       country?: string;
       postal_code?: string;
+      username?: string;
+      job_title?: string;
+      employer?: string;
+      facebook_link?: string;
+      is_display_email?: boolean;
+      is_accept_text?: boolean;
+      grade?: string;
+      baptism_date?: string | Date | null;
+      baptism_location?: string;
+      member_status?: string;
       role?: string;
       is_active?: boolean;
       departmentId?: number;
@@ -448,7 +545,31 @@ export class UserService {
       "state",
       "country",
       "postal_code",
+      "username",
+      "job_title",
+      "employer",
+      "facebook_link",
+      "baptism_location",
+      "grade",
+      "member_status",
     ];
+
+    if (data.phone_is_whatsapp !== undefined) {
+      (user as any).phone_is_whatsapp = data.phone_is_whatsapp;
+    }
+
+    if (data.marital_status !== undefined) {
+      (user as any).marital_status = data.marital_status === '' ? null : data.marital_status;
+    }
+
+    if (data.date_married !== undefined) {
+      if (data.date_married === null || data.date_married === '') {
+        (user as any).date_married = null;
+      } else {
+        const d = data.date_married instanceof Date ? data.date_married : new Date(data.date_married as string);
+        (user as any).date_married = isNaN(d.getTime()) ? (user as any).date_married : d;
+      }
+    }
     for (const field of stringFields) {
       const incoming = (data as any)[field];
       if (incoming !== undefined) {
@@ -478,6 +599,16 @@ export class UserService {
       if (composed) user.full_name = composed;
     }
 
+    if (data.is_display_email !== undefined) (user as any).is_display_email = data.is_display_email;
+    if (data.is_accept_text !== undefined) (user as any).is_accept_text = data.is_accept_text;
+    if (data.baptism_date !== undefined) {
+      if (data.baptism_date === null || data.baptism_date === '') {
+        (user as any).baptism_date = null;
+      } else {
+        const d = data.baptism_date instanceof Date ? data.baptism_date : new Date(data.baptism_date as string);
+        (user as any).baptism_date = isNaN(d.getTime()) ? (user as any).baptism_date : d;
+      }
+    }
     if (data.is_active !== undefined) user.is_active = data.is_active;
     if (data.role !== undefined) user.role = data.role;
 
@@ -589,13 +720,17 @@ export class UserService {
   }
 
   // ─── Directory (global user search, no branch scope) ────────────────────
-  async searchAllUsers(search?: string): Promise<User[]> {
+  async searchAllUsers(
+    search?: string,
+    opts?: { isAdminLike?: boolean; requesterId?: string }
+  ): Promise<any[]> {
     const query = this.userRepository
       .createQueryBuilder('user')
       .select([
         'user.id', 'user.email', 'user.full_name', 'user.first_name',
         'user.last_name', 'user.role', 'user.is_active',
         'user.state', 'user.city', 'user.country', 'user.phone_number',
+        'user.settings', 'user.last_access', 'user.profile_img',
       ])
       .where('user.is_active = :active', { active: true });
 
@@ -606,7 +741,35 @@ export class UserService {
       );
     }
 
-    return query.orderBy('user.full_name', 'ASC').limit(100).getMany();
+    const all = await query.orderBy('user.full_name', 'ASC').limit(500).getMany();
+
+    // Privacy enforcement: hide users with isProfileVisible = 'private' from non-admins.
+    // Always show the requester themselves.
+    if (opts?.isAdminLike) return all.slice(0, 100).map((u) => this.serializeUserWithPresence(u));
+    return all
+      .filter((u) => {
+        if (opts?.requesterId && u.id === opts.requesterId) return true;
+        const v = u.settings?.privacy?.isProfileVisible;
+        return v !== 'private';
+      })
+      .slice(0, 100)
+      .map((u) => {
+        // Strip fields the user opted out of exposing.
+        const p = u.settings?.privacy || {};
+        const clone: any = this.serializeUserWithPresence(u);
+        if (p.showEmail === false) clone.email = undefined;
+        if (p.showLocation === false) {
+          clone.address_line = undefined;
+          clone.city = undefined;
+          clone.state = undefined;
+          clone.country = undefined;
+        }
+        if (p.showOnlineStatus === false) {
+          clone.last_access = undefined;
+          clone.is_online = undefined;
+        }
+        return clone as User;
+      });
   }
 
   async findActiveUserByEmail(email: string): Promise<User | null> {
@@ -621,6 +784,7 @@ export class UserService {
         'user.nick_name',
         'user.dob',
         'user.gender',
+        'user.marital_status',
         'user.address_line',
         'user.state',
         'user.city',

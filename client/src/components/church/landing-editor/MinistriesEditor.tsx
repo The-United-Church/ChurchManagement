@@ -5,22 +5,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import ImageUploadButton from './ImageUploadButton';
-import type { LandingCoreValue } from '@/lib/api';
+import type { LandingMinistry } from '@/lib/api';
 
 interface Props {
-  value: LandingCoreValue[];
-  onChange: (next: LandingCoreValue[]) => void;
+  value: LandingMinistry[];
+  onChange: (next: LandingMinistry[]) => void;
 }
 
-/** Editor for the church's core values shown on the About page. */
-const CoreValuesEditor: React.FC<Props> = ({ value, onChange }) => {
+const MinistriesEditor: React.FC<Props> = ({ value, onChange }) => {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
-  const update = (i: number, patch: Partial<LandingCoreValue>) =>
-    onChange(value.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const update = (i: number, patch: Partial<LandingMinistry>) =>
+    onChange(value.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
 
   const add = () => {
-    onChange([...value, { title: '', description: '', icon: '', image: '' }]);
+    onChange([...value, { title: '', description: '', icon: '' }]);
     setExpandedIdx(value.length);
   };
 
@@ -34,24 +33,29 @@ const CoreValuesEditor: React.FC<Props> = ({ value, onChange }) => {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-xs">Core values</Label>
+          <Label className="text-xs">Ministries</Label>
           <p className="text-xs text-muted-foreground">
-            Shown on the public About page. An image (if uploaded) is preferred over the icon.
+            Icons (optional):{' '}
+            <code className="font-mono">Music2</code>,{' '}
+            <code className="font-mono">Users</code>,{' '}
+            <code className="font-mono">Heart</code>,{' '}
+            <code className="font-mono">Sparkles</code>,{' '}
+            <code className="font-mono">Church</code>,{' '}
+            <code className="font-mono">Calendar</code>,{' '}
+            <code className="font-mono">Globe</code>.
           </p>
         </div>
         <Button type="button" size="sm" variant="ghost" className="h-7" onClick={add}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add value
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add ministry
         </Button>
       </div>
 
       {value.length === 0 && (
-        <p className="text-xs text-muted-foreground italic">
-          No core values added — defaults will be shown.
-        </p>
+        <p className="text-xs text-muted-foreground italic">No ministries added yet.</p>
       )}
 
       <div className="space-y-1.5">
-        {value.map((c, i) => {
+        {value.map((m, i) => {
           const open = expandedIdx === i;
           return (
             <div key={i} className="rounded-md border bg-white overflow-hidden">
@@ -68,10 +72,10 @@ const CoreValuesEditor: React.FC<Props> = ({ value, onChange }) => {
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                   )}
                   <span className="text-xs font-medium truncate text-slate-800">
-                    {c.title || <span className="text-slate-400 italic">Untitled value</span>}
+                    {m.title || <span className="text-slate-400 italic">Untitled ministry</span>}
                   </span>
-                  {c.icon && (
-                    <span className="text-xs text-slate-400 shrink-0 font-mono">{c.icon}</span>
+                  {m.icon && (
+                    <span className="text-xs text-slate-400 shrink-0 font-mono">{m.icon}</span>
                   )}
                 </button>
                 <Button
@@ -91,31 +95,34 @@ const CoreValuesEditor: React.FC<Props> = ({ value, onChange }) => {
                   <div className="grid grid-cols-12 gap-2">
                     <Input
                       className="col-span-7 h-8 text-xs"
-                      placeholder="Value title (e.g. Love)"
-                      value={c.title}
+                      placeholder="Ministry title"
+                      value={m.title}
                       onChange={(e) => update(i, { title: e.target.value })}
                     />
                     <Input
                       className="col-span-5 h-8 text-xs"
-                      placeholder="Icon (e.g. Heart)"
-                      value={c.icon ?? ''}
+                      placeholder="Icon (e.g. Music2)"
+                      value={m.icon ?? ''}
                       onChange={(e) => update(i, { icon: e.target.value })}
                     />
                   </div>
                   <Textarea
                     rows={2}
                     placeholder="Short description"
-                    value={c.description ?? ''}
+                    value={m.description ?? ''}
                     className="text-xs"
                     onChange={(e) => update(i, { description: e.target.value })}
                   />
                   <div className="flex flex-col gap-1">
-                    <Label className="text-xs text-muted-foreground">Image (optional)</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Background image (optional)
+                    </Label>
                     <ImageUploadButton
-                      value={c.image || undefined}
-                      onChange={(url) => update(i, { image: url ?? '' })}
-                      folder="custom-domains/core-values"
-                      thumbClassName="h-12 w-12"
+                      value={m.background_image}
+                      onChange={(url) => update(i, { background_image: url })}
+                      folder="custom-domains/ministries"
+                      thumbClassName="h-12 w-20"
+                      errorMessage="Ministry image upload failed"
                     />
                   </div>
                 </div>
@@ -128,4 +135,4 @@ const CoreValuesEditor: React.FC<Props> = ({ value, onChange }) => {
   );
 };
 
-export default CoreValuesEditor;
+export default MinistriesEditor;

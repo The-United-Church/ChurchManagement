@@ -88,6 +88,12 @@ export class User {
   })
   marital_status: "single" | "married" | "widowed" | "engaged" | "divorced" | "separated";
 
+  @Column({ type: "date", nullable: true })
+  date_married: Date;
+
+  @Column({ type: "boolean", default: false, nullable: true })
+  phone_is_whatsapp: boolean;
+
   @Column({ nullable: true })
   grade: string;
 
@@ -105,7 +111,7 @@ export class User {
   member_status: "member" | "attender" | "visitor";
 
   @Column("json", { nullable: true })
-  family_members: string[];
+  family_members: any[];
 
   @Column({ type: "timestamp", nullable: true })
   last_access: Date;

@@ -5,6 +5,7 @@ import { firebaseAuth } from "../../config/firebase.admin";
 import bcrypt from "bcrypt";
 import * as speakeasy from "speakeasy";
 import { sendPasswordResetOtpEmail } from "../../email/otp/sendPasswordResetOtpEmail";
+import { send2FACodeEmail } from "../../email/otp/send2FACodeEmail";
 import { TokenService } from "./token.service";
 import { GoogleAuthService, GoogleProfile } from "./google-auth.service";
 import CustomError from "../../utils/customError";
@@ -66,6 +67,24 @@ export class AuthService {
     } catch (error: any) {
       return await this.userRepository.findOne({ where });
     }
+  }
+
+  /** Generate a 6-digit 2FA code, hash + persist it on the user, and email it. */
+  private async issueTwoFactorCode(user: User): Promise<void> {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = await bcrypt.hash(code, 10);
+    user.two_factor_code = codeHash;
+    user.two_factor_code_expires_at = new Date(Date.now() + 10 * 60 * 1000);
+    await this.userRepository.save(user);
+    try {
+      await send2FACodeEmail(user.email, code);
+    } catch (e) {
+      console.error('Failed to send 2FA email:', e);
+    }
+  }
+
+  private isTwoFactorEnabled(user: User): boolean {
+    return Boolean((user.settings as any)?.security?.['2fa']);
   }
 
 
@@ -173,7 +192,7 @@ export class AuthService {
 
   async firebaseLogin(
     idToken: string
-  ): Promise<{ user: UserResponse; tokens: AuthTokens }> {
+  ): Promise<{ user: UserResponse; tokens: AuthTokens; requires2FA?: boolean }> {
     const decoded = await firebaseAuth.verifyIdToken(idToken);
     const email = normalizeEmail(decoded.email);
     if (!email) throw new Error("Firebase token missing email");
@@ -182,8 +201,19 @@ export class AuthService {
     if (!user) throw new Error("No account found for this email. Please register first.");
     if (!user.is_active) throw new Error("Account is deactivated. Please contact an administrator.");
 
+    if (this.isTwoFactorEnabled(user)) {
+      await this.issueTwoFactorCode(user);
+      return {
+        user: this.stripSensitiveFields(user),
+        tokens: { accessToken: '', refreshToken: '' },
+        requires2FA: true,
+      };
+    }
+
     const tokens = this.tokenService.generateTokenPair(user);
     await this.saveRefreshToken(user, tokens.refreshToken);
+    user.last_access = new Date();
+    await this.userRepository.save(user);
 
     return { user: this.stripSensitiveFields(user), tokens };
   }
@@ -191,7 +221,7 @@ export class AuthService {
   async login(
     rawEmail: string,
     password: string
-  ): Promise<{ user: UserResponse; tokens: AuthTokens }> {
+  ): Promise<{ user: UserResponse; tokens: AuthTokens; requires2FA?: boolean }> {
     const email = normalizeEmail(rawEmail);
     if (!email) throw new Error("Invalid email or password.");
     const user = await this.findUserWithRelations({ email });
@@ -202,10 +232,31 @@ export class AuthService {
     if (!isValidPassword) throw new Error("Invalid email or password");
     if (!user.is_active) throw new Error("Account is deactivated. Please contact an administrator.");
 
+    if (this.isTwoFactorEnabled(user)) {
+      await this.issueTwoFactorCode(user);
+      return {
+        user: this.stripSensitiveFields(user),
+        tokens: { accessToken: '', refreshToken: '' },
+        requires2FA: true,
+      };
+    }
+
     const tokens = this.tokenService.generateTokenPair(user);
     await this.saveRefreshToken(user, tokens.refreshToken);
+    user.last_access = new Date();
+    await this.userRepository.save(user);
 
     return { user: this.stripSensitiveFields(user), tokens };
+  }
+
+  /** Re-issue a 2FA code (e.g. user clicked "resend"). */
+  async resendTwoFactorCode(rawEmail: string): Promise<void> {
+    const email = normalizeEmail(rawEmail);
+    if (!email) return;
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user || !user.is_active) return;
+    if (!this.isTwoFactorEnabled(user)) return;
+    await this.issueTwoFactorCode(user);
   }
 
   async googleSignIn(

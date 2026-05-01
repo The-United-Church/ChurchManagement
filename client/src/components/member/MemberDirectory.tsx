@@ -157,10 +157,19 @@ const MemberDirectory: React.FC = () => {
               <Card key={member.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setViewTarget(member)}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={getProfileImage(member)} />
-                      <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative shrink-0">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={getProfileImage(member)} />
+                        <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
+                      </Avatar>
+                      {member.is_online === true && (
+                        <span
+                          aria-label="Online"
+                          title="Online"
+                          className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 shadow-sm"
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-sm truncate">{displayName}</h3>

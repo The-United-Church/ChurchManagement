@@ -29,6 +29,8 @@ export interface AuthResponse {
   permissions: any[];
   isNewUser?: boolean;
   customDomain?: CustomDomainAuthInfo | null;
+  /** True when the server requires a 2FA code before issuing tokens. */
+  requires2FA?: boolean;
 }
 
 export interface RegisterResponse {
@@ -228,10 +230,40 @@ export async function apiLogin(
   if (res.status !== 200) {
     throw new Error(res.data?.message || "Login failed");
   }
+
+  // 2FA branch — server has emailed a code, no tokens yet.
+  if (res.data?.data?.requires2FA) {
+    return {
+      ...res.data.data,
+      user: { id: '', email: res.data.data.email, full_name: '' },
+      role: null,
+      permissions: [],
+    } as AuthResponse;
+  }
+
   // Clear any stale token before saving fresh ones
   clearTokens();
   saveTokensFromResponse(res);
   return res.data.data;
+}
+
+export async function apiVerify2FA(
+  email: string,
+  code: string
+): Promise<AuthResponse> {
+  const res = await axios.post(`${API_BASE}/auth/verify-2fa`, { email, code }, {
+    headers: { 'Content-Type': 'application/json', ...customDomainHeader() },
+  });
+  if (res.status !== 200) throw new Error(res.data?.message || '2FA verification failed');
+  clearTokens();
+  saveTokensFromResponse(res);
+  return res.data.data;
+}
+
+export async function apiResend2FA(email: string): Promise<void> {
+  await axios.post(`${API_BASE}/auth/resend-2fa`, { email }, {
+    headers: { 'Content-Type': 'application/json', ...customDomainHeader() },
+  });
 }
 
 export async function apiGoogleSignIn(

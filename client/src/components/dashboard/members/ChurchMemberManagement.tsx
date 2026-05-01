@@ -206,7 +206,7 @@ const MemberList: React.FC<MemberListProps> = ({ members, selectedIds, onToggleS
 // -- Main Component ---------------------------------------------------------
 const ChurchMemberManagement: React.FC = () => {
   const { currentChurch, currentBranch, effectiveRole, branchRole } = useChurch();
-  const { members, loading, saving, load, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, create, update, setBranchStatus, remove, removeMany, importMembers } = useMemberCrud();
+  const { members, loading, saving, load, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, create, update, setBranchStatus, remove, removeMany, importMembers, activeCount, adminCount } = useMemberCrud();
   const { people, load: loadPeople } = usePeopleCrud();
 
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
@@ -242,20 +242,9 @@ const ChurchMemberManagement: React.FC = () => {
   };
 
   const canManage = effectiveRole === 'admin' || effectiveRole === 'super_admin' || branchRole === 'admin' || branchRole === 'coordinator';
-  console.log('[canManage debug]', {
-    effectiveRole,
-    branchRole,
-    canManage,
-    currentBranchId: currentBranch?.id,
-    currentBranchMembershipRole: currentBranch?.membership_role,
-    currentChurchId: currentChurch?.id,
-  });
   const branchName = currentBranch?.name;
   const churchName = currentChurch?.denomination_name;
   const displayOrg = branchName ?? churchName ?? '';
-
-  const adminCount = members.filter((m) => m.role === 'admin' || m.role === 'super_admin').length;
-  const activeCount = members.filter((m) => m.branch_is_active !== false).length;
 
   if (!currentChurch) {
     return (

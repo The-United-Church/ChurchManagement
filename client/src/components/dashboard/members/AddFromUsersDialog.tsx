@@ -188,8 +188,17 @@ const AddFromUsersDialog: React.FC<AddFromUsersDialogProps> = ({
                           onClick={(e) => e.stopPropagation()}
                           className="shrink-0"
                         />
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-blue-700">{initials}</span>
+                        <div className="relative shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-xs font-bold text-blue-700">{initials}</span>
+                          </div>
+                          {u.is_online === true && (
+                            <span
+                              aria-label="Online"
+                              title="Online"
+                              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"
+                            />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">

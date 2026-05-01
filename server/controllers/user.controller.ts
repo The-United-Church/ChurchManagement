@@ -133,7 +133,7 @@ export class UserController {
       const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '25'), 10)));
       const search = req.query.search ? String(req.query.search) : undefined;
 
-      const { data, total } = await this.userService.getUsersPaginated({
+      const { data, total, activeCount, adminCount } = await this.userService.getUsersPaginated({
         page,
         limit,
         search,
@@ -146,6 +146,8 @@ export class UserController {
       res.status(200).json({
         data,
         total,
+        activeCount,
+        adminCount,
         page,
         limit,
         status: 200,
@@ -250,7 +252,13 @@ export class UserController {
   getDirectory = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { search } = req.query;
-      const users = await this.userService.searchAllUsers(search as string | undefined);
+      const requesterRole = (req as any).user?.role as string | undefined;
+      const requesterId = (req as any).user?.id as string | undefined;
+      const isAdminLike = requesterRole === 'admin' || requesterRole === 'super_admin';
+      const users = await this.userService.searchAllUsers(
+        search as string | undefined,
+        { isAdminLike, requesterId }
+      );
       res.status(200).json({
         data: users.map((u) => classToPlain(u)),
         status: 200,
@@ -309,13 +317,26 @@ export class UserController {
         middle_name,
         nick_name,
         phone_number,
+        phone_is_whatsapp,
         dob,
         gender,
+        marital_status,
+        date_married,
         address_line,
         city,
         state,
         country,
         postal_code,
+        username,
+        job_title,
+        employer,
+        facebook_link,
+        is_display_email,
+        is_accept_text,
+        grade,
+        baptism_date,
+        baptism_location,
+        member_status,
         role,
         is_active,
         departmentId,
@@ -332,13 +353,26 @@ export class UserController {
           middle_name,
           nick_name,
           phone_number,
+          phone_is_whatsapp,
           dob,
           gender,
+          marital_status,
+          date_married,
           address_line,
           city,
           state,
           country,
           postal_code,
+          username,
+          job_title,
+          employer,
+          facebook_link,
+          is_display_email,
+          is_accept_text,
+          grade,
+          baptism_date,
+          baptism_location,
+          member_status,
           role,
           is_active,
             departmentId,

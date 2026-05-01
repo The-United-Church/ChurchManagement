@@ -47,13 +47,14 @@ export class PersonService {
     const { page, limit, search, branchId, denominationIds } = opts;
     const skip = (page - 1) * limit;
 
-    const qb = this.repo.createQueryBuilder("p");
+    const qb = this.repo.createQueryBuilder("p")
+      .where("p.converted_user_id IS NULL");
 
     if (branchId) {
-      qb.where("p.branch_id = :branchId", { branchId });
+      qb.andWhere("p.branch_id = :branchId", { branchId });
     } else if (denominationIds && denominationIds.length > 0) {
       qb.innerJoin("p.branch", "b")
-        .where("b.denomination_id IN (:...denominationIds)", { denominationIds });
+        .andWhere("b.denomination_id IN (:...denominationIds)", { denominationIds });
     }
 
     if (search?.trim()) {

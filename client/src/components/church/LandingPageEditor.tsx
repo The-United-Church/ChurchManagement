@@ -4,17 +4,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type {
   LandingConfig,
   LandingCoreValue,
   LandingHighlight,
-  LandingMinistry,
-  LandingServiceTime,
   LandingSocialLinks,
 } from '@/lib/api';
 import HighlightsEditor from './landing-editor/HighlightsEditor';
 import CoreValuesEditor from './landing-editor/CoreValuesEditor';
+import ServicesEditor from './landing-editor/ServicesEditor';
+import MinistriesEditor from './landing-editor/MinistriesEditor';
 import ImageUploadButton from './landing-editor/ImageUploadButton';
 
 interface Props {
@@ -35,31 +35,9 @@ const LandingPageEditor: React.FC<Props> = ({ value, onChange }) => {
     onChange({ ...cfg, [k]: v });
   };
 
-  const services = cfg.service_times ?? [];
-  const ministries = cfg.ministries ?? [];
   const highlights = cfg.highlights ?? [];
   const coreValues = cfg.core_values ?? [];
   const social: LandingSocialLinks = cfg.social ?? {};
-
-  /* ─── Service times ────────────────────────────────────────────────── */
-  const updateService = (i: number, patch: Partial<LandingServiceTime>) => {
-    const next = services.map((s, idx) => (idx === i ? { ...s, ...patch } : s));
-    setField('service_times', next);
-  };
-  const addService = () =>
-    setField('service_times', [...services, { label: '', day: '', time: '' }]);
-  const removeService = (i: number) =>
-    setField('service_times', services.filter((_, idx) => idx !== i));
-
-  /* ─── Ministries ───────────────────────────────────────────────────── */
-  const updateMinistry = (i: number, patch: Partial<LandingMinistry>) => {
-    const next = ministries.map((m, idx) => (idx === i ? { ...m, ...patch } : m));
-    setField('ministries', next);
-  };
-  const addMinistry = () =>
-    setField('ministries', [...ministries, { title: '', description: '', icon: '' }]);
-  const removeMinistry = (i: number) =>
-    setField('ministries', ministries.filter((_, idx) => idx !== i));
 
   const setSocial = (k: keyof LandingSocialLinks, v: string) =>
     setField('social', { ...social, [k]: v });
@@ -154,127 +132,16 @@ const LandingPageEditor: React.FC<Props> = ({ value, onChange }) => {
           </div>
 
           {/* ─── Service times ───────────────────────────────────── */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Service times</Label>
-              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={addService}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add service
-              </Button>
-            </div>
-            {services.length === 0 && (
-              <p className="text-xs text-muted-foreground italic">No services added yet.</p>
-            )}
-            <div className="space-y-3">
-              {services.map((s, i) => (
-                <div key={i} className="rounded-md border bg-white p-3 space-y-2">
-                  <div className="grid grid-cols-12 gap-2">
-                    <Input
-                      className="col-span-4"
-                      placeholder="Sunday Service"
-                      value={s.label}
-                      onChange={(e) => updateService(i, { label: e.target.value })}
-                    />
-                    <Input
-                      className="col-span-3"
-                      placeholder="Sundays"
-                      value={s.day ?? ''}
-                      onChange={(e) => updateService(i, { day: e.target.value })}
-                    />
-                    <Input
-                      className="col-span-4"
-                      placeholder="9:00 AM"
-                      value={s.time ?? ''}
-                      onChange={(e) => updateService(i, { time: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="col-span-1 text-red-600 hover:bg-red-50"
-                      onClick={() => removeService(i)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Background image (optional)
-                    </Label>
-                    <ImageUploadButton
-                      value={s.background_image}
-                      onChange={(url) => updateService(i, { background_image: url })}
-                      folder="custom-domains/services"
-                      thumbClassName="h-12 w-20"
-                      errorMessage="Service image upload failed"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ServicesEditor
+            value={cfg.service_times ?? []}
+            onChange={(next) => setField('service_times', next)}
+          />
 
           {/* ─── Ministries ──────────────────────────────────────── */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Ministries</Label>
-              <Button type="button" size="sm" variant="ghost" className="h-7" onClick={addMinistry}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add ministry
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Icons (optional): <code className="font-mono">Music2</code>,{' '}
-              <code className="font-mono">Users</code>, <code className="font-mono">Heart</code>,{' '}
-              <code className="font-mono">Sparkles</code>, <code className="font-mono">Church</code>,{' '}
-              <code className="font-mono">Calendar</code>, <code className="font-mono">Globe</code>.
-            </p>
-            <div className="space-y-2">
-              {ministries.map((m, i) => (
-                <div key={i} className="rounded-md border bg-white p-3 space-y-2">
-                  <div className="grid grid-cols-12 gap-2">
-                    <Input
-                      className="col-span-7"
-                      placeholder="Ministry title"
-                      value={m.title}
-                      onChange={(e) => updateMinistry(i, { title: e.target.value })}
-                    />
-                    <Input
-                      className="col-span-4"
-                      placeholder="Icon (e.g. Music2)"
-                      value={m.icon ?? ''}
-                      onChange={(e) => updateMinistry(i, { icon: e.target.value })}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="col-span-1 text-red-600 hover:bg-red-50"
-                      onClick={() => removeMinistry(i)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Textarea
-                    rows={2}
-                    placeholder="Short description"
-                    value={m.description ?? ''}
-                    onChange={(e) => updateMinistry(i, { description: e.target.value })}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <Label className="text-xs text-muted-foreground">
-                      Background image (optional)
-                    </Label>
-                    <ImageUploadButton
-                      value={m.background_image}
-                      onChange={(url) => updateMinistry(i, { background_image: url })}
-                      folder="custom-domains/ministries"
-                      thumbClassName="h-12 w-20"
-                      errorMessage="Ministry image upload failed"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <MinistriesEditor
+            value={cfg.ministries ?? []}
+            onChange={(next) => setField('ministries', next)}
+          />
 
           {/* ─── Core values ─────────────────────────────────────── */}
           <CoreValuesEditor

@@ -18,22 +18,8 @@ import {
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useAuthQuery';
 import { updateSettingsApi } from '@/lib/api';
+import { applyTheme, getStoredTheme, normalizeTheme, persistTheme, type Theme } from '@/lib/theme';
 import MemberProfile from './MemberProfile';
-
-type Theme = 'light' | 'dark' | 'system';
-
-function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-  if (theme === 'dark') {
-    root.classList.add('dark');
-  } else if (theme === 'light') {
-    root.classList.remove('dark');
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark) root.classList.add('dark');
-    else root.classList.remove('dark');
-  }
-}
 
 const MemberSettings: React.FC = () => {
   const { data: profile } = useProfile();
@@ -41,9 +27,12 @@ const MemberSettings: React.FC = () => {
 
   // ── Theme ──────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem('app_theme') as Theme) || 'light'
+    () => getStoredTheme()
   );
   const [savingTheme, setSavingTheme] = useState(false);
+
+  // Apply current theme on mount and on theme change
+  useEffect(() => { applyTheme(theme); }, [theme]);
 
 
   // ── Currency ───────────────────────────────────────────────────────────────
@@ -64,6 +53,11 @@ const MemberSettings: React.FC = () => {
     if (!profile?.settings) return;
     const s = profile.settings;
     if (s.currency) setCurrency(s.currency);
+    if (s.appearance?.theme) {
+      const nextTheme = normalizeTheme(s.appearance.theme);
+      setTheme(nextTheme);
+      persistTheme(nextTheme);
+    }
     if (s.privacy) {
       const p = s.privacy;
       if (p.isProfileVisible) setIsProfileVisible(p.isProfileVisible);
@@ -92,9 +86,12 @@ const MemberSettings: React.FC = () => {
   const handleApplyTheme = async () => {
     setSavingTheme(true);
     try {
-      applyTheme(theme);
-      localStorage.setItem('app_theme', theme);
+      persistTheme(theme);
+      await updateSettingsApi({ appearance: { theme } });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
       toast.success('Theme applied');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save theme');
     } finally {
       setSavingTheme(false);
     }

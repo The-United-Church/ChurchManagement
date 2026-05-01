@@ -8,6 +8,7 @@ import {
   deletePersonApi,
   importPeopleApi,
   convertPersonApi,
+  bulkConvertPersonsApi,
 } from '@/lib/api';
 import { toast } from 'sonner';
 import { useChurch } from '@/components/church/ChurchProvider';
@@ -137,6 +138,21 @@ export function usePeopleCrud() {
     }
   };
 
+  const convertMany = async (ids: string[]) => {
+    setSaving(true);
+    try {
+      const res = await bulkConvertPersonsApi(ids);
+      toast.success(res.message || `${res.converted} converted`);
+      await invalidate();
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'Bulk conversion failed');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const removeMany = async (ids: string[]) => {
     setSaving(true);
     try {
@@ -170,5 +186,6 @@ export function usePeopleCrud() {
     removeMany,
     importPeople,
     convert,
+    convertMany,
   };
 }
