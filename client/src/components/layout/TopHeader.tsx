@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import NotificationBell from './NotificationBell';
 import { MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { subscribeTotalUnread } from '@/lib/chat';
 
 interface TopHeaderProps {
   /** Optional left content (e.g. page title) */
@@ -17,6 +18,12 @@ interface TopHeaderProps {
 const TopHeader: React.FC<TopHeaderProps> = ({ left }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    return subscribeTotalUnread(user.id, setUnreadCount);
+  }, [user?.id]);
 
   const initials = (user?.full_name || user?.email || '?')
     .split(/\s+|@/)
@@ -33,10 +40,15 @@ const TopHeader: React.FC<TopHeaderProps> = ({ left }) => {
         <button
           type="button"
           onClick={() => navigate('/messages')}
-          className="h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-gray-100"
+          className="relative h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-gray-100"
           aria-label="Messages"
         >
           <MessageSquare className="h-5 w-5 text-gray-700" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
         <NotificationBell />
         <button

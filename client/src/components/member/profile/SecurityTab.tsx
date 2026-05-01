@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Shield, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { changePasswordApi } from '@/lib/api';
+import { changePasswordApi, updateSettingsApi } from '@/lib/api';
+import { useProfile } from '@/hooks/useAuthQuery';
 
 export function SecurityTab() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+  const is2FAEnabled = Boolean((profile as any)?.settings?.security?.['2fa']);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,6 +22,21 @@ export function SecurityTab() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [saving2FA, setSaving2FA] = useState(false);
+
+  const handleToggle2FA = async () => {
+    setSaving2FA(true);
+    try {
+      await updateSettingsApi({ security: { '2fa': !is2FAEnabled } });
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
+      toast.success(is2FAEnabled ? '2FA disabled' : '2FA enabled');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update 2FA setting';
+      toast.error(message);
+    } finally {
+      setSaving2FA(false);
+    }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,13 +69,23 @@ export function SecurityTab() {
         <CardContent>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
+              <Shield className={`h-5 w-5 ${is2FAEnabled ? 'text-green-500' : 'text-muted-foreground'}`} />
               <div>
                 <p className="font-medium">Two-Factor Authentication</p>
-                <p className="text-sm text-muted-foreground">Currently disabled</p>
+                <p className="text-sm text-muted-foreground">
+                  {is2FAEnabled ? 'Currently enabled — a code will be emailed on each login' : 'Currently disabled'}
+                </p>
               </div>
             </div>
-            <Button className="w-full sm:w-auto">Enable 2FA</Button>
+            <Button
+              className="w-full sm:w-auto"
+              variant={is2FAEnabled ? 'outline' : 'default'}
+              onClick={handleToggle2FA}
+              disabled={saving2FA}
+            >
+              {saving2FA && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {is2FAEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+            </Button>
           </div>
         </CardContent>
       </Card>

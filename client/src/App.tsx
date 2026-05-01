@@ -11,6 +11,7 @@ import DomainProvider from '@/components/domain/DomainProvider';
 import RealtimeSyncProvider from '@/components/auth/RealtimeSyncProvider';
 import { ReloadPrompt } from '@/components/pwa/ReloadPrompt';
 import ThemeBootstrap from '@/components/layout/ThemeBootstrap';
+import MessageAlertSound from '@/components/chat/MessageAlertSound';
 import Index from './pages/Index';
 import LandingPage from './pages/LandingPage';
 import CustomDomainLanding from './components/domain/CustomDomainLanding';
@@ -80,6 +81,7 @@ function AppRoutes() {
         <Toaster />
         <BrowserRouter>
           <ScrollToTop />
+          {isAuthenticated && <MessageAlertSound />}
           <Routes>
             <Route path="/" element={<RootLanding />} />
             {/* Custom-domain sub-pages — only meaningful on branded domains */}

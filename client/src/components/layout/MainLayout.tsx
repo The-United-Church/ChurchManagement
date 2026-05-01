@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import Sidebar from './Sidebar';
 import MobileSidebar from './MobileSidebar';
 import TopHeader from './TopHeader';
+import NotificationBell from './NotificationBell';
+import { MessageSquare } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { subscribeTotalUnread } from '@/lib/chat';
 import AdminDashboard from '../dashboard/admin/AdminDashboard';
 import PeopleManagement from '../dashboard/people/PeopleManagement';
 import ChurchManagement from '../dashboard/admin/ChurchManagement';
@@ -26,6 +30,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     return localStorage.getItem('sidebarCollapsed') === 'true';
   });
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    return subscribeTotalUnread(user.id, setUnreadCount);
+  }, [user?.id]);
+
+  const initials = (user?.full_name || user?.email || '?')
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   const handleToggleCollapse = () => {
     setSidebarCollapsed((prev) => {
@@ -202,18 +220,40 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <MobileSidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
-              {currentChurch?.denomination_name || 'Church Management'}
-            </h1>
-              {user && (
-                <p className="text-sm text-gray-600">
-                  {user.full_name} ({user.role?.name ?? user.role})
-                </p>
-              )}
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-gray-900 truncate">
+                {currentChurch?.denomination_name || 'Church Management'}
+              </h1>
             </div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate('/messages')}
+              className="relative h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-gray-100"
+              aria-label="Messages"
+            >
+              <MessageSquare className="h-5 w-5 text-gray-700" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className="ml-1"
+              aria-label="Profile"
+            >
+              <Avatar className="h-8 w-8">
+                {user?.profile_img && <AvatarImage src={user.profile_img} alt={user?.full_name} />}
+                <AvatarFallback className="text-xs bg-blue-100 text-blue-700">{initials}</AvatarFallback>
+              </Avatar>
+            </button>
           </div>
         </div>
         

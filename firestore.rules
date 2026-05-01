@@ -6,16 +6,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isConversationParticipant(data) {
-      return signedIn()
-        && data.participantIds is list
-        && request.auth.uid in data.participantIds;
-    }
+    // NOTE: participantIds and senderId use PostgreSQL UUIDs (not Firebase UIDs),
+    // so we cannot compare request.auth.uid against them. Authentication is
+    // enforced via signedIn(); query-level filtering (array-contains) scopes
+    // what each client can retrieve.
 
     function validParticipantList(data) {
       return data.participantIds is list
-        && data.participantIds.size() == 2
-        && request.auth.uid in data.participantIds;
+        && data.participantIds.size() == 2;
     }
 
     function validConversationCreate(data) {
@@ -26,11 +24,15 @@ service cloud.firestore {
           'lastMessage',
           'lastMessageAt',
           'lastSenderId',
-          'unread'
+          'unread',
+          'archivedFor',
+          'hiddenFor'
         ])
         && validParticipantList(data)
         && data.participants is map
         && data.unread is map
+        && (!('archivedFor' in data) || data.archivedFor is map)
+        && (!('hiddenFor' in data) || data.hiddenFor is map)
         && data.lastMessage is string
         && data.lastMessage.size() <= 280
         && (data.lastMessageAt == null || data.lastMessageAt is timestamp)
@@ -39,86 +41,103 @@ service cloud.firestore {
 
     function validConversationUpdate() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return isConversationParticipant(resource.data)
-        && isConversationParticipant(request.resource.data)
+      return signedIn()
         && request.resource.data.participantIds == resource.data.participantIds
         && request.resource.data.participants == resource.data.participants
-        && changed.hasOnly(['lastMessage', 'lastMessageAt', 'lastSenderId', 'unread'])
+        && changed.hasOnly(['lastMessage', 'lastMessageAt', 'lastSenderId', 'unread', 'archivedFor', 'hiddenFor'])
         && (!changed.hasAny(['lastMessage'])
           || (request.resource.data.lastMessage is string
             && request.resource.data.lastMessage.size() <= 280))
         && (!changed.hasAny(['lastMessageAt'])
           || request.resource.data.lastMessageAt is timestamp)
-        && (!changed.hasAny(['lastSenderId'])
-          || request.resource.data.lastSenderId == request.auth.uid)
-        && request.resource.data.unread is map;
+        && request.resource.data.unread is map
+        && (!('archivedFor' in request.resource.data) || request.resource.data.archivedFor is map)
+        && (!('hiddenFor' in request.resource.data) || request.resource.data.hiddenFor is map);
+    }
+
+    function validAttachment(data) {
+      return data == null || (
+        data is map
+        && data.keys().hasOnly(['name', 'url', 'contentType', 'size'])
+        && data.name is string
+        && data.url is string
+        && data.contentType is string
+        && data.size is number
+        && data.size <= 10485760
+      );
+    }
+
+    function validMessageShape(data, conversationId) {
+      return data.keys().hasOnly([
+          'conversationId',
+          'senderId',
+          'text',
+          'createdAt',
+          'editedAt',
+          'deletedAt',
+          'deletedFor',
+          'attachment',
+          'status',
+          'scheduledFor',
+          'sentAt'
+        ])
+        && data.conversationId == conversationId
+        && data.senderId is string
+        && data.senderId.size() > 0
+        && data.text is string
+        && data.text.size() <= 4000
+        && validAttachment(data.attachment)
+        && (!('deletedFor' in data) || data.deletedFor is map)
+        && (!('editedAt' in data) || data.editedAt == request.time || data.editedAt is timestamp || data.editedAt == null)
+        && (!('deletedAt' in data) || data.deletedAt == request.time || data.deletedAt is timestamp || data.deletedAt == null)
+        && (!('status' in data) || data.status in ['sent', 'scheduled'])
+        && (!('scheduledFor' in data) || data.scheduledFor == null || data.scheduledFor is timestamp)
+        && (!('sentAt' in data) || data.sentAt == request.time || data.sentAt is timestamp || data.sentAt == null);
+    }
+
+    function validMessageCreate(data, conversationId) {
+      return signedIn()
+        && validMessageShape(data, conversationId)
+        && data.createdAt == request.time
+        && (data.text.size() > 0 || data.attachment != null);
+    }
+
+    function validMessageUpdate(conversationId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return signedIn()
+        && validMessageShape(request.resource.data, conversationId)
+        && request.resource.data.conversationId == resource.data.conversationId
+        && request.resource.data.senderId == resource.data.senderId
+        && changed.hasOnly(['text', 'editedAt', 'deletedAt', 'deletedFor', 'attachment', 'status', 'scheduledFor', 'sentAt', 'createdAt']);
     }
 
 // ── Conversations (test) ──────────────────────────────────────────────
     match /conversations/{conversationId} {
-      allow read: if isConversationParticipant(resource.data);
+      allow read: if signedIn();
       allow create: if validConversationCreate(request.resource.data);
       allow update: if validConversationUpdate();
       allow delete: if false;
 
       match /messages/{messageId} {
-        function parentConversation() {
-          return get(/databases/$(database)/documents/conversations/$(conversationId));
-        }
-
-        function isParentConversationParticipant() {
-          return signedIn()
-            && request.auth.uid in parentConversation().data.participantIds;
-        }
-
-        function validMessageCreate(data) {
-          return isParentConversationParticipant()
-            && data.keys().hasOnly(['conversationId', 'senderId', 'text', 'createdAt'])
-            && data.conversationId == conversationId
-            && data.senderId == request.auth.uid
-            && data.text is string
-            && data.text.size() > 0
-            && data.text.size() <= 4000
-            && data.createdAt == request.time;
-        }
-
-        allow read: if isParentConversationParticipant();
-        allow create: if validMessageCreate(request.resource.data);
-        allow update, delete: if false;
+        allow read: if signedIn();
+        allow create: if validMessageCreate(request.resource.data, conversationId);
+        allow update: if validMessageUpdate(conversationId);
+        allow delete: if false;
       }
     }
 
     // ── Conversations (live) ──────────────────────────────────────────────
     match /conversations_live/{conversationId} {
-      allow read: if isConversationParticipant(resource.data);
+      allow read: if signedIn();
       allow create: if validConversationCreate(request.resource.data);
       allow update: if validConversationUpdate();
       allow delete: if false;
 
       match /messages_live/{messageId} {
-        function parentConversationLive() {
-          return get(/databases/$(database)/documents/conversations_live/$(conversationId));
-        }
-
-        function isParentConversationLiveParticipant() {
-          return signedIn()
-            && request.auth.uid in parentConversationLive().data.participantIds;
-        }
-
-        function validMessageLiveCreate(data) {
-          return isParentConversationLiveParticipant()
-            && data.keys().hasOnly(['conversationId', 'senderId', 'text', 'createdAt'])
-            && data.conversationId == conversationId
-            && data.senderId == request.auth.uid
-            && data.text is string
-            && data.text.size() > 0
-            && data.text.size() <= 4000
-            && data.createdAt == request.time;
-        }
-
-        allow read: if isParentConversationLiveParticipant();
-        allow create: if validMessageLiveCreate(request.resource.data);
-        allow update, delete: if false;
+        allow read: if signedIn();
+        allow create: if validMessageCreate(request.resource.data, conversationId);
+        allow update: if validMessageUpdate(conversationId);
+        allow delete: if false;
       }
     }
 

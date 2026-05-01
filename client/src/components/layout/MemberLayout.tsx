@@ -1,10 +1,14 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
 import MemberSidebar from './MemberSidebar';
 import MobileMemberSidebar from './MobileMemberSidebar';
 import TopHeader from './TopHeader';
+import NotificationBell from './NotificationBell';
+import { MessageSquare } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { subscribeTotalUnread } from '@/lib/chat';
 import MemberHome from '../member/MemberHome';
 import MemberDirectory from '../member/MemberDirectory';
 import MemberRegistrations from '../member/MemberRegistrations';
@@ -34,6 +38,21 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const { currentChurch, currentBranch } = useChurch();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    return subscribeTotalUnread(user.id, setUnreadCount);
+  }, [user?.id]);
+
+  const initials = (user?.full_name || user?.email || '?')
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   const activeSection = sectionFromPath(pathname);
 
@@ -61,10 +80,10 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile Header */}
         <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <MobileMemberSidebar />
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-gray-900 truncate">
                 {currentChurch?.denomination_name || 'Church'}
               </h1>
               {currentBranch && (
@@ -73,12 +92,34 @@ const MemberLayout: React.FC<MemberLayoutProps> = ({ children }) => {
                   {currentBranch.name}
                 </p>
               )}
-              {user && (
-                <p className="text-sm text-gray-600">
-                  {user.full_name} ({user.role?.name ?? user.role})
-                </p>
-              )}
             </div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate('/messages')}
+              className="relative h-9 w-9 inline-flex items-center justify-center rounded-full hover:bg-gray-100"
+              aria-label="Messages"
+            >
+              <MessageSquare className="h-5 w-5 text-gray-700" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] font-bold leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationBell />
+            <button
+              type="button"
+              onClick={() => navigate('/member/settings')}
+              className="ml-1"
+              aria-label="Profile"
+            >
+              <Avatar className="h-8 w-8">
+                {user?.profile_img && <AvatarImage src={user.profile_img} alt={user?.full_name} />}
+                <AvatarFallback className="text-xs bg-blue-100 text-blue-700">{initials}</AvatarFallback>
+              </Avatar>
+            </button>
           </div>
         </div>
 
