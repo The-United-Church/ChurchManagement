@@ -67,7 +67,7 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
   if (highlights.length === 0) return null;
 
   return (
-    <section className="bg-slate-50/80 border-y border-slate-200">
+    <section className="bg-slate-50/80 dark:bg-gray-800/50 border-y border-slate-200 dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
         {/* Heading */}
         <div className="text-center max-w-2xl mx-auto mb-10">
@@ -77,10 +77,10 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
           >
             Highlights
           </p>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">
+          <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
             Moments together
           </h2>
-          <p className="mt-3 text-slate-600">
+          <p className="mt-3 text-slate-600 dark:text-gray-400">
             Browse our recent services, events and outreaches.
           </p>
         </div>
@@ -122,7 +122,7 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
               <select
                 value={activeTitle}
                 onChange={(e) => setActiveTitle(e.target.value)}
-                className="w-full sm:w-auto text-sm rounded-md border border-slate-200 bg-white px-2 py-1.5"
+                className="w-full sm:w-auto text-sm rounded-md border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-200 px-2 py-1.5"
               >
                 <option value="all">All categories</option>
                 {uniqueTitles.map((title) => (
@@ -140,7 +140,7 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
                 type="date"
                 value={activeDate === 'all' ? '' : activeDate}
                 onChange={(e) => setActiveDate(e.target.value || 'all')}
-                className="text-sm rounded-md border border-slate-200 bg-white px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
+                className="text-sm rounded-md border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
               />
             </div>
           )}
@@ -163,7 +163,7 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
 
         {/* Card grid — one card per highlight */}
         {visible.length === 0 ? (
-          <p className="text-center text-slate-500 py-12 text-sm">
+          <p className="text-center text-slate-500 dark:text-gray-400 py-12 text-sm">
             No highlights match your filters.
           </p>
         ) : (
@@ -173,11 +173,11 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
                 type="button"
                 key={h.id || i}
                 onClick={() => setExpanded({ highlight: h, imageIndex: 0 })}
-                className="group text-left rounded-xl overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2"
+                className="group text-left rounded-xl overflow-hidden border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={{ ['--tw-ring-color' as any]: 'var(--brand)' }}
               >
                 {/* Cover image */}
-                <div className="aspect-video bg-slate-100 overflow-hidden relative">
+                <div className="aspect-video bg-slate-100 dark:bg-gray-700 overflow-hidden relative">
                   {h.images.length > 0 ? (
                     <img
                       src={h.images[0]}
@@ -187,7 +187,7 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Images className="h-10 w-10 text-slate-300" />
+                      <Images className="h-10 w-10 text-slate-300 dark:text-gray-600" />
                     </div>
                   )}
                   {h.images.length > 1 && (
@@ -199,15 +199,15 @@ const HighlightsGallery: React.FC<Props> = ({ highlights }) => {
 
                 {/* Meta */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-slate-900 truncate">{h.title}</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-white truncate">{h.title}</h3>
                   {h.date && (
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 dark:text-gray-400">
                       <Calendar className="h-3 w-3" />
                       {formatDate(h.date)}
                     </p>
                   )}
                   {h.description && (
-                    <p className="mt-1.5 text-sm text-slate-600 line-clamp-2">
+                    <p className="mt-1.5 text-sm text-slate-600 dark:text-gray-400 line-clamp-2">
                       {h.description}
                     </p>
                   )}

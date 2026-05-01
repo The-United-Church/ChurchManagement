@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format } from "date-fns";
-import { User, Pencil, Calendar as CalendarIcon, Loader2, ChevronDown, AlertCircle, CheckCircle, ShieldAlert } from 'lucide-react';
+import { User, Pencil, Calendar as CalendarIcon, Loader2, AlertCircle, CheckCircle, ShieldAlert } from 'lucide-react';
 import type { PersonCreateDTO } from '@/types/person';
 import { Country, State } from 'country-state-city';
 import { uploadToCloudinary } from '@/lib/cloudinary';
@@ -323,19 +323,21 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
     <div className="space-y-2">
       <Label className="text-xs font-bold text-gray-700">Phone</Label>
       <div className="flex gap-2">
-        <div className="relative flex-none">
-          <select
-            value={cc}
-            onChange={(e) => { const next = e.target.value; setCc(next); update(next, local); }}
-            className="border-0 border-b border-gray-300 rounded-none pl-3 pr-8 py-2.5 text-sm appearance-none min-w-[120px] bg-transparent focus:outline-none focus-visible:border-app-primary"
-          >
-            {countryCodes.map((item, idx) => (
-              <option key={`${item.code}-${idx}`} value={item.code}>
-                {item.flag} {item.code}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <div className="flex-none min-w-[130px]">
+          <Select value={cc} onValueChange={(next) => { setCc(next); update(next, local); }}>
+            <SelectTrigger className="border-0 border-b border-gray-300 rounded-none px-0 focus:ring-0 shadow-none bg-transparent text-sm h-auto py-2.5">
+              <SelectValue>
+                {(() => { const opt = countryCodes.find((o) => o.code === cc); return opt ? `${opt.flag} ${opt.code}` : cc; })()}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="max-h-60 overflow-y-auto">
+              {countryCodes.map((item, idx) => (
+                <SelectItem key={`${item.code}-${idx}`} value={item.code}>
+                  {item.flag} {item.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Input
           value={local}

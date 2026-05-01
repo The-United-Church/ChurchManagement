@@ -69,7 +69,7 @@ const CustomDomainLanding: React.FC = () => {
   );
 
   return (
-    <div style={themeStyle} className="min-h-screen bg-white text-slate-900 antialiased">
+    <div style={themeStyle} className="min-h-screen bg-white dark:bg-gray-900 text-slate-900 dark:text-white antialiased">
       <BrandedHeader />
 
       <Hero
@@ -147,7 +147,7 @@ const Hero: React.FC<{
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at 20% 20%, var(--brand-soft), transparent 55%), radial-gradient(circle at 80% 60%, var(--brand-soft), transparent 50%), white',
+          'radial-gradient(circle at 20% 20%, var(--brand-soft), transparent 55%), radial-gradient(circle at 80% 60%, var(--brand-soft), transparent 50%)',
         }}
       />
     )}
@@ -155,7 +155,7 @@ const Hero: React.FC<{
       <div className="max-w-3xl">
         <span
           className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-            heroImage ? 'bg-white/15 text-white border border-white/20' : 'border border-slate-200 bg-white text-slate-700'
+            heroImage ? 'bg-white/15 text-white border border-white/20' : 'border border-slate-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-700 dark:text-gray-200'
           }`}
           style={!heroImage ? { color: 'var(--brand)' } : undefined}
         >
@@ -163,14 +163,14 @@ const Hero: React.FC<{
         </span>
         <h1
           className={`mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight ${
-            heroImage ? 'text-white' : 'text-slate-900'
+            heroImage ? 'text-white' : 'text-slate-900 dark:text-white'
           }`}
         >
           {headline}
         </h1>
         <p
           className={`mt-6 text-lg sm:text-xl max-w-2xl leading-relaxed ${
-            heroImage ? 'text-white/90' : 'text-slate-600'
+            heroImage ? 'text-white/90' : 'text-slate-600 dark:text-gray-400'
           }`}
         >
           {subheadline}
@@ -202,14 +202,14 @@ const QuickFacts: React.FC<{
   pastor: string | null;
   phone: string | null;
 }> = ({ address, pastor, phone }) => (
-  <section className="border-y border-slate-200 bg-slate-50/60">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-slate-700">
+  <section className="border-y border-slate-200 dark:border-gray-700 bg-slate-50/60 dark:bg-gray-800/60">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-slate-700 dark:text-gray-300">
       {address && (
         <div className="flex items-start gap-3">
           <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand)' }} />
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500">Find us</p>
-            <p className="font-medium text-slate-900">{address}</p>
+            <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">Find us</p>
+            <p className="font-medium text-slate-900 dark:text-white">{address}</p>
           </div>
         </div>
       )}
@@ -217,8 +217,8 @@ const QuickFacts: React.FC<{
         <div className="flex items-start gap-3">
           <Users className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand)' }} />
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500">Led by</p>
-            <p className="font-medium text-slate-900">{pastor}</p>
+            <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">Led by</p>
+            <p className="font-medium text-slate-900 dark:text-white">{pastor}</p>
           </div>
         </div>
       )}
@@ -226,8 +226,8 @@ const QuickFacts: React.FC<{
         <div className="flex items-start gap-3">
           <Phone className="h-5 w-5 mt-0.5 flex-shrink-0" style={{ color: 'var(--brand)' }} />
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500">Call us</p>
-            <a href={`tel:${phone}`} className="font-medium text-slate-900 hover:underline">{phone}</a>
+            <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-gray-400">Call us</p>
+            <a href={`tel:${phone}`} className="font-medium text-slate-900 dark:text-white hover:underline">{phone}</a>
           </div>
         </div>
       )}
@@ -242,9 +242,9 @@ const About: React.FC<{ text: string; mission?: string }> = ({ text, mission }) 
         <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--brand)' }}>
           About Us
         </p>
-        <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">Who we are</h2>
+        <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Who we are</h2>
       </div>
-      <div className="lg:col-span-2 space-y-6 text-lg leading-relaxed text-slate-600 whitespace-pre-line">
+      <div className="lg:col-span-2 space-y-6 text-lg leading-relaxed text-slate-600 dark:text-gray-400 whitespace-pre-line">
         <p>{text}</p>
         {mission && (
           <Card className="border-0 shadow-none" style={{ background: 'var(--brand-soft)' }}>
@@ -252,7 +252,7 @@ const About: React.FC<{ text: string; mission?: string }> = ({ text, mission }) 
               <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--brand)' }}>
                 Our mission
               </p>
-              <p className="text-slate-800 italic leading-relaxed">"{mission}"</p>
+              <p className="text-slate-800 dark:text-gray-200 italic leading-relaxed">"{mission}"</p>
             </CardContent>
           </Card>
         )}
@@ -292,14 +292,14 @@ const VideoBlock: React.FC<{ url: string }> = ({ url }) => {
 };
 
 const ServiceTimes: React.FC<{ items: LandingServiceTime[] }> = ({ items }) => (
-  <section id="services" className="bg-slate-50/80 border-y border-slate-200">
+  <section id="services" className="bg-slate-50/80 dark:bg-gray-800/50 border-y border-slate-200 dark:border-gray-700">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
       <div className="text-center max-w-2xl mx-auto mb-12">
         <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--brand)' }}>
           Service Times
         </p>
-        <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">When we gather</h2>
-        <p className="mt-3 text-slate-600">Come as you are — there's a seat saved for you.</p>
+        <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">When we gather</h2>
+        <p className="mt-3 text-slate-600 dark:text-gray-400">Come as you are — there's a seat saved for you.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((s, i) => {
@@ -307,7 +307,7 @@ const ServiceTimes: React.FC<{ items: LandingServiceTime[] }> = ({ items }) => (
           return (
             <Card
               key={i}
-              className={`relative overflow-hidden border-slate-200 ${hasBg ? 'text-white' : ''}`}
+              className={`relative overflow-hidden border-slate-200 dark:border-gray-700 ${hasBg ? 'text-white' : 'dark:bg-gray-800'}`}
             >
               {hasBg && (
                 <>
@@ -331,13 +331,13 @@ const ServiceTimes: React.FC<{ items: LandingServiceTime[] }> = ({ items }) => (
                     <Calendar className="h-5 w-5" />
                   </div>
                   <h3
-                    className={`text-lg font-semibold ${hasBg ? 'text-white' : 'text-slate-900'}`}
+                    className={`text-lg font-semibold ${hasBg ? 'text-white' : 'text-slate-900 dark:text-white'}`}
                   >
                     {s.label}
                   </h3>
                 </div>
                 <div
-                  className={`space-y-1 text-sm ${hasBg ? 'text-white/90' : 'text-slate-600'}`}
+                  className={`space-y-1 text-sm ${hasBg ? 'text-white/90' : 'text-slate-600 dark:text-gray-400'}`}
                 >
                   {s.day && (
                     <p className="flex items-center gap-2">
@@ -367,8 +367,8 @@ const Ministries: React.FC<{ items: LandingMinistry[] }> = ({ items }) => (
       <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--brand)' }}>
         Ministries
       </p>
-      <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900">Find your place</h2>
-      <p className="mt-3 text-slate-600">
+      <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Find your place</h2>
+      <p className="mt-3 text-slate-600 dark:text-gray-400">
         From kids to seniors, there's a community here for every season of life.
       </p>
     </div>
@@ -403,7 +403,7 @@ const Ministries: React.FC<{ items: LandingMinistry[] }> = ({ items }) => (
           );
         }
         return (
-          <Card key={i} className="border-slate-200 hover:shadow-md transition-shadow">
+          <Card key={i} className="border-slate-200 dark:border-gray-700 dark:bg-gray-800 hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div
                 className="h-12 w-12 rounded-xl flex items-center justify-center mb-4"
@@ -411,9 +411,9 @@ const Ministries: React.FC<{ items: LandingMinistry[] }> = ({ items }) => (
               >
                 <Icon className="h-6 w-6" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{m.title}</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{m.title}</h3>
               {m.description && (
-                <p className="mt-2 text-slate-600 leading-relaxed">{m.description}</p>
+                <p className="mt-2 text-slate-600 dark:text-gray-400 leading-relaxed">{m.description}</p>
               )}
             </CardContent>
           </Card>

@@ -17,9 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Loader2 } from 'lucide-react';
+import { Edit, Loader2, Plus, Trash2, UserRound } from 'lucide-react';
 import type { MemberDTO } from '@/hooks/useMemberCrud';
-import type { UpdateMemberPayload } from '@/lib/api';
+import type { FamilyMemberDTO, UpdateMemberPayload } from '@/lib/api';
+import { FamilyMemberDialog } from '@/components/member/profile/FamilyMemberDialog';
+import type { FamilyMember } from '@/components/member/profile/types';
+import { RELATIONSHIP_OPTIONS } from '@/components/member/profile/types';
 
 type ProfilePayload = UpdateMemberPayload & { role?: string };
 
@@ -206,9 +209,29 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
   canManageBranchRole = true,
 }) => {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [familyDialogOpen, setFamilyDialogOpen] = useState(false);
+  const [editingFamilyMember, setEditingFamilyMember] = useState<FamilyMember | null>(null);
+  const [familySaving, setFamilySaving] = useState(false);
 
   useEffect(() => {
-    if (member) setForm(memberToForm(member));
+    if (member) {
+      setForm(memberToForm(member));
+      // Normalise FamilyMemberDTO from API to FamilyMember (same shape, just ensure id exists)
+      const fam: FamilyMember[] = (member.family_members ?? []).map((m: FamilyMemberDTO) => ({
+        id: m.id ?? crypto.randomUUID(),
+        first_name: m.first_name,
+        last_name: m.last_name,
+        relationship: m.relationship,
+        birthdate: m.birthdate,
+        gender: m.gender,
+        phone: m.phone,
+        marital_status: m.marital_status,
+        email: m.email,
+        linked_user_id: m.linked_user_id,
+      }));
+      setFamilyMembers(fam);
+    }
   }, [member]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -223,6 +246,15 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
 
     const tasks: Promise<boolean>[] = [];
     if (Object.keys(payload).length > 0) tasks.push(onSave(member.id, payload));
+
+    // Include family members if they changed
+    const originalFamily = JSON.stringify(member.family_members ?? []);
+    const currentFamily = JSON.stringify(familyMembers);
+    if (originalFamily !== currentFamily) {
+      const familyPayload: ProfilePayload = { family_members: familyMembers as unknown as FamilyMemberDTO[] };
+      tasks.push(onSave(member.id, familyPayload));
+    }
+
     if (canManageBranchRole && form.is_active !== original.is_active) {
       tasks.push(onToggleBranchActive(member.id, form.is_active));
     }
@@ -235,6 +267,7 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -485,6 +518,64 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
             </div>
           </div>
 
+          {/* Family Members */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Family Members</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { setEditingFamilyMember(null); setFamilyDialogOpen(true); }}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add
+              </Button>
+            </div>
+            {familyMembers.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">No family members added yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {familyMembers.map((fm) => (
+                  <div key={fm.id} className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <UserRound className="h-4 w-4 text-gray-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {fm.first_name} {fm.last_name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {RELATIONSHIP_OPTIONS.find((r) => r.value === fm.relationship)?.label ?? fm.relationship}
+                          {fm.phone ? ` · ${fm.phone}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0 ml-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => { setEditingFamilyMember(fm); setFamilyDialogOpen(true); }}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => setFamilyMembers((prev) => prev.filter((m) => m.id !== fm.id))}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Privacy / Communication */}
           <div className="space-y-2 pt-2">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Privacy &amp; Communication</p>
@@ -559,6 +650,25 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <FamilyMemberDialog
+      open={familyDialogOpen}
+      onOpenChange={(o) => { setFamilyDialogOpen(o); if (!o) setEditingFamilyMember(null); }}
+      editingMember={editingFamilyMember}
+      isPending={familySaving}
+      onSave={(form) => {
+        if (editingFamilyMember) {
+          setFamilyMembers((prev) =>
+            prev.map((m) => m.id === editingFamilyMember.id ? { ...form, id: editingFamilyMember.id } : m)
+          );
+        } else {
+          setFamilyMembers((prev) => [...prev, { ...form, id: crypto.randomUUID() }]);
+        }
+        setFamilyDialogOpen(false);
+        setEditingFamilyMember(null);
+      }}
+    />
+    </>
   );
 };
 

@@ -69,17 +69,17 @@ const testimonials: Testimonial[] = [
 
 const TestimonialsSection: React.FC = () => {
   return (
-    <section id="testimonials" className="py-20 md:py-28 bg-white">
+    <section id="testimonials" className="py-20 md:py-28 bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-blue-600 mb-3">
             Testimonials
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
             Loved by Church Leaders Everywhere
           </h2>
-          <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
             Hear from pastors, administrators, and coordinators who use ChurchFlow
             to manage and grow their congregations.
           </p>
@@ -104,7 +104,7 @@ const TestimonialCard: React.FC<Testimonial> = ({
   rating,
   avatar,
 }) => (
-  <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow duration-300 flex flex-col">
+  <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow duration-300 flex flex-col">
     {/* Quote icon */}
     <Quote className="h-8 w-8 text-blue-200 mb-4 flex-shrink-0" />
 
@@ -114,23 +114,23 @@ const TestimonialCard: React.FC<Testimonial> = ({
         <Star
           key={i}
           className={`h-4 w-4 ${
-            i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+            i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'
           }`}
         />
       ))}
     </div>
 
     {/* Content */}
-    <p className="text-gray-700 leading-relaxed text-sm flex-1">"{content}"</p>
+    <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm flex-1">"{content}"</p>
 
     {/* Author */}
-    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200">
+    <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
         {avatar}
       </div>
       <div>
-        <p className="font-semibold text-sm text-gray-900">{name}</p>
-        <p className="text-xs text-gray-500">
+        <p className="font-semibold text-sm text-gray-900 dark:text-white">{name}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {role} · {church}
         </p>
       </div>

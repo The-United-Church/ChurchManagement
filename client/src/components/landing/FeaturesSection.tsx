@@ -88,17 +88,17 @@ const features = [
 
 const FeaturesSection: React.FC = () => {
   return (
-    <section id="features" className="py-20 md:py-28 bg-white">
+    <section id="features" className="py-20 md:py-28 bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-blue-600 mb-3">
             Features
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
             Everything Your Church Needs in One Place
           </h2>
-          <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
             From registration to daily operations, ChurchFlow provides all the tools
             to run your church efficiently and connect with your congregation.
           </p>
@@ -122,12 +122,12 @@ const FeatureCard: React.FC<{
   color: string;
   bg: string;
 }> = ({ icon: Icon, title, description, color, bg }) => (
-  <div className="group relative p-6 rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300">
-    <div className={`inline-flex p-3 rounded-xl ${bg} mb-4`}>
+  <div className="group relative p-6 rounded-2xl border border-gray-100 dark:border-gray-700 dark:bg-gray-800/50 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-lg dark:hover:shadow-gray-900/50 transition-all duration-300">
+    <div className={`inline-flex p-3 rounded-xl ${bg} dark:bg-gray-700/60 mb-4`}>
       <Icon className={`h-6 w-6 ${color}`} />
     </div>
-    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-    <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
+    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
+    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{description}</p>
   </div>
 );
 

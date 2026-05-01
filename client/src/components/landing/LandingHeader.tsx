@@ -48,7 +48,7 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) 
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-100 dark:border-gray-800">
       {/* ── Announcement banner ── */}
       {bannerVisible && (
         <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 overflow-hidden">
@@ -99,7 +99,7 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) 
               <button
                 key={link.href}
                 onClick={() => scrollTo(link.href)}
-                className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
                 {link.label}
               </button>
@@ -118,7 +118,7 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) 
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+            className="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -129,18 +129,18 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({ onGetStarted, onLogin }) 
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white">
+        <div className="md:hidden border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="px-4 py-4 space-y-3">
             {navLinks.map(link => (
               <button
                 key={link.href}
                 onClick={() => scrollTo(link.href)}
-                className="block w-full text-left text-sm font-medium text-gray-600 hover:text-blue-600 py-2"
+                className="block w-full text-left text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 py-2"
               >
                 {link.label}
               </button>
             ))}
-            <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+            <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-col gap-2">
               <Button variant="outline" className="w-full" onClick={() => { setMobileOpen(false); onLogin(); }}>
                 Sign In
               </Button>

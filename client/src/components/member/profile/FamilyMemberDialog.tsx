@@ -13,8 +13,9 @@ import {
 import { BadgeCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchPersonByEmail } from '@/lib/api';
-import { FormInput } from '@/components/dashboard/people/AddPersonDialog';
+import { FormInput, PhoneField, isoToFlag } from '@/components/dashboard/people/AddPersonDialog';
 import { FormSelect } from '@/components/ui/form-select';
+import { Country } from 'country-state-city';
 import type { FamilyMember } from './types';
 import {
   EMPTY_FAMILY,
@@ -40,6 +41,17 @@ export function FamilyMemberDialog({
 }: FamilyMemberDialogProps) {
   const [form, setForm] = useState<Omit<FamilyMember, 'id'>>(EMPTY_FAMILY);
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  const phoneOptions = React.useMemo(
+    () =>
+      Country.getAllCountries().map((c) => ({
+        isoCode: c.isoCode,
+        name: c.name,
+        code: `+${c.phonecode}`,
+        flag: isoToFlag(c.isoCode),
+      })),
+    []
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -165,7 +177,12 @@ export function FamilyMemberDialog({
               </div>
 
               <div className="grid grid-cols-2 gap-6">
-                <FormInput label="Mobile Phone" placeholder="Optional" value={form.phone || ''} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
+                <PhoneField
+                  value={form.phone || ''}
+                  onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+                  options={phoneOptions}
+                  countryName=""
+                />
                 <FormSelect label="Marital Status" options={MARITAL_OPTIONS} value={form.marital_status || ''} onValueChange={(v) => setForm((f) => ({ ...f, marital_status: v }))} placeholder="Select status" />
               </div>
             </CardContent>

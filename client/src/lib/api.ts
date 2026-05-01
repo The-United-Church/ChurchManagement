@@ -134,6 +134,7 @@ export interface MemberDTO {
   baptism_date?: string | null;
   baptism_location?: string | null;
   member_status?: string | null;
+  family_members?: FamilyMemberDTO[];
   role: string;
   /** Role within the current branch (from BranchMembership.role) */
   branch_role?: string;
@@ -194,6 +195,7 @@ export type UpdateMemberPayload = Partial<{
   baptism_date: string | null;
   baptism_location: string | null;
   member_status: string | null;
+  family_members: FamilyMemberDTO[];
 }>;
 
 export const updateMemberApi = (id: string, data: UpdateMemberPayload) =>

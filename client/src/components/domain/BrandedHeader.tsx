@@ -25,7 +25,7 @@ const BrandedHeader: React.FC = () => {
   const logoUrl = branding?.logo_url ?? null;
 
   return (
-    <header className="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200/60">
+    <header className="sticky top-0 z-30 bg-white/85 dark:bg-gray-900/85 backdrop-blur border-b border-slate-200/60 dark:border-gray-700/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo / church name */}
         <Link to="/" className="flex items-center gap-3 min-w-0">
@@ -39,7 +39,7 @@ const BrandedHeader: React.FC = () => {
               <Church className="h-5 w-5" />
             </div>
           )}
-          <span className="font-semibold text-slate-900 truncate">{churchName}</span>
+          <span className="font-semibold text-slate-900 dark:text-white truncate">{churchName}</span>
         </Link>
 
         {/* Navigation */}
@@ -53,7 +53,7 @@ const BrandedHeader: React.FC = () => {
                 className={
                   isActive
                     ? 'transition-colors font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 transition-colors'
+                    : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-colors'
                 }
                 style={isActive ? { color: accent } : undefined}
               >

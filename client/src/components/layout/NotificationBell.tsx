@@ -1,84 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, X, Check, MessageCircle, UserPlus, Calendar, Shield } from 'lucide-react';
+import { Bell, X, Check, MessageCircle, UserPlus, Calendar, Shield, Megaphone, CircleCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { fetchRecentActivities } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/components/auth/AuthProvider';
+import {
+  markNotificationRead,
+  markNotificationsRead,
+  notificationDate,
+  subscribeNotifications,
+  type AppNotification,
+} from '@/lib/notifications';
 
-interface NotificationItem {
-  id: string;
-  type: 'message' | 'member' | 'event' | 'security' | 'activity';
-  title: string;
-  description: string;
-  createdAt: string;
-  read?: boolean;
-  link?: string;
-}
-
-const ICON_MAP: Record<NotificationItem['type'], React.ComponentType<{ className?: string }>> = {
+const ICON_MAP: Record<AppNotification['type'], React.ComponentType<{ className?: string }>> = {
   message: MessageCircle,
   member: UserPlus,
   event: Calendar,
   security: Shield,
-  activity: Bell,
+  announcement: Megaphone,
+  registration: CircleCheck,
+  system: Bell,
 };
-
-const STORAGE_KEY = 'cf_notifications_read';
-
-function getReadIds(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw) as string[]);
-  } catch {
-    return new Set();
-  }
-}
-
-function setReadIds(ids: Set<string>) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(ids)));
-  } catch {}
-}
 
 /**
  * Top-bar notification bell.
  *
- * Surfaces:
- *  - Recent server activity log entries (member added, role changes, login alerts, etc.)
- *  - New direct-message hints (when messaging is added, items will be pushed here).
+ * Surfaces user notification documents from Firestore's `notifications` collection.
  */
 const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [readIds, setReadIdsState] = useState<Set<string>>(getReadIds);
+  const [items, setItems] = useState<AppNotification[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  const { data: activitiesRes } = useQuery({
-    queryKey: ['notifications', 'recent-activities'],
-    queryFn: () => fetchRecentActivities(15),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  });
+  useEffect(() => {
+    if (!user?.id) {
+      setItems([]);
+      return;
+    }
 
-  const items: NotificationItem[] = (activitiesRes?.data || []).map((a: any) => {
-    let type: NotificationItem['type'] = 'activity';
-    if (a.entity_type === 'user') type = 'member';
-    else if (a.entity_type === 'event') type = 'event';
-    else if (a.entity_type === 'auth') type = 'security';
-    return {
-      id: a.id,
-      type,
-      title: humanizeAction(a.action, a.entity_type),
-      description: a.description || '',
-      createdAt: a.created_at || a.createdAt,
-      link: linkForActivity(a),
-    };
-  });
+    return subscribeNotifications(user.id, setItems, 30);
+  }, [user?.id]);
 
-  const unread = items.filter((i) => !readIds.has(i.id));
+  const unread = items.filter((i) => !i.read);
 
   // Click outside to close
   useEffect(() => {
@@ -92,22 +58,33 @@ const NotificationBell: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const markAllRead = () => {
-    const next = new Set(readIds);
-    items.forEach((i) => next.add(i.id));
-    setReadIds(next);
-    setReadIdsState(next);
+  const markAllRead = async () => {
+    const unreadIds = unread.map((i) => i.id);
+    setItems((current) => current.map((item) => ({ ...item, read: true })));
+    try {
+      await markNotificationsRead(unreadIds);
+    } catch {
+      setItems((current) => current.map((item) => (
+        unreadIds.includes(item.id) ? { ...item, read: false } : item
+      )));
+    }
   };
 
-  const markRead = (id: string) => {
-    const next = new Set(readIds);
-    next.add(id);
-    setReadIds(next);
-    setReadIdsState(next);
+  const markRead = async (id: string) => {
+    setItems((current) => current.map((item) => (
+      item.id === id ? { ...item, read: true } : item
+    )));
+    try {
+      await markNotificationRead(id);
+    } catch {
+      setItems((current) => current.map((item) => (
+        item.id === id ? { ...item, read: false } : item
+      )));
+    }
   };
 
-  const handleClick = (item: NotificationItem) => {
-    markRead(item.id);
+  const handleClick = (item: AppNotification) => {
+    if (!item.read) markRead(item.id);
     if (item.link) navigate(item.link);
     setOpen(false);
   };
@@ -167,14 +144,14 @@ const NotificationBell: React.FC = () => {
 
             {items.map((n) => {
               const Icon = ICON_MAP[n.type] || Bell;
-              const isRead = readIds.has(n.id);
+              const createdAt = notificationDate(n.createdAt);
               return (
                 <button
                   key={n.id}
                   type="button"
                   onClick={() => handleClick(n)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${
-                    isRead ? 'opacity-70' : 'bg-blue-50/30'
+                    n.read ? 'opacity-70' : 'bg-blue-50/30'
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
@@ -183,6 +160,8 @@ const NotificationBell: React.FC = () => {
                         : n.type === 'member' ? 'bg-blue-100 text-blue-600'
                         : n.type === 'event' ? 'bg-purple-100 text-purple-600'
                         : n.type === 'security' ? 'bg-orange-100 text-orange-600'
+                        : n.type === 'announcement' ? 'bg-emerald-100 text-emerald-600'
+                        : n.type === 'registration' ? 'bg-indigo-100 text-indigo-600'
                         : 'bg-gray-100 text-gray-600'
                     }`}>
                       <Icon className="h-4 w-4" />
@@ -190,14 +169,14 @@ const NotificationBell: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{n.title}</p>
-                    {n.description && (
-                      <p className="text-xs text-gray-600 line-clamp-2 mt-0.5">{n.description}</p>
+                    {n.message && (
+                      <p className="text-xs text-gray-600 line-clamp-2 mt-0.5">{n.message}</p>
                     )}
                     <p className="text-[10px] text-gray-400 mt-1">
-                      {n.createdAt ? formatDistanceToNow(new Date(n.createdAt), { addSuffix: true }) : ''}
+                      {createdAt ? formatDistanceToNow(createdAt, { addSuffix: true }) : ''}
                     </p>
                   </div>
-                  {!isRead && (
+                  {!n.read && (
                     <span className="flex-shrink-0 h-2 w-2 rounded-full bg-blue-500 mt-2" />
                   )}
                 </button>
@@ -218,26 +197,5 @@ const NotificationBell: React.FC = () => {
     </div>
   );
 };
-
-function humanizeAction(action?: string, entity?: string): string {
-  if (!action) return 'Activity';
-  const a = action.toLowerCase();
-  const e = (entity || '').toLowerCase();
-  if (a === 'login') return 'Login alert';
-  if (a === 'register') return 'New registration';
-  if (a === 'create' && e === 'user') return 'New member added';
-  if (a === 'create' && e === 'event') return 'Event created';
-  if (a === 'update' && e === 'event') return 'Event updated';
-  if (a === 'update' && e === 'user') return 'Member updated';
-  if (a === 'delete') return `${e || 'Item'} removed`;
-  return `${action} ${entity || ''}`.trim();
-}
-
-function linkForActivity(a: any): string | undefined {
-  if (!a) return;
-  if (a.entity_type === 'event' && a.entity_id) return `/events`;
-  if (a.entity_type === 'user') return `/people`;
-  return undefined;
-}
 
 export default NotificationBell;

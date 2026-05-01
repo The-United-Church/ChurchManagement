@@ -36,17 +36,17 @@ const steps = [
 
 const HowItWorksSection: React.FC = () => {
   return (
-    <section id="how-it-works" className="py-20 md:py-28 bg-gray-50">
+    <section id="how-it-works" className="py-20 md:py-28 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <p className="text-sm font-semibold uppercase tracking-wider text-blue-600 mb-3">
             How It Works
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
             Get Started in Three Simple Steps
           </h2>
-          <p className="mt-4 text-lg text-gray-600 leading-relaxed">
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
             No complex setup. No technical knowledge required. Get your church
             online and organized in minutes.
           </p>
@@ -59,7 +59,7 @@ const HowItWorksSection: React.FC = () => {
               <StepCard {...step} />
               {index < steps.length - 1 && (
                 <div className="hidden md:flex items-center justify-center -mx-8">
-                  <ArrowRight className="h-8 w-8 text-gray-300" />
+                  <ArrowRight className="h-8 w-8 text-gray-300 dark:text-gray-600" />
                 </div>
               )}
             </React.Fragment>
@@ -68,8 +68,8 @@ const HowItWorksSection: React.FC = () => {
 
         {/* Simplified architecture visual */}
         <div className="mt-20 max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <h3 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
+            <h3 className="text-center text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-8">
               Platform Architecture
             </h3>
             <div className="flex flex-col items-center gap-4">
@@ -104,22 +104,22 @@ const StepCard: React.FC<{
 }> = ({ number, icon: Icon, title, description, color, bg }) => (
   <div className="relative text-center md:text-left">
     <div className="flex flex-col items-center md:items-start">
-      <div className={`relative inline-flex p-4 rounded-2xl ${bg} mb-6`}>
-        <Icon className="h-8 w-8 text-gray-900" />
+      <div className={`relative inline-flex p-4 rounded-2xl ${bg} dark:bg-gray-700/60 mb-6`}>
+        <Icon className="h-8 w-8 text-gray-900 dark:text-white" />
         <span
           className={`absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br ${color} text-white text-xs font-bold rounded-full flex items-center justify-center`}
         >
           {number}
         </span>
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{description}</p>
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
     </div>
   </div>
 );
 
 const VerticalConnector: React.FC = () => (
-  <div className="w-px h-6 bg-gray-300" />
+  <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
 );
 
 const RoleBlock: React.FC<{ label: string; description: string; gradient: string }> = ({
@@ -140,18 +140,18 @@ const ChurchBlock: React.FC<{ name: string; branches: number; members: number }>
   branches,
   members,
 }) => (
-  <div className="border border-gray-200 rounded-xl p-4">
+  <div className="border border-gray-200 dark:border-gray-700 dark:bg-gray-700/40 rounded-xl p-4">
     <div className="flex items-center gap-2 mb-3">
       <Church className="h-4 w-4 text-blue-600" />
-      <p className="font-semibold text-sm text-gray-900">{name}</p>
+      <p className="font-semibold text-sm text-gray-900 dark:text-white">{name}</p>
     </div>
-    <div className="flex gap-4 text-xs text-gray-500">
+    <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
       <span>{branches} Branches</span>
       <span>{members} Members</span>
     </div>
     <div className="mt-2 flex gap-1">
-      <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Admin</span>
-      <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Members</span>
+      <span className="text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">Admin</span>
+      <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">Members</span>
     </div>
   </div>
 );
