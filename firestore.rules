@@ -54,6 +54,7 @@ service cloud.firestore {
         && request.resource.data.unread is map;
     }
 
+// ── Conversations (test) ──────────────────────────────────────────────
     match /conversations/{conversationId} {
       allow read: if isConversationParticipant(resource.data);
       allow create: if validConversationCreate(request.resource.data);
@@ -87,6 +88,41 @@ service cloud.firestore {
       }
     }
 
+    // ── Conversations (live) ──────────────────────────────────────────────
+    match /conversations_live/{conversationId} {
+      allow read: if isConversationParticipant(resource.data);
+      allow create: if validConversationCreate(request.resource.data);
+      allow update: if validConversationUpdate();
+      allow delete: if false;
+
+      match /messages_live/{messageId} {
+        function parentConversationLive() {
+          return get(/databases/$(database)/documents/conversations_live/$(conversationId));
+        }
+
+        function isParentConversationLiveParticipant() {
+          return signedIn()
+            && request.auth.uid in parentConversationLive().data.participantIds;
+        }
+
+        function validMessageLiveCreate(data) {
+          return isParentConversationLiveParticipant()
+            && data.keys().hasOnly(['conversationId', 'senderId', 'text', 'createdAt'])
+            && data.conversationId == conversationId
+            && data.senderId == request.auth.uid
+            && data.text is string
+            && data.text.size() > 0
+            && data.text.size() <= 4000
+            && data.createdAt == request.time;
+        }
+
+        allow read: if isParentConversationLiveParticipant();
+        allow create: if validMessageLiveCreate(request.resource.data);
+        allow update, delete: if false;
+      }
+    }
+
+    // ── Notifications (test) ──────────────────────────────────────────────
     match /notifications/{notificationId} {
       function isNotificationRecipient(data) {
         return signedIn()
@@ -106,6 +142,28 @@ service cloud.firestore {
       allow read: if isNotificationRecipient(resource.data);
       allow create, delete: if false;
       allow update: if validNotificationReadUpdate();
+    }
+
+    // ── Notifications (live) ──────────────────────────────────────────────
+    match /notifications_live/{notificationId} {
+      function isNotificationLiveRecipient(data) {
+        return signedIn()
+          && data.recipientId is string
+          && data.recipientId == request.auth.uid;
+      }
+
+      function validNotificationLiveReadUpdate() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return isNotificationLiveRecipient(resource.data)
+          && isNotificationLiveRecipient(request.resource.data)
+          && changed.hasOnly(['read', 'readAt'])
+          && request.resource.data.read == true
+          && request.resource.data.readAt == request.time;
+      }
+
+      allow read: if isNotificationLiveRecipient(resource.data);
+      allow create, delete: if false;
+      allow update: if validNotificationLiveReadUpdate();
     }
 
     match /{document=**} {

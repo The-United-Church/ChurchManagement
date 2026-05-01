@@ -321,11 +321,11 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
 
   return (
     <div className="space-y-2">
-      <Label className="text-xs font-bold text-gray-700">Phone</Label>
+      <Label className="text-xs font-bold text-foreground">Phone</Label>
       <div className="flex gap-2">
         <div className="flex-none min-w-[130px]">
           <Select value={cc} onValueChange={(next) => { setCc(next); update(next, local); }}>
-            <SelectTrigger className="border-0 border-b border-gray-300 rounded-none px-0 focus:ring-0 shadow-none bg-transparent text-sm h-auto py-2.5">
+            <SelectTrigger className="border-0 border-b border-border rounded-none px-0 focus:ring-0 shadow-none bg-transparent text-sm h-auto py-2.5">
               <SelectValue>
                 {(() => { const opt = countryCodes.find((o) => o.code === cc); return opt ? `${opt.flag} ${opt.code}` : cc; })()}
               </SelectValue>
@@ -343,7 +343,7 @@ export const PhoneField: React.FC<{ value: string; onChange: (v: string) => void
           value={local}
           onChange={(e) => { const v = e.target.value; setLocal(v); update(cc, v); }}
           placeholder="Phone number"
-          className="border-0 border-b border-gray-300 rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent"
+          className="border-0 border-b border-border rounded-none px-0 focus-visible:ring-0 focus-visible:border-app-primary bg-transparent"
         />
       </div>
     </div>

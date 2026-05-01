@@ -13,6 +13,8 @@ import {
 } from 'firebase/firestore';
 import { firebaseDb } from '@/lib/firebase';
 
+const NOTIFICATIONS_COLLECTION = import.meta.env.VITE_NOTIFICATIONS_COLLECTION || 'notifications';
+
 export type NotificationType = 'message' | 'member' | 'event' | 'security' | 'announcement' | 'registration' | 'system';
 
 export interface AppNotification {
@@ -34,7 +36,7 @@ export function subscribeNotifications(
   maxItems = 30,
 ): () => void {
   const notificationsQuery = query(
-    collection(firebaseDb, 'notifications'),
+    collection(firebaseDb, NOTIFICATIONS_COLLECTION),
     where('recipientId', '==', recipientId),
     orderBy('createdAt', 'desc'),
     limit(maxItems),
@@ -54,7 +56,7 @@ export function subscribeNotifications(
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {
-  await updateDoc(doc(firebaseDb, 'notifications', notificationId), {
+  await updateDoc(doc(firebaseDb, NOTIFICATIONS_COLLECTION, notificationId), {
     read: true,
     readAt: serverTimestamp(),
   });
@@ -65,7 +67,7 @@ export async function markNotificationsRead(notificationIds: string[]): Promise<
 
   const batch = writeBatch(firebaseDb);
   notificationIds.forEach((notificationId) => {
-    batch.update(doc(firebaseDb, 'notifications', notificationId), {
+    batch.update(doc(firebaseDb, NOTIFICATIONS_COLLECTION, notificationId), {
       read: true,
       readAt: serverTimestamp(),
     });

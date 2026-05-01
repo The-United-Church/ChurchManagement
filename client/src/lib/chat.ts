@@ -4,6 +4,9 @@ import {
 } from 'firebase/firestore';
 import { firebaseDb } from '@/lib/firebase';
 
+const CONVERSATIONS_COLLECTION = import.meta.env.VITE_CONVERSATIONS_COLLECTION || 'conversations';
+const MESSAGES_COLLECTION = import.meta.env.VITE_MESSAGES_COLLECTION || 'messages';
+
 export interface ChatParticipant {
   id: string;
   full_name: string;
@@ -40,7 +43,7 @@ export async function getOrCreateConversation(
   other: ChatParticipant
 ): Promise<string> {
   const id = conversationIdFor(me.id, other.id);
-  const ref = doc(firebaseDb, 'conversations', id);
+  const ref = doc(firebaseDb, CONVERSATIONS_COLLECTION, id);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
     await setDoc(ref, {
@@ -60,7 +63,7 @@ export function subscribeConversations(
   cb: (rows: Conversation[]) => void
 ): () => void {
   const q = query(
-    collection(firebaseDb, 'conversations'),
+    collection(firebaseDb, CONVERSATIONS_COLLECTION),
     where('participantIds', 'array-contains', myId),
     orderBy('lastMessageAt', 'desc'),
     limit(50),
@@ -76,7 +79,7 @@ export function subscribeMessages(
   cb: (rows: Message[]) => void
 ): () => void {
   const q = query(
-    collection(firebaseDb, 'conversations', conversationId, 'messages'),
+    collection(firebaseDb, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION),
     orderBy('createdAt', 'asc'),
     limit(200),
   );
@@ -93,13 +96,13 @@ export async function sendMessage(
   text: string,
 ): Promise<void> {
   if (!text.trim()) return;
-  await addDoc(collection(firebaseDb, 'conversations', conversationId, 'messages'), {
+  await addDoc(collection(firebaseDb, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION), {
     conversationId,
     senderId,
     text: text.trim(),
     createdAt: serverTimestamp(),
   });
-  await updateDoc(doc(firebaseDb, 'conversations', conversationId), {
+  await updateDoc(doc(firebaseDb, CONVERSATIONS_COLLECTION, conversationId), {
     lastMessage: text.trim().slice(0, 280),
     lastMessageAt: serverTimestamp(),
     lastSenderId: senderId,
@@ -108,12 +111,12 @@ export async function sendMessage(
 }
 
 async function getRecipientUnread(conversationId: string, recipientId: string): Promise<number> {
-  const snap = await getDoc(doc(firebaseDb, 'conversations', conversationId));
+  const snap = await getDoc(doc(firebaseDb, CONVERSATIONS_COLLECTION, conversationId));
   return (snap.data()?.unread?.[recipientId] as number) ?? 0;
 }
 
 export async function markConversationRead(conversationId: string, myId: string): Promise<void> {
-  await updateDoc(doc(firebaseDb, 'conversations', conversationId), {
+  await updateDoc(doc(firebaseDb, CONVERSATIONS_COLLECTION, conversationId), {
     [`unread.${myId}`]: 0,
   });
 }
