@@ -432,6 +432,11 @@ export class UserService {
       "job_title",
       "employer",
       "facebook_link",
+      "instagram_link",
+      "linkedin_link",
+      "twitter_link",
+      "whatsapp_link",
+      "website_link",
       "is_display_email",
       "is_accept_text",
       "marital_status",
@@ -483,7 +488,22 @@ export class UserService {
       return null;
     }
 
-    user.settings = settings;
+    user.settings = {
+      ...(user.settings || {}),
+      ...settings,
+      privacy: {
+        ...(user.settings?.privacy || {}),
+        ...(settings.privacy || {}),
+      },
+      notifications: {
+        ...(user.settings?.notifications || {}),
+        ...(settings.notifications || {}),
+      },
+      security: {
+        ...(user.settings?.security || {}),
+        ...(settings.security || {}),
+      },
+    } as UserSettings;
     const savedUser = this.userRepository.save(user);
 
     const { password, ...userWithoutPassword } = classToPlain(savedUser) as any;
@@ -513,6 +533,11 @@ export class UserService {
       job_title?: string;
       employer?: string;
       facebook_link?: string;
+      instagram_link?: string;
+      linkedin_link?: string;
+      twitter_link?: string;
+      whatsapp_link?: string;
+      website_link?: string;
       is_display_email?: boolean;
       is_accept_text?: boolean;
       grade?: string;
@@ -549,6 +574,11 @@ export class UserService {
       "job_title",
       "employer",
       "facebook_link",
+      "instagram_link",
+      "linkedin_link",
+      "twitter_link",
+      "whatsapp_link",
+      "website_link",
       "baptism_location",
       "grade",
       "member_status",
@@ -728,8 +758,16 @@ export class UserService {
       .createQueryBuilder('user')
       .select([
         'user.id', 'user.email', 'user.full_name', 'user.first_name',
-        'user.last_name', 'user.role', 'user.is_active',
-        'user.state', 'user.city', 'user.country', 'user.phone_number',
+        'user.last_name', 'user.middle_name', 'user.nick_name', 'user.username',
+        'user.role', 'user.is_active', 'user.address_line', 'user.state',
+        'user.city', 'user.country', 'user.postal_code', 'user.phone_number',
+        'user.phone_is_whatsapp', 'user.dob', 'user.gender', 'user.marital_status',
+        'user.date_married', 'user.job_title', 'user.employer', 'user.facebook_link',
+        'user.instagram_link', 'user.linkedin_link', 'user.twitter_link',
+        'user.whatsapp_link', 'user.website_link',
+        'user.is_display_email', 'user.is_accept_text', 'user.grade', 'user.baptism_date',
+        'user.baptism_location', 'user.member_status',
+        'user.family_members',
         'user.settings', 'user.last_access', 'user.profile_img',
       ])
       .where('user.is_active = :active', { active: true });
@@ -758,11 +796,46 @@ export class UserService {
         const p = u.settings?.privacy || {};
         const clone: any = this.serializeUserWithPresence(u);
         if (p.showEmail === false) clone.email = undefined;
+        if (p.showPhoneNumber === false) {
+          clone.phone_number = undefined;
+          clone.phone_is_whatsapp = undefined;
+        }
+        if (p.showFamilyMembers === false) clone.family_members = undefined;
         if (p.showLocation === false) {
           clone.address_line = undefined;
           clone.city = undefined;
           clone.state = undefined;
           clone.country = undefined;
+          clone.postal_code = undefined;
+        }
+        if (p.showBirthYear === false && clone.dob) {
+          // Keep month/day but hide the year by replacing it with '0000'
+          const dobStr = clone.dob instanceof Date
+            ? clone.dob.toISOString().slice(0, 10)
+            : String(clone.dob).slice(0, 10);
+          clone.dob = '0000' + dobStr.slice(4);
+        }
+        if (p.showMaritalStatus === false) {
+          clone.marital_status = undefined;
+          clone.date_married = undefined;
+        }
+        if (p.showSocialLinks === false) {
+          clone.facebook_link = undefined;
+          clone.instagram_link = undefined;
+          clone.linkedin_link = undefined;
+          clone.twitter_link = undefined;
+          clone.whatsapp_link = undefined;
+          clone.website_link = undefined;
+        }
+        if (p.showWork === false) {
+          clone.job_title = undefined;
+          clone.employer = undefined;
+        }
+        if (p.showMembership === false) {
+          clone.member_status = undefined;
+          clone.baptism_date = undefined;
+          clone.baptism_location = undefined;
+          clone.grade = undefined;
         }
         if (p.showOnlineStatus === false) {
           clone.last_access = undefined;

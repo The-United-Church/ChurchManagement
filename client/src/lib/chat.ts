@@ -1,6 +1,6 @@
 import {
   collection, addDoc, doc, query, where, orderBy, onSnapshot,
-  serverTimestamp, setDoc, updateDoc, getDoc, Timestamp, limit,
+  serverTimestamp, setDoc, updateDoc, getDoc, getDocs, Timestamp, limit, limitToLast, startAfter,
 } from 'firebase/firestore';
 import { getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
 import { firebaseDb, firebaseStorage } from '@/lib/firebase';
@@ -25,6 +25,7 @@ export interface Conversation {
   unread?: Record<string, number>;
   archivedFor?: Record<string, boolean>;
   hiddenFor?: Record<string, boolean>;
+  clearBefore?: Record<string, Timestamp>;
 }
 
 export interface ChatAttachment {
@@ -77,6 +78,7 @@ export async function getOrCreateConversation(
       unread: { [me.id]: 0, [other.id]: 0 },
       archivedFor: {},
       hiddenFor: {},
+      clearBefore: {},
     });
   } else {
     await updateDoc(ref, {
@@ -123,17 +125,35 @@ export function visibleConversations(
 
 export function subscribeMessages(
   conversationId: string,
-  cb: (rows: Message[]) => void
+  cb: (rows: Message[]) => void,
+  pageSize = 50,
 ): () => void {
   const q = query(
     collection(firebaseDb, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION),
     orderBy('createdAt', 'asc'),
-    limit(200),
+    limitToLast(pageSize),
   );
   return onSnapshot(q, (snap) => {
     const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Message[];
     cb(rows);
   }, () => cb([]));
+}
+
+export async function fetchOlderMessages(
+  conversationId: string,
+  before: Timestamp,
+  pageSize = 50,
+): Promise<Message[]> {
+  const q = query(
+    collection(firebaseDb, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_COLLECTION),
+    orderBy('createdAt', 'desc'),
+    startAfter(before),
+    limit(pageSize),
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as any) }) as Message)
+    .reverse();
 }
 
 export async function sendMessage(
@@ -264,6 +284,7 @@ export async function deleteConversationForUser(conversationId: string, myId: st
   await updateDoc(doc(firebaseDb, CONVERSATIONS_COLLECTION, conversationId), {
     [`hiddenFor.${myId}`]: true,
     [`archivedFor.${myId}`]: false,
+    [`clearBefore.${myId}`]: serverTimestamp(),
     [`unread.${myId}`]: 0,
   });
 }

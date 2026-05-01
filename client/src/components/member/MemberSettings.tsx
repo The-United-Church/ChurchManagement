@@ -42,7 +42,14 @@ const MemberSettings: React.FC = () => {
   // ── Privacy ────────────────────────────────────────────────────────────────
   const [isProfileVisible, setIsProfileVisible] = useState<'public' | 'private'>('public');
   const [showEmail, setShowEmail] = useState(true);
+  const [showPhoneNumber, setShowPhoneNumber] = useState(false);
+  const [showFamilyMembers, setShowFamilyMembers] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
+  const [showBirthYear, setShowBirthYear] = useState(false);
+  const [showMaritalStatus, setShowMaritalStatus] = useState(false);
+  const [showSocialLinks, setShowSocialLinks] = useState(false);
+  const [showWork, setShowWork] = useState(false);
+  const [showMembership, setShowMembership] = useState(false);
   const [showActivityStatus, setShowActivityStatus] = useState(false);
   const [allowDirectMessage, setAllowDirectMessage] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(false);
@@ -62,7 +69,14 @@ const MemberSettings: React.FC = () => {
       const p = s.privacy;
       if (p.isProfileVisible) setIsProfileVisible(p.isProfileVisible);
       if (typeof p.showEmail === 'boolean') setShowEmail(p.showEmail);
+      if (typeof p.showPhoneNumber === 'boolean') setShowPhoneNumber(p.showPhoneNumber);
+      if (typeof p.showFamilyMembers === 'boolean') setShowFamilyMembers(p.showFamilyMembers);
       if (typeof p.showLocation === 'boolean') setShowLocation(p.showLocation);
+      if (typeof p.showBirthYear === 'boolean') setShowBirthYear(p.showBirthYear);
+      if (typeof p.showMaritalStatus === 'boolean') setShowMaritalStatus(p.showMaritalStatus);
+      if (typeof p.showSocialLinks === 'boolean') setShowSocialLinks(p.showSocialLinks);
+      if (typeof p.showWork === 'boolean') setShowWork(p.showWork);
+      if (typeof p.showMembership === 'boolean') setShowMembership(p.showMembership);
       if (typeof p.showActivityStatus === 'boolean') setShowActivityStatus(p.showActivityStatus);
       if (typeof p.allowDirectMessage === 'boolean') setAllowDirectMessage(p.allowDirectMessage);
       if (typeof p.showOnlineStatus === 'boolean') setShowOnlineStatus(p.showOnlineStatus);
@@ -117,7 +131,14 @@ const MemberSettings: React.FC = () => {
         privacy: {
           isProfileVisible,
           showEmail,
+          showPhoneNumber,
+          showFamilyMembers,
           showLocation,
+          showBirthYear,
+          showMaritalStatus,
+          showSocialLinks,
+          showWork,
+          showMembership,
           showActivityStatus,
           allowDirectMessage,
           showOnlineStatus,
@@ -135,7 +156,14 @@ const MemberSettings: React.FC = () => {
   const handleResetPrivacy = () => {
     setIsProfileVisible('public');
     setShowEmail(true);
+    setShowPhoneNumber(false);
+    setShowFamilyMembers(false);
     setShowLocation(false);
+    setShowBirthYear(false);
+    setShowMaritalStatus(false);
+    setShowSocialLinks(false);
+    setShowWork(false);
+    setShowMembership(false);
     setShowActivityStatus(false);
     setAllowDirectMessage(true);
     setShowOnlineStatus(false);
@@ -338,10 +366,52 @@ const MemberSettings: React.FC = () => {
                       onChange: setShowEmail,
                     },
                     {
+                      label: 'Phone Number',
+                      color: 'bg-emerald-500',
+                      value: showPhoneNumber,
+                      onChange: setShowPhoneNumber,
+                    },
+                    {
+                      label: 'Family Members',
+                      color: 'bg-cyan-500',
+                      value: showFamilyMembers,
+                      onChange: setShowFamilyMembers,
+                    },
+                    {
                       label: 'Location / Address',
                       color: 'bg-purple-500',
                       value: showLocation,
                       onChange: setShowLocation,
+                    },
+                    {
+                      label: 'Birth Year',
+                      color: 'bg-indigo-500',
+                      value: showBirthYear,
+                      onChange: setShowBirthYear,
+                    },
+                    {
+                      label: 'Marital Status',
+                      color: 'bg-pink-500',
+                      value: showMaritalStatus,
+                      onChange: setShowMaritalStatus,
+                    },
+                    {
+                      label: 'Social Links',
+                      color: 'bg-sky-500',
+                      value: showSocialLinks,
+                      onChange: setShowSocialLinks,
+                    },
+                    {
+                      label: 'Work Info',
+                      color: 'bg-amber-500',
+                      value: showWork,
+                      onChange: setShowWork,
+                    },
+                    {
+                      label: 'Membership Info',
+                      color: 'bg-teal-500',
+                      value: showMembership,
+                      onChange: setShowMembership,
                     },
                     {
                       label: 'Activity Status',

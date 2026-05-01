@@ -17,7 +17,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Loader2, Plus, Trash2, UserRound } from 'lucide-react';
+import {
+  Edit,
+  Facebook,
+  Globe,
+  Instagram,
+  Linkedin,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Trash2,
+  Twitter,
+  UserRound,
+} from 'lucide-react';
 import type { MemberDTO } from '@/hooks/useMemberCrud';
 import type { FamilyMemberDTO, UpdateMemberPayload } from '@/lib/api';
 import { FamilyMemberDialog } from '@/components/member/profile/FamilyMemberDialog';
@@ -57,6 +69,11 @@ interface FormState {
   job_title: string;
   employer: string;
   facebook_link: string;
+  instagram_link: string;
+  linkedin_link: string;
+  twitter_link: string;
+  whatsapp_link: string;
+  website_link: string;
   is_display_email: boolean;
   is_accept_text: boolean;
   grade: string;
@@ -87,6 +104,11 @@ const EMPTY_FORM: FormState = {
   job_title: '',
   employer: '',
   facebook_link: '',
+  instagram_link: '',
+  linkedin_link: '',
+  twitter_link: '',
+  whatsapp_link: '',
+  website_link: '',
   is_display_email: false,
   is_accept_text: false,
   grade: '',
@@ -99,6 +121,15 @@ const EMPTY_FORM: FormState = {
 
 /** Trim & normalize an empty string to undefined for diffing purposes. */
 const norm = (v: string | null | undefined): string => (typeof v === 'string' ? v : '') ?? '';
+
+const SOCIAL_FIELDS = [
+  { key: 'facebook_link', label: 'Facebook', placeholder: 'https://facebook.com/profile', icon: Facebook },
+  { key: 'instagram_link', label: 'Instagram', placeholder: 'https://instagram.com/handle', icon: Instagram },
+  { key: 'linkedin_link', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/profile', icon: Linkedin },
+  { key: 'twitter_link', label: 'X / Twitter', placeholder: 'https://x.com/handle', icon: Twitter },
+  { key: 'whatsapp_link', label: 'WhatsApp', placeholder: 'https://wa.me/1234567890', icon: MessageCircle },
+  { key: 'website_link', label: 'Website', placeholder: 'https://website.com', icon: Globe },
+] as const;
 
 /** Build a FormState from a member DTO so the dialog can be edited in place. */
 function memberToForm(member: MemberDTO): FormState {
@@ -123,6 +154,11 @@ function memberToForm(member: MemberDTO): FormState {
     job_title: norm(member.job_title),
     employer: norm(member.employer),
     facebook_link: norm(member.facebook_link),
+    instagram_link: norm(member.instagram_link),
+    linkedin_link: norm(member.linkedin_link),
+    twitter_link: norm(member.twitter_link),
+    whatsapp_link: norm(member.whatsapp_link),
+    website_link: norm(member.website_link),
     is_display_email: member.is_display_email ?? false,
     is_accept_text: member.is_accept_text ?? false,
     grade: norm(member.grade),
@@ -160,6 +196,11 @@ function buildDiff(member: MemberDTO, form: FormState): UpdateMemberPayload {
     'job_title',
     'employer',
     'facebook_link',
+    'instagram_link',
+    'linkedin_link',
+    'twitter_link',
+    'whatsapp_link',
+    'website_link',
     'baptism_location',
     'grade',
   ] as const;
@@ -508,13 +549,22 @@ const EditMemberDialog: React.FC<EditMemberDialogProps> = ({
                 onChange={(e) => update('username', e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-facebook">Facebook link</Label>
-              <Input
-                id="edit-facebook"
-                value={form.facebook_link}
-                onChange={(e) => update('facebook_link', e.target.value)}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {SOCIAL_FIELDS.map(({ key, label, placeholder, icon: Icon }) => (
+                <div key={key} className="space-y-1.5">
+                  <Label htmlFor={`edit-${key}`}>{label}</Label>
+                  <div className="relative">
+                    <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                      id={`edit-${key}`}
+                      value={form[key]}
+                      placeholder={placeholder}
+                      className="pl-9"
+                      onChange={(e) => update(key, e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

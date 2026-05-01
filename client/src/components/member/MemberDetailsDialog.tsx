@@ -47,7 +47,7 @@ const initials = (m: MemberDTO) => {
 };
 
 const Field: React.FC<{ label: string; value?: string; icon?: React.ReactNode }> = ({ label, value, icon }) => (
-  <div className="rounded-lg border border-app-primary-light/70 bg-gradient-to-b from-white to-app-primary-light/20 px-3 py-2">
+  <div className="rounded-lg border border-app-primary-light/70 bg-gradient-to-b from-background to-app-primary-light/10 dark:from-muted/30 dark:to-muted/10 px-3 py-2">
     <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-app-selected-text/80">{label}</p>
     <p className="flex items-center gap-2 text-sm text-app-selected-text">
       {icon}
@@ -73,8 +73,8 @@ const MemberDetailsDialog: React.FC<MemberDetailsDialogProps> = ({ open, onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80dvh] overflow-hidden bg-white p-0 flex flex-col">
-        <div className="shrink-0 border-b border-app-primary-light bg-gradient-to-r from-app-primary-light/70 via-white to-app-primary-light/30 px-6 py-5">
+      <DialogContent className="max-w-3xl max-h-[80dvh] overflow-hidden p-0 flex flex-col">
+        <div className="shrink-0 border-b border-app-primary-light bg-gradient-to-r from-app-primary-light/50 via-background to-app-primary-light/20 dark:from-app-primary-light/10 dark:via-background dark:to-app-primary-light/5 px-6 py-5">
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">

@@ -32,6 +32,11 @@ export interface ProfileForm {
   job_title: string;
   employer: string;
   facebook_link: string;
+  instagram_link: string;
+  linkedin_link: string;
+  twitter_link: string;
+  whatsapp_link: string;
+  website_link: string;
   is_display_email: boolean;
   is_accept_text: boolean;
   grade: string;

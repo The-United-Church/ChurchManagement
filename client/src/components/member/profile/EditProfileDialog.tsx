@@ -10,7 +10,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import {
+  Facebook,
+  Globe,
+  Instagram,
+  Linkedin,
+  Loader2,
+  Calendar as CalendarIcon,
+  MessageCircle,
+  Twitter,
+} from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
@@ -41,6 +50,11 @@ const INITIAL_FORM: ProfileForm = {
   job_title: '',
   employer: '',
   facebook_link: '',
+  instagram_link: '',
+  linkedin_link: '',
+  twitter_link: '',
+  whatsapp_link: '',
+  website_link: '',
   is_display_email: true,
   is_accept_text: false,
   grade: '',
@@ -56,6 +70,15 @@ interface EditProfileDialogProps {
   onSave: (form: ProfileForm) => void;
   isPending: boolean;
 }
+
+const SOCIAL_FIELDS = [
+  { key: 'facebook_link', label: 'Facebook', placeholder: 'https://facebook.com/your-profile', icon: Facebook },
+  { key: 'instagram_link', label: 'Instagram', placeholder: 'https://instagram.com/your-handle', icon: Instagram },
+  { key: 'linkedin_link', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/your-profile', icon: Linkedin },
+  { key: 'twitter_link', label: 'X / Twitter', placeholder: 'https://x.com/your-handle', icon: Twitter },
+  { key: 'whatsapp_link', label: 'WhatsApp', placeholder: 'https://wa.me/1234567890', icon: MessageCircle },
+  { key: 'website_link', label: 'Website', placeholder: 'https://your-website.com', icon: Globe },
+] as const;
 
 export function EditProfileDialog({
   open,
@@ -111,6 +134,11 @@ export function EditProfileDialog({
       job_title: profile.job_title || '',
       employer: profile.employer || '',
       facebook_link: profile.facebook_link || '',
+      instagram_link: profile.instagram_link || '',
+      linkedin_link: profile.linkedin_link || '',
+      twitter_link: profile.twitter_link || '',
+      whatsapp_link: profile.whatsapp_link || '',
+      website_link: profile.website_link || '',
       is_display_email: profile.is_display_email ?? true,
       is_accept_text: profile.is_accept_text ?? false,
       grade: profile.grade || '',
@@ -270,8 +298,22 @@ export function EditProfileDialog({
                     <ProfileToggle id="profile-accept-text" label="Accept text messages" checked={form.is_accept_text} onCheckedChange={(checked) => setForm((f) => ({ ...f, is_accept_text: checked }))} />
                     <ProfileToggle id="profile-display-email" label="Display email in directory" checked={form.is_display_email} onCheckedChange={(checked) => setForm((f) => ({ ...f, is_display_email: checked }))} />
                   </div>
-                  <div className="mt-6">
-                    <FormInput label="Facebook Link" placeholder="Optional" value={form.facebook_link} onChange={(v) => setForm((f) => ({ ...f, facebook_link: v }))} />
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Social Links</h4>
+                    {SOCIAL_FIELDS.map(({ key, label, placeholder, icon: Icon }) => (
+                      <div key={key} className="space-y-2">
+                        <Label className="text-xs font-bold text-gray-700">{label}</Label>
+                        <div className="relative">
+                          <Icon className="absolute left-0 top-2.5 h-4 w-4 text-gray-400" />
+                          <Input
+                            value={form[key]}
+                            placeholder={placeholder}
+                            className="border-0 border-b border-gray-300 rounded-none bg-transparent pl-7 pr-0 focus-visible:ring-0 focus-visible:border-app-primary"
+                            onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>

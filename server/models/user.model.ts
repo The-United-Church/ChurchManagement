@@ -75,6 +75,21 @@ export class User {
   @Column({ nullable: true })
   facebook_link: string;
 
+  @Column({ nullable: true })
+  instagram_link: string;
+
+  @Column({ nullable: true })
+  linkedin_link: string;
+
+  @Column({ nullable: true })
+  twitter_link: string;
+
+  @Column({ nullable: true })
+  whatsapp_link: string;
+
+  @Column({ nullable: true })
+  website_link: string;
+
   @Column({ type: "boolean", default: true })
   is_display_email: boolean;
 

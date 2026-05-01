@@ -21,7 +21,14 @@ export interface NotificationSettings {
 export interface PrivacySettings {
   isProfileVisible: 'public' | 'private';
   showEmail: boolean;
+  showPhoneNumber: boolean;
+  showFamilyMembers: boolean;
   showLocation: boolean;
+  showBirthYear: boolean;
+  showMaritalStatus: boolean;
+  showSocialLinks: boolean;
+  showWork: boolean;
+  showMembership: boolean;
   showActivityStatus: boolean;
   allowDirectMessage: boolean;
   showOnlineStatus: boolean;

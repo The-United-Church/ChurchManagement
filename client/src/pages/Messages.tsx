@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Send, Search, MessageCircle, ArrowLeft, ChevronLeft, Paperclip,
   CalendarClock, X, Edit3, Trash2, Archive, ArchiveRestore, Image as ImageIcon,
-  FileText,
+  FileText, User, Phone, Mail, MapPin, Calendar, Heart, Briefcase, Building2,
+  BadgeCheck, Link as LinkIcon, Users, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useProfile } from '@/hooks/useAuthQuery';
@@ -23,6 +24,7 @@ import {
   sendScheduledMessage,
   archiveConversationForUser,
   deleteConversationForUser,
+  fetchOlderMessages,
   uploadChatAttachment,
   visibleConversations,
 } from '@/lib/chat';
@@ -30,7 +32,82 @@ import type { Conversation, Message, ChatParticipant } from '@/lib/chat';
 import { fetchUsersDirectoryApi } from '@/lib/api';
 import type { DirectoryUserDTO } from '@/lib/api';
 import { playMessageBeep, registerMessageSoundUnlock } from '@/lib/messageSound';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
+
+type ConfirmState = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => Promise<void> | void;
+} | null;
+
+type ChatProfileState = {
+  participant: ChatParticipant;
+  profile: DirectoryUserDTO | null;
+  loading: boolean;
+} | null;
+
+const nameForDirectoryUser = (person?: DirectoryUserDTO | null, fallback?: ChatParticipant) => {
+  const fullName = person?.full_name || [person?.first_name, person?.last_name].filter(Boolean).join(' ');
+  return fullName || fallback?.full_name || person?.email || fallback?.email || 'Member';
+};
+
+const formatProfileValue = (value?: string | number | boolean | null) => {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return String(value).replace(/_/g, ' ');
+};
+
+const hasProfileValue = (...values: Array<string | number | boolean | null | undefined>) => (
+  values.some((value) => Boolean(formatProfileValue(value)))
+);
+
+const formatBirthday = (dob?: string | null) => {
+  if (!dob) return '';
+  const yearMasked = dob.startsWith('0000-');
+  const dateStr = yearMasked ? '2000' + dob.slice(4) : dob;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  return yearMasked
+    ? date.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+    : date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
+const readableDate = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+};
+
+const externalUrl = (value: string) => (/^https?:\/\//i.test(value) ? value : `https://${value}`);
+
+const ProfileField: React.FC<{
+  icon: React.ElementType;
+  label: string;
+  value?: string | number | boolean | null;
+  href?: string | null;
+}> = ({ icon: Icon, label, value, href }) => {
+  const display = formatProfileValue(value);
+  if (!display) return null;
+  return (
+    <div className="flex items-start gap-3 rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-medium uppercase text-gray-500">{label}</p>
+        {href ? (
+          <a href={externalUrl(href)} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1 truncate text-sm font-medium text-blue-600 hover:text-blue-700">
+            <span className="truncate">{display}</span>
+            <ExternalLink className="h-3 w-3 shrink-0" />
+          </a>
+        ) : (
+          <p className="break-words text-sm font-medium capitalize text-gray-900">{display}</p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const MessagesPage: React.FC = () => {
   const { user } = useAuth();
@@ -59,9 +136,18 @@ const MessagesPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scheduledAt, setScheduledAt] = useState('');
   const [sending, setSending] = useState(false);
+  const [olderMessages, setOlderMessages] = useState<Message[]>([]);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [profileState, setProfileState] = useState<ChatProfileState>(null);
   // Holds the other participant while waiting for Firestore subscription to return the new conversation
   const [pendingOther, setPendingOther] = useState<ChatParticipant | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const skipNextAutoScrollRef = useRef(false);
 
   // ── Sound-notification tracking refs ────────────────────────────────────────
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
@@ -89,6 +175,11 @@ const MessagesPage: React.FC = () => {
     if (me?.id) markConversationRead(activeId, me.id).catch(() => {});
     return unsub;
   }, [activeId, me?.id]);
+
+  useEffect(() => {
+    setOlderMessages([]);
+    setHasMoreMessages(true);
+  }, [activeId]);
 
   // Load directory for "Start new" picker
   useEffect(() => {
@@ -192,18 +283,130 @@ const MessagesPage: React.FC = () => {
 
   const visibleMessages = useMemo(() => {
     if (!me?.id) return [];
-    return messages.filter((m) => {
+    const clearBefore = active?.clearBefore?.[me.id]?.toMillis?.() ?? 0;
+    const merged = [...olderMessages, ...messages];
+    const unique = Array.from(new Map(merged.map((m) => [m.id, m])).values());
+    unique.sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0));
+    return unique.filter((m) => {
       if (m.deletedFor?.[me.id]) return false;
+      const messageTime = m.sentAt?.toMillis?.() ?? m.createdAt?.toMillis?.() ?? 0;
+      if (messageTime <= clearBefore) return false;
       if (m.status !== 'scheduled') return true;
       return m.senderId === me.id;
     });
-  }, [messages, me?.id]);
+  }, [olderMessages, messages, active?.clearBefore, me?.id]);
+
+  const loadOlderMessages = async () => {
+    if (!activeId || loadingOlder || !hasMoreMessages) return;
+    const first = visibleMessages.find((m) => m.createdAt?.toDate);
+    if (!first?.createdAt) return;
+    const scroller = messagesScrollRef.current;
+    const previousHeight = scroller?.scrollHeight ?? 0;
+    setLoadingOlder(true);
+    try {
+      const older = await fetchOlderMessages(activeId, first.createdAt, 50);
+      skipNextAutoScrollRef.current = true;
+      setOlderMessages((current) => {
+        const merged = [...older, ...current];
+        return Array.from(new Map(merged.map((m) => [m.id, m])).values());
+      });
+      setHasMoreMessages(older.length === 50);
+      requestAnimationFrame(() => {
+        if (scroller) scroller.scrollTop = scroller.scrollHeight - previousHeight;
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeId || loadingOlder) return;
+    if (skipNextAutoScrollRef.current) {
+      skipNextAutoScrollRef.current = false;
+      return;
+    }
+    requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ block: 'end' }));
+  }, [activeId, visibleMessages.length, loadingOlder]);
 
   const canEditMessage = (message: Message) => {
     if (message.senderId !== me?.id || message.deletedAt) return false;
     if (message.status === 'scheduled') return true;
     const sentAt = message.sentAt?.toDate?.() || message.createdAt?.toDate?.();
     return Boolean(sentAt && Date.now() - sentAt.getTime() <= 5 * 60 * 1000);
+  };
+
+  const canDeleteMessageForEveryone = (message: Message) => {
+    if (message.senderId !== me?.id || message.deletedAt) return false;
+    if (message.status === 'scheduled') return true;
+    const sentAt = message.sentAt?.toDate?.() || message.createdAt?.toDate?.();
+    return Boolean(sentAt && Date.now() - sentAt.getTime() <= 5 * 60 * 1000);
+  };
+
+  const confirmDelete = (state: ConfirmState) => setConfirmState(state);
+
+  const runConfirm = async () => {
+    if (!confirmState) return;
+    setConfirmLoading(true);
+    try {
+      await confirmState.onConfirm();
+      setConfirmState(null);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const requestDeleteMessageForMe = (message: Message) => {
+    if (!activeId || !me?.id) return;
+    confirmDelete({
+      title: 'Delete message for you?',
+      description: 'This removes the message from your chat only. Other participants may still see it.',
+      confirmLabel: 'Delete for me',
+      onConfirm: () => deleteMessageForMe(activeId, message.id, me.id),
+    });
+  };
+
+  const requestDeleteMessageForEveryone = (message: Message) => {
+    if (!activeId) return;
+    if (!canDeleteMessageForEveryone(message)) return;
+    confirmDelete({
+      title: 'Delete message for everyone?',
+      description: 'This will remove the message content and attachment for everyone in this conversation.',
+      confirmLabel: 'Delete for everyone',
+      onConfirm: () => deleteMessageForEveryone(activeId, message.id),
+    });
+  };
+
+  const requestDeleteConversationForMe = (conversationId: string) => {
+    if (!me?.id) return;
+    confirmDelete({
+      title: 'Delete conversation for you?',
+      description: 'This clears the chat from your inbox and hides all current messages for you. New messages will start a fresh visible thread.',
+      confirmLabel: 'Delete for me',
+      onConfirm: async () => {
+        await deleteConversationForUser(conversationId, me.id);
+        if (conversationId === activeId) setParams({});
+      },
+    });
+  };
+
+  const openParticipantProfile = async (participant: ChatParticipant) => {
+    setProfileState({ participant, profile: null, loading: true });
+    try {
+      const query = participant.email || participant.full_name;
+      const response = await fetchUsersDirectoryApi(query);
+      const found = response.data.find((person) => person.id === participant.id) || null;
+      setProfileState((current) => (
+        current?.participant.id === participant.id
+          ? { participant, profile: found, loading: false }
+          : current
+      ));
+    } catch {
+      setProfileState((current) => (
+        current?.participant.id === participant.id
+          ? { participant, profile: null, loading: false }
+          : current
+      ));
+    }
   };
 
   const fileSizeLabel = (size: number) => {
@@ -268,6 +471,7 @@ const MessagesPage: React.FC = () => {
   }
 
   return (
+    <>
     <div className="flex h-[calc(100dvh-3.5rem)] bg-white">
       {/* Sidebar */}
       <aside className={`${activeId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r border-gray-200`}>
@@ -371,14 +575,12 @@ const MessagesPage: React.FC = () => {
                   <button
                     type="button"
                     className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                    title="Delete conversation"
-                    onClick={() => {
-                      deleteConversationForUser(c.id, me.id).catch(console.error);
-                      if (c.id === activeId) setParams({});
-                    }}
+                    title="Delete conversation for me"
+                    onClick={() => requestDeleteConversationForMe(c.id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
+
                 </div>
               );
             })}
@@ -397,7 +599,7 @@ const MessagesPage: React.FC = () => {
                       const participant: ChatParticipant = {
                         id: p.id,
                         full_name: p.full_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.email,
-                        email: p.email,
+                        email: p.email || '',
                         profile_img: p.profile_img,
                       };
                       setPendingOther(participant);
@@ -451,16 +653,18 @@ const MessagesPage: React.FC = () => {
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <Avatar className="h-9 w-9">
-                {other.profile_img && <AvatarImage src={other.profile_img} />}
-                <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                  {other.full_name.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
+              <button type="button" className="rounded-full" onClick={() => openParticipantProfile(other)} aria-label={`View ${other.full_name} profile`}>
+                <Avatar className="h-9 w-9">
+                  {other.profile_img && <AvatarImage src={other.profile_img} />}
+                  <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
+                    {other.full_name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+              <button type="button" className="min-w-0 text-left" onClick={() => openParticipantProfile(other)}>
                 <p className="text-sm font-semibold truncate">{other.full_name}</p>
                 <p className="text-[11px] text-gray-500 truncate">{other.email}</p>
-              </div>
+              </button>
               <div className="ml-auto flex items-center gap-1">
                 <button
                   type="button"
@@ -474,16 +678,28 @@ const MessagesPage: React.FC = () => {
                   type="button"
                   className="rounded p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
                   title="Delete conversation for me"
-                  onClick={() => {
-                    deleteConversationForUser(active.id, me.id).then(() => setParams({})).catch(console.error);
-                  }}
+                  onClick={() => requestDeleteConversationForMe(active.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50">
+            <div
+              ref={messagesScrollRef}
+              className="flex-1 overflow-y-auto px-4 py-4 bg-gray-50"
+              onScroll={(e) => {
+                if (e.currentTarget.scrollTop < 80) loadOlderMessages().catch(console.error);
+              }}
+            >
+              {hasMoreMessages && visibleMessages.length > 0 && (
+                <div className="mb-3 text-center">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => loadOlderMessages().catch(console.error)} disabled={loadingOlder}>
+                    {loadingOlder ? 'Loading…' : 'Load older messages'}
+                  </Button>
+                </div>
+              )}
               {visibleMessages.map((m) => {
                 const mine = m.senderId === me.id;
                 const deleted = Boolean(m.deletedAt);
@@ -546,13 +762,20 @@ const MessagesPage: React.FC = () => {
                           <button
                             type="button"
                             className={`rounded px-2 py-1 text-[10px] ${mine ? 'bg-blue-500 text-white hover:bg-blue-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                            onClick={() => {
-                              if (mine) deleteMessageForEveryone(activeId, m.id).catch(console.error);
-                              else deleteMessageForMe(activeId, m.id, me.id).catch(console.error);
-                            }}
+                            onClick={() => requestDeleteMessageForMe(m)}
                           >
                             <Trash2 className="mr-1 inline h-3 w-3" />
-                            Delete
+                            Delete for me
+                          </button>
+                        )}
+                        {!deleted && mine && canDeleteMessageForEveryone(m) && (
+                          <button
+                            type="button"
+                            className="rounded bg-red-500 px-2 py-1 text-[10px] text-white hover:bg-red-600"
+                            onClick={() => requestDeleteMessageForEveryone(m)}
+                          >
+                            <Trash2 className="mr-1 inline h-3 w-3" />
+                            Delete for everyone
                           </button>
                         )}
                       </div>
@@ -560,6 +783,7 @@ const MessagesPage: React.FC = () => {
                   </div>
                 );
               })}
+              <div ref={messagesEndRef} />
             </div>
 
             <div className="border-t border-gray-200 p-3 bg-white">
@@ -640,6 +864,173 @@ const MessagesPage: React.FC = () => {
         )}
       </section>
     </div>
+    <ConfirmDialog
+      open={Boolean(confirmState)}
+      onOpenChange={(open) => !open && setConfirmState(null)}
+      title={confirmState?.title || ''}
+      description={confirmState?.description || ''}
+      confirmLabel={confirmState?.confirmLabel || 'Delete'}
+      loading={confirmLoading}
+      onConfirm={runConfirm}
+    />
+    <Dialog open={Boolean(profileState)} onOpenChange={(open) => !open && setProfileState(null)}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto p-0">
+        <DialogHeader className="border-b border-gray-100 px-5 py-4 pr-12">
+          <DialogTitle>Member Profile</DialogTitle>
+        </DialogHeader>
+        <div className="px-5 pb-5">
+          {profileState && (
+            <>
+              <div className="flex items-center gap-4 py-4">
+                <Avatar className="h-16 w-16">
+                  {(profileState.profile?.profile_img || profileState.participant.profile_img) && (
+                    <AvatarImage src={profileState.profile?.profile_img || profileState.participant.profile_img} />
+                  )}
+                  <AvatarFallback className="bg-blue-100 text-blue-700">
+                    {nameForDirectoryUser(profileState.profile, profileState.participant).slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-lg font-semibold text-gray-900">{nameForDirectoryUser(profileState.profile, profileState.participant)}</h3>
+                  <p className="text-sm capitalize text-gray-500">{profileState.profile?.role || 'Member'}</p>
+                </div>
+                {profileState.loading && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
+              </div>
+
+              {!profileState.loading && !profileState.profile && (
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-600">
+                  This member has not shared profile details in the directory.
+                </div>
+              )}
+
+              {profileState.profile && (
+                <div className="space-y-5">
+                  <section>
+                    <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Contact</h4>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <ProfileField icon={Mail} label="Email" value={profileState.profile.email} />
+                      <ProfileField icon={Phone} label="Phone" value={profileState.profile.phone_number} />
+                      <ProfileField icon={MessageCircle} label="WhatsApp" value={profileState.profile.phone_is_whatsapp ? 'Yes' : ''} />
+                      <ProfileField icon={BadgeCheck} label="Status" value={profileState.profile.is_active === false ? 'Inactive' : 'Active'} />
+                    </div>
+                  </section>
+
+                  {hasProfileValue(
+                    profileState.profile.username,
+                    profileState.profile.gender,
+                    profileState.profile.dob,
+                    profileState.profile.marital_status,
+                    profileState.profile.date_married,
+                  ) && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Personal</h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <ProfileField icon={User} label="Username" value={profileState.profile.username} />
+                        <ProfileField icon={User} label="Gender" value={profileState.profile.gender} />
+                        <ProfileField icon={Calendar} label="Birthday" value={formatBirthday(profileState.profile.dob)} />
+                        <ProfileField icon={Heart} label="Marital Status" value={profileState.profile.marital_status} />
+                        <ProfileField icon={Calendar} label="Date Married" value={readableDate(profileState.profile.date_married)} />
+                        <ProfileField icon={Phone} label="Accepts Texts" value={profileState.profile.is_accept_text === true ? 'Yes' : ''} />
+                      </div>
+                    </section>
+                  )}
+
+                  {hasProfileValue(
+                    profileState.profile.job_title,
+                    profileState.profile.employer,
+                  ) && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Work</h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <ProfileField icon={Briefcase} label="Job Title" value={profileState.profile.job_title} />
+                        <ProfileField icon={Building2} label="Employer" value={profileState.profile.employer} />
+                      </div>
+                    </section>
+                  )}
+
+                  {hasProfileValue(
+                    profileState.profile.member_status,
+                    profileState.profile.grade,
+                    profileState.profile.baptism_date,
+                    profileState.profile.baptism_location,
+                  ) && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Membership</h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <ProfileField icon={BadgeCheck} label="Member Status" value={profileState.profile.member_status} />
+                        <ProfileField icon={User} label="Grade" value={profileState.profile.grade} />
+                        <ProfileField icon={Calendar} label="Baptism Date" value={readableDate(profileState.profile.baptism_date)} />
+                        <ProfileField icon={MapPin} label="Baptism Location" value={profileState.profile.baptism_location} />
+                      </div>
+                    </section>
+                  )}
+
+                  {hasProfileValue(
+                    profileState.profile.address_line,
+                    profileState.profile.city,
+                    profileState.profile.state,
+                    profileState.profile.country,
+                    profileState.profile.postal_code,
+                  ) && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Location</h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <ProfileField icon={MapPin} label="Address" value={profileState.profile.address_line} />
+                        <ProfileField icon={MapPin} label="City" value={profileState.profile.city} />
+                        <ProfileField icon={MapPin} label="State" value={profileState.profile.state} />
+                        <ProfileField icon={MapPin} label="Country" value={profileState.profile.country} />
+                        <ProfileField icon={MapPin} label="Postal Code" value={profileState.profile.postal_code} />
+                      </div>
+                    </section>
+                  )}
+
+                  {hasProfileValue(
+                    profileState.profile.facebook_link,
+                    profileState.profile.instagram_link,
+                    profileState.profile.linkedin_link,
+                    profileState.profile.twitter_link,
+                    profileState.profile.whatsapp_link,
+                    profileState.profile.website_link,
+                  ) && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Social</h4>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <ProfileField icon={LinkIcon} label="Facebook" value={profileState.profile.facebook_link} href={profileState.profile.facebook_link} />
+                        <ProfileField icon={LinkIcon} label="Instagram" value={profileState.profile.instagram_link} href={profileState.profile.instagram_link} />
+                        <ProfileField icon={LinkIcon} label="LinkedIn" value={profileState.profile.linkedin_link} href={profileState.profile.linkedin_link} />
+                        <ProfileField icon={LinkIcon} label="X / Twitter" value={profileState.profile.twitter_link} href={profileState.profile.twitter_link} />
+                        <ProfileField icon={LinkIcon} label="WhatsApp" value={profileState.profile.whatsapp_link} href={profileState.profile.whatsapp_link} />
+                        <ProfileField icon={LinkIcon} label="Website" value={profileState.profile.website_link} href={profileState.profile.website_link} />
+                      </div>
+                    </section>
+                  )}
+
+                  {profileState.profile.family_members && profileState.profile.family_members.length > 0 && (
+                    <section>
+                      <h4 className="mb-2 text-xs font-semibold uppercase text-gray-500">Family Members</h4>
+                      <div className="grid gap-2">
+                        {profileState.profile.family_members.map((familyMember) => (
+                          <div key={familyMember.id} className="flex items-center gap-3 rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
+                            <Users className="h-4 w-4 shrink-0 text-gray-500" />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-gray-900">
+                                {[familyMember.first_name, familyMember.last_name].filter(Boolean).join(' ')}
+                              </p>
+                              <p className="text-xs capitalize text-gray-500">{familyMember.relationship}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

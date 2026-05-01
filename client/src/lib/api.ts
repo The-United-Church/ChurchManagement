@@ -128,6 +128,11 @@ export interface MemberDTO {
   job_title?: string | null;
   employer?: string | null;
   facebook_link?: string | null;
+  instagram_link?: string | null;
+  linkedin_link?: string | null;
+  twitter_link?: string | null;
+  whatsapp_link?: string | null;
+  website_link?: string | null;
   is_display_email?: boolean;
   is_accept_text?: boolean;
   grade?: string | null;
@@ -189,6 +194,11 @@ export type UpdateMemberPayload = Partial<{
   job_title: string | null;
   employer: string | null;
   facebook_link: string | null;
+  instagram_link: string | null;
+  linkedin_link: string | null;
+  twitter_link: string | null;
+  whatsapp_link: string | null;
+  website_link: string | null;
   is_display_email: boolean;
   is_accept_text: boolean;
   grade: string | null;
@@ -456,10 +466,17 @@ export const changePasswordApi = (data: { oldPassword: string; newPassword: stri
 export interface UserPrivacySettings {
   isProfileVisible?: 'public' | 'private';
   showEmail?: boolean;
+  showPhoneNumber?: boolean;
+  showFamilyMembers?: boolean;
   showLocation?: boolean;
+  showBirthYear?: boolean;
+  showMaritalStatus?: boolean;
+  showSocialLinks?: boolean;
   showActivityStatus?: boolean;
   allowDirectMessage?: boolean;
   showOnlineStatus?: boolean;
+  showWork?: boolean;
+  showMembership?: boolean;
 }
 
 export interface UserSettings {
@@ -504,17 +521,42 @@ export const updateSettingsApi = (settings: UserSettings) =>
 // ─── Directory (global user search for Add-from-Users picker) ─────────────────
 export interface DirectoryUserDTO {
   id: string;
-  email: string;
+  email?: string;
   full_name?: string;
   first_name?: string;
   last_name?: string;
+  middle_name?: string;
+  nick_name?: string;
+  username?: string;
   role: string;
   is_active?: boolean;
   profile_img?: string;
+  address_line?: string | null;
   state?: string;
   city?: string;
   country?: string;
+  postal_code?: string | null;
   phone_number?: string;
+  phone_is_whatsapp?: boolean;
+  dob?: string | null;
+  gender?: string | null;
+  marital_status?: string | null;
+  date_married?: string | null;
+  job_title?: string | null;
+  employer?: string | null;
+  facebook_link?: string | null;
+  instagram_link?: string | null;
+  linkedin_link?: string | null;
+  twitter_link?: string | null;
+  whatsapp_link?: string | null;
+  website_link?: string | null;
+  is_display_email?: boolean;
+  is_accept_text?: boolean;
+  grade?: string | null;
+  baptism_date?: string | null;
+  baptism_location?: string | null;
+  member_status?: string | null;
+  family_members?: FamilyMemberDTO[];
   last_access?: string | null;
   is_online?: boolean;
 }

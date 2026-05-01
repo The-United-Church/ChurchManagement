@@ -46,7 +46,9 @@ const MemberDirectory: React.FC = () => {
     staleTime: 30 * 1000,
   });
 
-  const allMembers = data?.pages.flatMap((p) => p.data) ?? [];
+  const allMembers = (data?.pages.flatMap((p) => p.data) ?? []).sort(
+    (a, b) => (b.is_online === true ? 1 : 0) - (a.is_online === true ? 1 : 0),
+  );
   const total = data?.pages[0]?.total ?? 0;
 
   // Trigger next page load when sentinel div enters the viewport
@@ -88,14 +90,14 @@ const MemberDirectory: React.FC = () => {
     const normalized = role.toLowerCase();
     switch (normalized) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300';
       case 'super_admin':
       case 'owner':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300';
       case 'coordinator':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300';
     }
   };
 
@@ -117,7 +119,7 @@ const MemberDirectory: React.FC = () => {
       {!currentBranch && (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">Select a branch to view members.</p>
+            <p className="text-muted-foreground">Select a branch to view members.</p>
           </CardContent>
         </Card>
       )}
@@ -126,7 +128,7 @@ const MemberDirectory: React.FC = () => {
       <Card className={!currentBranch ? 'opacity-60 pointer-events-none' : ''}>
         <CardContent className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search members by name or email..."
               value={searchTerm}
@@ -140,7 +142,7 @@ const MemberDirectory: React.FC = () => {
 
       {isLoading && currentBranch && (
         <Card>
-          <CardContent className="p-8 text-center flex items-center justify-center gap-2 text-gray-600">
+          <CardContent className="p-8 text-center flex items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading members...
           </CardContent>
@@ -166,7 +168,7 @@ const MemberDirectory: React.FC = () => {
                         <span
                           aria-label="Online"
                           title="Online"
-                          className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500 shadow-sm"
+                          className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500 shadow-sm"
                         />
                       )}
                     </div>
@@ -177,7 +179,7 @@ const MemberDirectory: React.FC = () => {
                           {displayRole}
                         </Badge>
                       </div>
-                      <p className="text-xs text-gray-600 truncate">{member.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -192,14 +194,14 @@ const MemberDirectory: React.FC = () => {
 
       {isFetchingNextPage && (
         <div className="flex justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
 
       {!isLoading && currentBranch && allMembers.length === 0 && (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No members found matching your search.</p>
+            <p className="text-muted-foreground">No members found matching your search.</p>
           </CardContent>
         </Card>
       )}

@@ -53,7 +53,6 @@ router.get(
 router.get(
   "/directory",
   authMiddleware(new UserService()) as RequestHandler,
-  adminMiddleware,
   userController.getDirectory.bind(userController)
 );
 
