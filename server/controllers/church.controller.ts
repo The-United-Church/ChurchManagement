@@ -132,7 +132,7 @@ export const deleteChurch = asyncHandler(
 
 export const createBranch = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { name, address, city, state, country, pastor_name, description, image, is_headquarters } = req.body;
+    const { name, address, city, state, country, pastor_name, description, image, map_marker, is_headquarters } = req.body;
     const denomination_id = req.params.id; // /churches/:id/branches
     const userId = (req as AuthRequest).user?.id;
 
@@ -152,6 +152,7 @@ export const createBranch = asyncHandler(
         pastor_name: pastor_name?.trim(),
         description: description?.trim(),
         image: image?.trim(),
+        map_marker: map_marker?.trim(),
         is_headquarters: is_headquarters ?? false,
         created_by: userId,
       });
@@ -179,7 +180,7 @@ export const getBranches = asyncHandler(
 
 export const updateBranch = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { name, address, city, state, country, pastor_name, description, image, is_headquarters } = req.body;
+    const { name, address, city, state, country, pastor_name, description, image, map_marker, is_headquarters } = req.body;
     const userId = (req as AuthRequest).user?.id;
 
     const branch = await churchService.updateBranch(req.params.branchId, {
@@ -191,6 +192,7 @@ export const updateBranch = asyncHandler(
       pastor_name: pastor_name?.trim(),
       description: description?.trim(),
       image: image?.trim(),
+      map_marker: map_marker?.trim(),
       is_headquarters,
     });
 

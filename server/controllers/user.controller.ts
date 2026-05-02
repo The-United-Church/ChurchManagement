@@ -250,6 +250,25 @@ export class UserController {
     });
   });
 
+  getMapPins = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const branchId = (req as any).branchId as string | undefined;
+      if (!branchId) {
+        res.status(400).json({
+          status: 400,
+          message: 'Branch context required (X-Branch-Id header).',
+        });
+        return;
+      }
+      const data = await this.userService.getMapPinsForBranch(branchId);
+      res.status(200).json({
+        data,
+        status: 200,
+        message: 'Map pins fetched successfully',
+      });
+    }
+  );
+
   getDirectory = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { search } = req.query;

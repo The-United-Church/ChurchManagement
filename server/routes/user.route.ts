@@ -69,6 +69,12 @@ router.put(
 );
 
 router.get(
+  "/map-pins",
+  authMiddleware(new UserService()) as RequestHandler,
+  userController.getMapPins.bind(userController)
+);
+
+router.get(
   "/profile",
   authMiddleware(new UserService()) as RequestHandler,
   userController.getUserProfile.bind(userController)

@@ -27,6 +27,8 @@ export interface Branch {
   country?: string;
   pastor_name?: string;
   description?: string;
+  image?: string;
+  map_marker?: string;
   is_headquarters: boolean;
   denomination_id: string;
   created_at: string;

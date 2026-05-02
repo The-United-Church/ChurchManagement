@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, CalendarDays, QrCode, MapPin, Repeat, Image, Users, Eye, Copy, Globe, Palette, LayoutTemplate } from 'lucide-react';
+import { CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, CalendarDays, QrCode, MapPin, Repeat, Image, Users, Eye, Copy, Globe, Palette, LayoutTemplate, Map, Navigation, Pin, Shield } from 'lucide-react';
 
 interface Release {
   period: string;
@@ -117,8 +117,40 @@ const releases: Release[] = [
       },
     ],
   },
+  {
+    period: 'May 2026',
+    tag: 'Released',
+    title: 'Member Location Map',
+    description:
+      'A visual map that shows where your branch members are located. Admins upload a custom map marker icon for the branch, and members self-report their location by dropping a pin — giving leadership a clear geographic picture of the congregation.',
+    features: [
+      {
+        icon: <Map className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Dedicated Member Map page — a full-screen interactive Mapbox map accessible from the admin sidebar showing every member who has set a location pin.',
+      },
+      {
+        icon: <Pin className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Self-reported member pins — members drop their own location pin (or tap "Use my current location") from their profile settings, keeping location data opt-in and accurate.',
+      },
+      {
+        icon: <Image className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Custom branch marker icon — branch admins upload a dedicated map marker image (e.g. the church logo) that replaces the default pin, so every member location is branded.',
+      },
+      {
+        icon: <Navigation className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Click-to-reveal member cards — clicking any marker on the map opens a popup showing the member\'s photo, full name, and coordinates.',
+      },
+      {
+        icon: <Shield className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Privacy-first — members who have not set a pin do not appear on the map at all. Location data is stored only when the member explicitly saves it.',
+      },
+      {
+        icon: <Users className="h-4 w-4 text-orange-400 shrink-0 mt-0.5" />,
+        text: 'Branch-scoped — the map only shows members of the currently active branch, consistent with the existing branch-context model.',
+      },
+    ],
+  },
   // {
-  //   period: 'Coming Soon',
   //   tag: 'Coming Soon',
   //   title: 'Event Management',
   //   description:

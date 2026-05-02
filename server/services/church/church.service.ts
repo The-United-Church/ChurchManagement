@@ -81,6 +81,7 @@ export class ChurchService {
     pastor_name?: string;
     description?: string;
     image?: string;
+    map_marker?: string;
     is_headquarters?: boolean;
     created_by?: string;
   }): Promise<Branch> {
@@ -152,7 +153,7 @@ export class ChurchService {
 
   async updateBranch(
     id: string,
-    data: Partial<Pick<Branch, "name" | "address" | "city" | "state" | "country" | "pastor_name" | "description" | "image" | "is_headquarters">>
+    data: Partial<Pick<Branch, "name" | "address" | "city" | "state" | "country" | "pastor_name" | "description" | "image" | "map_marker" | "is_headquarters">>
   ): Promise<Branch | null> {
     const branch = await this.branchRepo.findOneBy({ id });
     if (!branch) return null;

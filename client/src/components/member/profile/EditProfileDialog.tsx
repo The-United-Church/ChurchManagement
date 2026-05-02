@@ -29,6 +29,8 @@ import { FormSelect } from '@/components/ui/form-select';
 import { ProfileGenderRadio, ProfileToggle, DateField } from './ProfileSubComponents';
 import type { ProfileForm } from './types';
 import { MARITAL_OPTIONS, MEMBER_STATUS_OPTIONS } from './types';
+import MemberPinPicker from '@/components/member/MemberPinPicker';
+import { useChurch } from '@/components/church/ChurchProvider';
 
 const INITIAL_FORM: ProfileForm = {
   first_name: '',
@@ -61,6 +63,8 @@ const INITIAL_FORM: ProfileForm = {
   baptism_date: '',
   baptism_location: '',
   member_status: 'member',
+  map_pin_lat: null,
+  map_pin_lng: null,
 };
 
 interface EditProfileDialogProps {
@@ -92,6 +96,7 @@ export function EditProfileDialog({
   const [countryIsoCode, setCountryIsoCode] = useState('');
   const [birthdateDate, setBirthdateDate] = useState<Date | undefined>();
   const [form, setForm] = useState<ProfileForm>(INITIAL_FORM);
+  const { currentBranch } = useChurch() as any;
 
   const phoneOptions = React.useMemo(
     () =>
@@ -145,6 +150,8 @@ export function EditProfileDialog({
       baptism_date: profile.baptism_date ? String(profile.baptism_date).split('T')[0] : '',
       baptism_location: profile.baptism_location || '',
       member_status: profile.member_status || 'member',
+      map_pin_lat: profile.map_pin_lat != null ? Number(profile.map_pin_lat) : null,
+      map_pin_lng: profile.map_pin_lng != null ? Number(profile.map_pin_lng) : null,
     });
     setBirthdateDate(profile.dob ? new Date(profile.dob as string) : undefined);
 
@@ -284,6 +291,20 @@ export function EditProfileDialog({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <FormInput label="City" value={form.city} onChange={(v) => setForm((f) => ({ ...f, city: v }))} />
                   <FormInput label="Postal Code" value={form.postal_code} onChange={(v) => setForm((f) => ({ ...f, postal_code: v }))} />
+                </div>
+                <div className="pt-4 border-t border-gray-100 space-y-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">My Location on Map</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Drop a pin so your branch can see where members are located. Optional.
+                    </p>
+                  </div>
+                  <MemberPinPicker
+                    lat={form.map_pin_lat}
+                    lng={form.map_pin_lng}
+                    onChange={(lat, lng) => setForm((f) => ({ ...f, map_pin_lat: lat, map_pin_lng: lng }))}
+                    markerUrl={currentBranch?.map_marker || undefined}
+                  />
                 </div>
                 <div className="pt-4 border-t border-gray-100">
                   <h4 className="text-sm font-semibold mb-4 text-gray-900">Contact Information</h4>

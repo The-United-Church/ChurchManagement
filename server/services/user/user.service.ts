@@ -277,6 +277,44 @@ export class UserService {
     return { data: users.map((u) => this.serializeUserWithPresence(u, respectPrivacy)), total, activeCount, adminCount };
   }
 
+  /**
+   * Lightweight payload of users in a branch who have set a map pin.
+   * Used by the branch admin's Member Map page.
+   */
+  async getMapPinsForBranch(branchId: string): Promise<Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    profile_img: string | null;
+    map_pin_lat: number;
+    map_pin_lng: number;
+  }>> {
+    const rows = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.branchMemberships', 'bm', 'bm.branch_id = :branchId AND bm.is_active = true', { branchId })
+      .where('user.map_pin_lat IS NOT NULL')
+      .andWhere('user.map_pin_lng IS NOT NULL')
+      .andWhere('user.is_active = true')
+      .select([
+        'user.id',
+        'user.first_name',
+        'user.last_name',
+        'user.profile_img',
+        'user.map_pin_lat',
+        'user.map_pin_lng',
+      ])
+      .getMany();
+
+    return rows.map((u) => ({
+      id: u.id,
+      first_name: u.first_name ?? null,
+      last_name: u.last_name ?? null,
+      profile_img: u.profile_img ?? null,
+      map_pin_lat: Number(u.map_pin_lat),
+      map_pin_lng: Number(u.map_pin_lng),
+    }));
+  }
+
   async getAllUsers(branchId?: string, excludeUserId?: string, denominationIds?: string[]): Promise<any[]> {
     if (!branchId) {
       if (denominationIds && denominationIds.length > 0) {
@@ -458,6 +496,8 @@ export class UserService {
       "family_members",
       "gender",
       "profile_img",
+      "map_pin_lat",
+      "map_pin_lng",
     ];
 
     // Replace empty strings with null so typed columns (e.g. date) don't

@@ -33,6 +33,7 @@ import {
   Church,
   Crown,
   MapPin,
+  Map,
   Monitor,
   User,
 } from 'lucide-react';
@@ -103,6 +104,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, colla
       label: 'Directory',
       icon: Users,
       visible: true
+    },
+    {
+      id: 'member-map',
+      label: 'Member Map',
+      icon: Map,
+      visible: canViewAnalytics
     },
     {
       id: 'groups',

@@ -45,6 +45,10 @@ export class Branch {
   @Column({ nullable: true })
   image: string;
 
+  /** Custom marker icon URL used to represent members on the branch map. */
+  @Column({ nullable: true })
+  map_marker: string;
+
   @Column({ default: false })
   is_headquarters: boolean;
 

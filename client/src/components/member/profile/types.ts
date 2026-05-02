@@ -43,6 +43,8 @@ export interface ProfileForm {
   baptism_date: string;
   baptism_location: string;
   member_status: string;
+  map_pin_lat: number | null;
+  map_pin_lng: number | null;
 }
 
 export const EMPTY_FAMILY: Omit<FamilyMember, 'id'> = {

@@ -323,6 +323,7 @@ export interface BranchDTO {
   pastor_name?: string;
   description?: string;
   image?: string;
+  map_marker?: string;
   is_headquarters: boolean;
   denomination_id: string;
   created_at: string;
@@ -395,6 +396,8 @@ export const createBranchApi = (denominationId: string, data: {
   country?: string;
   pastor_name?: string;
   description?: string;
+  image?: string;
+  map_marker?: string;
   is_headquarters?: boolean;
 }) =>
   request<{ data: BranchDTO; status: number; message: string }>(`/churches/${denominationId}/branches`, {
@@ -410,6 +413,8 @@ export const updateBranchApi = (denominationId: string, branchId: string, data: 
   country: string;
   pastor_name: string;
   description: string;
+  image: string;
+  map_marker: string;
   is_headquarters: boolean;
 }>) =>
   request<{ data: BranchDTO; status: number; message: string }>(`/churches/${denominationId}/branches/${branchId}`, {
@@ -421,6 +426,19 @@ export const deleteBranchApi = (denominationId: string, branchId: string) =>
   request<{ status: number; message: string }>(`/churches/${denominationId}/branches/${branchId}`, {
     method: 'DELETE',
   });
+
+// ─── Map Pins ─────────────────────────────────────────────────────────────
+export interface MapPinDTO {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_img: string | null;
+  map_pin_lat: number;
+  map_pin_lng: number;
+}
+
+export const fetchMapPins = () =>
+  request<{ data: MapPinDTO[]; status: number; message: string }>(`/user/map-pins`);
 
 // ─── People ───────────────────────────────────────────────────────────────
 import type { Person, PersonCreateDTO, PersonUpdateDTO, ImportPeopleResult } from '@/types/person';

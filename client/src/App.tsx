@@ -98,6 +98,7 @@ function AppRoutes() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/people" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/directory" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/member-map" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/groups" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/followups" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

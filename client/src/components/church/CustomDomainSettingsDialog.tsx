@@ -95,10 +95,10 @@ const toFullDomain = (raw: string): string => {
 
 const StatusBadge: React.FC<{ status: CustomDomainDTO['status'] }> = ({ status }) => {
   const map: Record<CustomDomainDTO['status'], string> = {
-    pending: 'bg-amber-100 text-amber-800 border-amber-200',
-    active: 'bg-green-100 text-green-800 border-green-200',
-    inactive: 'bg-slate-100 text-slate-700 border-slate-200',
-    rejected: 'bg-red-100 text-red-800 border-red-200',
+    pending: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30',
+    active: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30',
+    inactive: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/20 dark:text-slate-300 dark:border-slate-500/30',
+    rejected: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/30',
   };
   return (
     <Badge variant="outline" className={`text-xs uppercase tracking-wide ${map[status]}`}>
@@ -271,18 +271,18 @@ const CustomDomainSettingsDialog: React.FC<Props> = ({ open, onOpenChange, churc
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 mt-2">
             {existing?.status === 'rejected' && existing.rejection_reason && (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              <div className="rounded-md border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-3 py-2 text-sm text-red-800 dark:text-red-300">
                 <strong>Rejected:</strong> {existing.rejection_reason}
                 <p className="text-xs mt-1">Make changes below and re-submit for review.</p>
               </div>
             )}
             {existing?.status === 'pending' && (
-              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <div className="rounded-md border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
                 Your custom domain is awaiting super admin approval.
               </div>
             )}
             {existing?.status === 'active' && (
-              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 flex items-center justify-between gap-3">
+              <div className="rounded-md border border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/10 px-3 py-2 text-sm text-green-800 dark:text-green-300 flex items-center justify-between gap-3">
                 <div>
                   Your custom domain is <strong>active</strong>. Point your DNS to Church Flow.
                 </div>
@@ -299,23 +299,23 @@ const CustomDomainSettingsDialog: React.FC<Props> = ({ open, onOpenChange, churc
               </div>
             )}
             {existing?.status === 'inactive' && (
-              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <div className="rounded-md border border-slate-200 dark:border-slate-500/30 bg-slate-50 dark:bg-slate-500/10 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
                 This domain has been deactivated by an administrator. Save changes below to request re-activation.
               </div>
             )}
 
             {/* Logo */}
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 rounded-lg border-2 border-dashed border-slate-300">
+              <Avatar className="h-20 w-20 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
                 <AvatarImage src={form.logo_url} className="object-cover rounded-lg" />
-                <AvatarFallback className="bg-slate-100 rounded-lg text-slate-400 text-xs">No logo</AvatarFallback>
+                <AvatarFallback className="bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-400 dark:text-slate-500 text-xs">No logo</AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <Label className="text-xs">Logo</Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Shown on the branded sign-in &amp; sign-up pages.
                 </p>
-                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border bg-white text-sm cursor-pointer hover:bg-slate-50">
+                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border bg-white dark:bg-gray-800 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700 dark:border-gray-700">
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
                   Upload
                   <input
@@ -424,7 +424,7 @@ const CustomDomainSettingsDialog: React.FC<Props> = ({ open, onOpenChange, churc
                 <Button
                   type="button"
                   variant="ghost"
-                  className="text-red-600 hover:bg-red-50"
+                  className="text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                   onClick={handleRemove}
                   disabled={removing || saving}
                 >

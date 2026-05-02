@@ -98,6 +98,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Mapbox popup — force white background & dark text regardless of app theme */
+.mapboxgl-popup-content {
+  background: #ffffff !important;
+  color: #111827 !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+}
+.mapboxgl-popup-tip {
+  border-top-color: #ffffff !important;
+  border-bottom-color: #ffffff !important;
+}
+.mapboxgl-popup-close-button {
+  color: #374151 !important;
+  font-size: 16px !important;
+  right: 6px !important;
+  top: 4px !important;
+}
+
 /* Animation keyframes for your IndexPage */
 @keyframes fadeIn {
   from {

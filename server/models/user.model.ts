@@ -179,6 +179,13 @@ export class User {
   @Column({ nullable: true })
   profile_img: string;
 
+  /** Self-reported location pin for the branch member map. */
+  @Column({ type: "double precision", nullable: true })
+  map_pin_lat: number | null;
+
+  @Column({ type: "double precision", nullable: true })
+  map_pin_lng: number | null;
+
   @Column("json", { nullable: true })
   settings: UserSettings;
 

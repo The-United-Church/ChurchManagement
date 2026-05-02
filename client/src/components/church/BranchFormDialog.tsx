@@ -32,6 +32,7 @@ interface BranchFormData {
   pastor_name: string;
   description: string;
   image: string;
+  map_marker: string;
   is_headquarters: boolean;
 }
 
@@ -44,6 +45,7 @@ const EMPTY: BranchFormData = {
   pastor_name: '',
   description: '',
   image: '',
+  map_marker: '',
   is_headquarters: false,
 };
 
@@ -69,11 +71,13 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
     pastor_name: b.pastor_name ?? '',
     description: b.description ?? '',
     image: b.image ?? '',
+    map_marker: b.map_marker ?? '',
     is_headquarters: b.is_headquarters ?? false,
   });
 
   const [form, setForm] = useState<BranchFormData>(() => (initial ? toForm(initial) : { ...EMPTY }));
   const [uploading, setUploading] = useState(false);
+  const [uploadingMarker, setUploadingMarker] = useState(false);
   const [states, setStates] = useState<{ name: string; isoCode: string }[]>(() => {
     if (initial?.country) {
       const matched = countries.find((c) => c.name === initial.country);
@@ -115,6 +119,16 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
     }
   };
 
+  const handleMarkerPick = async (file: File) => {
+    try {
+      setUploadingMarker(true);
+      const url = await uploadToCloudinary(file, 'branches');
+      set('map_marker', url);
+    } finally {
+      setUploadingMarker(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(form);
@@ -128,16 +142,32 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           {/* Branch image picker */}
-          <div className="flex justify-center">
-            <div className="relative">
-              <Avatar className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300">
-                <AvatarImage src={form.image || ''} className="object-cover rounded-lg" />
-                <AvatarFallback className="bg-gray-100 rounded-lg text-gray-400 text-xs">No image</AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-app-primary hover:bg-app-primary-hover text-white border-2 border-white grid place-items-center cursor-pointer">
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImagePick(f); }} />
-              </label>
+          <div className="flex justify-center gap-6">
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative">
+                <Avatar className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <AvatarImage src={form.image || ''} className="object-cover rounded-lg" />
+                  <AvatarFallback className="bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-400 dark:text-gray-500 text-xs">No image</AvatarFallback>
+                </Avatar>
+                <label className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-app-primary hover:bg-app-primary-hover text-white border-2 border-background grid place-items-center cursor-pointer">
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImagePick(f); }} />
+                </label>
+              </div>
+              <span className="text-[11px] text-muted-foreground">Branch Image</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <div className="relative">
+                <Avatar className="h-24 w-24 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <AvatarImage src={form.map_marker || ''} className="object-cover" />
+                  <AvatarFallback className="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-[10px] text-center px-1">Map<br />Marker</AvatarFallback>
+                </Avatar>
+                <label className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-app-primary hover:bg-app-primary-hover text-white border-2 border-background grid place-items-center cursor-pointer">
+                  {uploadingMarker ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMarkerPick(f); }} />
+                </label>
+              </div>
+              <span className="text-[11px] text-muted-foreground">Map Marker Icon</span>
             </div>
           </div>
           <div className="space-y-2">
@@ -175,7 +205,7 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
                 <SelectTrigger id="bf-country">
                   <SelectValue placeholder="Select Country" />
                 </SelectTrigger>
-                <SelectContent className="bg-white max-h-72 overflow-auto">
+                <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 max-h-72 overflow-auto">
                   {countries.map((c) => (
                     <SelectItem key={c.isoCode} value={c.isoCode}>{c.name}</SelectItem>
                   ))}
@@ -192,7 +222,7 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
                 <SelectTrigger id="bf-state">
                   <SelectValue placeholder={states.length === 0 ? 'Select country first' : 'Select State'} />
                 </SelectTrigger>
-                <SelectContent className="bg-white max-h-72 overflow-auto">
+                <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 max-h-72 overflow-auto">
                   {states.map((s) => (
                     <SelectItem key={s.isoCode} value={s.name}>{s.name}</SelectItem>
                   ))}
@@ -213,7 +243,7 @@ const BranchFormDialog: React.FC<Props> = ({ open, onOpenChange, onSubmit, initi
               type="checkbox"
               checked={form.is_headquarters}
               onChange={(e) => set('is_headquarters', e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:accent-app-primary"
             />
             <Label htmlFor="bf-hq" className="cursor-pointer">Mark as Headquarters</Label>
           </div>

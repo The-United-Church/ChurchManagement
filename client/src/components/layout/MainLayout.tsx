@@ -15,6 +15,7 @@ import ChurchManagement from '../dashboard/admin/ChurchManagement';
 import BranchManagement from '../dashboard/admin/BranchManagement';
 import ChurchMemberManagement from '../dashboard/members/ChurchMemberManagement';
 import MemberDirectory from '../member/MemberDirectory';
+import MemberLocationMap from '../member/MemberLocationMap';
 import MemberSettings from '../member/MemberSettings';
 import { EventListPage } from '../event/EventListPage';
 
@@ -72,6 +73,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         return <ChurchMemberManagement />;
       case 'directory':
         return <MemberDirectory />;
+      case 'member-map':
+        return <MemberLocationMap />;
       case 'groups':
         return (
           <div className="p-4 md:p-6">
