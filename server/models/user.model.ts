@@ -131,6 +131,12 @@ export class User {
   @Column({ type: "timestamp", nullable: true })
   last_access: Date;
 
+  @Column({ type: "timestamp", nullable: true })
+  current_session_started_at: Date | null;
+
+  @Column({ type: "integer", default: 0 })
+  total_time_spent_seconds: number;
+
   @Column({ nullable: true })
   reset_password_token: string;
 

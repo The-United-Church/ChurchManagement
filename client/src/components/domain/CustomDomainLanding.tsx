@@ -20,6 +20,7 @@ import BrandedFooter from '@/components/domain/BrandedFooter';
 import BrandedHeader from '@/components/domain/BrandedHeader';
 import HighlightsGallery from '@/components/domain/HighlightsGallery';
 import type { LandingHighlight, LandingMinistry, LandingServiceTime } from '@/lib/api';
+import { useWebsiteVisit } from '@/hooks/useWebsiteVisit';
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  Helpers                                                                   */
@@ -41,6 +42,7 @@ const MINISTRY_ICON: Record<string, React.ElementType> = {
 
 const CustomDomainLanding: React.FC = () => {
   const { branding } = useDomain();
+  useWebsiteVisit('custom_domain_landing');
 
   const accent = branding?.primary_color || '#4F46E5';
   const churchName = branding?.church_name || branding?.display_name || 'Our Church';

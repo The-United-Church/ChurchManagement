@@ -7,7 +7,7 @@ import emailService from "../../email/email.service";
 import { sendMemberAddedEmail } from "../../email/templates/email.member_added";
 import { firebaseAuth } from "../../config/firebase.admin";
 import { normalizeEmail } from "../../utils/email";
-import { isUserOnline } from "../socket.service";
+import { getActiveSessionStartedAt, isUserOnline } from "../socket.service";
 
 import { In } from "typeorm";
 import { Person } from "../../models/person.model";
@@ -17,17 +17,25 @@ export class UserService {
   private readonly membershipRepository = AppDataSource.getRepository(require('../../models/church/branch-membership.model').BranchMembership);
   private readonly personRepository = AppDataSource.getRepository(Person);
 
-  private serializeUserWithPresence(user: User): any {
+  private serializeUserWithPresence(user: User, respectPrivacy = true): any {
     const serialized = classToPlain(user) as any;
     const showOnlineStatus = serialized.settings?.privacy?.showOnlineStatus !== false;
 
-    if (!showOnlineStatus) {
+    if (respectPrivacy && !showOnlineStatus) {
       serialized.last_access = undefined;
       serialized.is_online = undefined;
       return serialized;
     }
 
     serialized.is_online = isUserOnline(serialized.id);
+    const activeStartedAt = getActiveSessionStartedAt(serialized.id);
+    serialized.current_session_started_at = activeStartedAt?.toISOString() ?? serialized.current_session_started_at ?? null;
+    const storedSeconds = Number(serialized.total_time_spent_seconds || 0);
+    const activeSeconds = activeStartedAt
+      ? Math.max(0, Math.floor((Date.now() - activeStartedAt.getTime()) / 1000))
+      : 0;
+    serialized.total_time_spent_seconds = storedSeconds + activeSeconds;
+    serialized.total_time_spent_minutes = Math.floor(serialized.total_time_spent_seconds / 60);
     return serialized;
   }
 
@@ -189,8 +197,10 @@ export class UserService {
     excludeUserId?: string;
     denominationIds?: string[];
     role?: string;
+    includePrivatePresence?: boolean;
   }): Promise<{ data: any[]; total: number; activeCount: number; adminCount: number }> {
-    const { page, limit, search, branchId, excludeUserId, denominationIds, role } = opts;
+    const { page, limit, search, branchId, excludeUserId, denominationIds, role, includePrivatePresence } = opts;
+    const respectPrivacy = !includePrivatePresence;
     const skip = (page - 1) * limit;
 
     const applyCommonFilters = (qb: any) => {
@@ -210,7 +220,7 @@ export class UserService {
       applyCommonFilters(qb);
       const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
       const data = users.map((u) => ({
-        ...this.serializeUserWithPresence(u),
+        ...this.serializeUserWithPresence(u, respectPrivacy),
         branch_is_active: (u as any).branchMemberships?.[0]?.is_active ?? true,
         branch_role: (u as any).branchMemberships?.[0]?.role ?? null,
       }));
@@ -250,7 +260,7 @@ export class UserService {
       const activeCount = total; // no branch_is_active concept here
       const adminCount = allUsers.filter((u) => u.role === 'admin' || u.role === 'super_admin').length;
 
-      return { data: users.map((u) => this.serializeUserWithPresence(u)), total, activeCount, adminCount };
+      return { data: users.map((u) => this.serializeUserWithPresence(u, respectPrivacy)), total, activeCount, adminCount };
     }
 
     // super_admin — all users
@@ -264,7 +274,7 @@ export class UserService {
     const activeCount = total;
     const adminCount = allUsers.filter((u) => u.role === 'admin' || u.role === 'super_admin').length;
 
-    return { data: users.map((u) => this.serializeUserWithPresence(u)), total, activeCount, adminCount };
+    return { data: users.map((u) => this.serializeUserWithPresence(u, respectPrivacy)), total, activeCount, adminCount };
   }
 
   async getAllUsers(branchId?: string, excludeUserId?: string, denominationIds?: string[]): Promise<any[]> {
@@ -689,12 +699,20 @@ export class UserService {
     totalUsers: number;
     activeUsers: number;
     inactiveUsers: number;
+    onlineUsers: number;
+    mostActiveUser: { id: string; email: string; full_name?: string; total_time_spent_seconds: number } | null;
     usersByRole: { role: string; count: number }[];
   }> {
     const allUsers = await this.userRepository.find();
 
     const activeUsers = allUsers.filter((u) => u.is_active === true);
     const inactiveUsers = allUsers.filter((u) => u.is_active === false);
+    const serializedUsers = allUsers.map((u) => this.serializeUserWithPresence(u, false));
+    const onlineUsers = serializedUsers.filter((u) => u.is_online).length;
+    const mostActive = serializedUsers.reduce<any | null>((best, user) => {
+      if (!best) return user;
+      return Number(user.total_time_spent_seconds || 0) > Number(best.total_time_spent_seconds || 0) ? user : best;
+    }, null);
 
     const roleCount: { [key: string]: number } = {};
     allUsers.forEach((u) => {
@@ -708,6 +726,15 @@ export class UserService {
       totalUsers: allUsers.length,
       activeUsers: activeUsers.length,
       inactiveUsers: inactiveUsers.length,
+      onlineUsers,
+      mostActiveUser: mostActive
+        ? {
+            id: mostActive.id,
+            email: mostActive.email,
+            full_name: mostActive.full_name,
+            total_time_spent_seconds: Number(mostActive.total_time_spent_seconds || 0),
+          }
+        : null,
       usersByRole,
     };
   }

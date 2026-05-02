@@ -407,6 +407,14 @@ export const logout = asyncHandler(
         const decoded = ts.verifyAccessToken(token);
         if (decoded?.id) {
           await authService.revokeRefreshToken(decoded.id);
+          await logActivity(
+            decoded.id,
+            ActivityAction.LOGOUT,
+            EntityType.AUTH,
+            decoded.id,
+            `User "${decoded.email || decoded.id}" logged out`,
+            { email: decoded.email }
+          );
         }
       }
     } catch {

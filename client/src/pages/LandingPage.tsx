@@ -10,10 +10,12 @@ import FeatureUpdatesSection from '@/components/landing/FeatureUpdatesSection';
 import PricingSection from '@/components/landing/PricingSection';
 import CTASection from '@/components/landing/CTASection';
 import LandingFooter from '@/components/landing/LandingFooter';
+import { useWebsiteVisit } from '@/hooks/useWebsiteVisit';
 
 const LandingPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  useWebsiteVisit('main_landing');
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;

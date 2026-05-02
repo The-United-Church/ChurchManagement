@@ -141,6 +141,7 @@ export class UserController {
         excludeUserId: requesterId,
         denominationIds: scopedDenomIds,
         role: (role && typeof role === 'string' && isAdminLike) ? role : undefined,
+        includePrivatePresence: isSuperAdmin,
       });
 
       res.status(200).json({

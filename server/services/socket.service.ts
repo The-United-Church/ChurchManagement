@@ -9,6 +9,7 @@ const tokenService = new TokenService();
 
 let io: Server | null = null;
 const activeUserSockets = new Map<string, Set<string>>();
+const activeSessionStartedAt = new Map<string, Date>();
 
 export function initializeSocket(httpServer: HttpServer): Server {
   // Match the HTTP CORS policy: allow configured origins plus any
@@ -83,6 +84,11 @@ function handleConnection(socket: Socket) {
     }
   });
 
+  socket.on("error", () => {
+    socket.leave(`user:${userId}`);
+    void markUserOffline(userId, socket.id);
+  });
+
   socket.on("disconnect", () => {
     socket.leave(`user:${userId}`);
     void markUserOffline(userId, socket.id);
@@ -96,7 +102,9 @@ async function markUserOnline(userId: string, socketId: string): Promise<void> {
   activeUserSockets.set(userId, sockets);
 
   if (!wasOnline) {
-    await touchLastAccess(userId);
+    const startedAt = new Date();
+    activeSessionStartedAt.set(userId, startedAt);
+    await touchLastAccess(userId, { current_session_started_at: startedAt });
     emitPresenceChanged();
   }
 }
@@ -109,20 +117,43 @@ async function markUserOffline(userId: string, socketId: string): Promise<void> 
   if (sockets.size > 0) return;
 
   activeUserSockets.delete(userId);
-  await touchLastAccess(userId);
+  const endedAt = new Date();
+  const startedAt = activeSessionStartedAt.get(userId);
+  activeSessionStartedAt.delete(userId);
+  const elapsedSeconds = startedAt
+    ? Math.max(0, Math.floor((endedAt.getTime() - startedAt.getTime()) / 1000))
+    : 0;
+  await finalizeSession(userId, elapsedSeconds, endedAt);
   emitPresenceChanged();
 }
 
-async function touchLastAccess(userId: string): Promise<void> {
+async function touchLastAccess(userId: string, extra: Partial<User> = {}): Promise<void> {
   try {
     if (!AppDataSource.isInitialized) return;
     await AppDataSource.getRepository(User).update(
       { id: userId },
-      { last_access: new Date() },
+      { last_access: new Date(), ...extra },
     );
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("Failed to update socket presence timestamp", error);
+    }
+  }
+}
+
+async function finalizeSession(userId: string, elapsedSeconds: number, endedAt: Date): Promise<void> {
+  try {
+    if (!AppDataSource.isInitialized) return;
+    const repo = AppDataSource.getRepository(User);
+    const user = await repo.findOne({ where: { id: userId } });
+    if (!user) return;
+    user.last_access = endedAt;
+    user.current_session_started_at = null;
+    user.total_time_spent_seconds = (user.total_time_spent_seconds || 0) + elapsedSeconds;
+    await repo.save(user);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Failed to finalize socket session duration", error);
     }
   }
 }
@@ -140,6 +171,11 @@ export function isUserOnline(userId: string | null | undefined): boolean {
 
 export function getOnlineUserIds(): string[] {
   return [...activeUserSockets.keys()];
+}
+
+export function getActiveSessionStartedAt(userId: string | null | undefined): Date | null {
+  if (!userId) return null;
+  return activeSessionStartedAt.get(userId) ?? null;
 }
 
 export function getIO(): Server {

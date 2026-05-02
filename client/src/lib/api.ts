@@ -50,8 +50,59 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 export const fetchUsers = () =>
   request<{ data: any[]; status: number; message: string }>('/user');
 
+export const fetchAllUsers = async () => {
+  const limit = 50;
+  let page = 1;
+  let all: any[] = [];
+  let total = Infinity;
+
+  while (all.length < total) {
+    const res = await request<{ data: any[]; total?: number; status: number; message: string }>(
+      `/user?page=${page}&limit=${limit}`,
+      { headers: { 'X-Branch-Id': '' } },
+    );
+    all = all.concat(res.data || []);
+    total = typeof res.total === 'number' ? res.total : all.length;
+    if (!res.data?.length || res.data.length < limit) break;
+    page += 1;
+  }
+
+  return { data: all, total, status: 200, message: 'Users fetched successfully' };
+};
+
 export const fetchUserStatistics = () =>
   request<{ data: any; status: number; message: string }>('/user/statistics');
+
+export interface WebsiteVisitStats {
+  totalVisits: number;
+  todayVisits: number;
+  mainLandingVisits: number;
+  customDomainVisits: number;
+  uniqueVisitors: number;
+  lastVisitAt: string | null;
+  lastVisitDomain: string | null;
+  topDomains: { domain: string; count: number }[];
+  daily: { date: string; count: number }[];
+}
+
+export const fetchWebsiteVisitStats = (days = 30) =>
+  request<{ data: WebsiteVisitStats; status: number; message: string }>(`/visits/stats?days=${days}`);
+
+export const recordWebsiteVisit = (payload: {
+  domain: string;
+  path: string;
+  pageType: 'main_landing' | 'custom_domain_landing';
+  visitorId?: string;
+}) =>
+  fetch(`${API_BASE}/visits`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).then((res) => {
+    if (!res.ok) throw new Error(`Visit tracking failed: ${res.status}`);
+    return res;
+  });
 
 // Activity Logs
 export const fetchActivities = (params?: Record<string, string>) => {
@@ -82,6 +133,29 @@ export const fetchPermissions = () =>
 export const fetchHealth = () =>
   axios.get(
     `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:7777'}/health`
+  ).then((r) => r.data);
+
+export interface ServiceHealthProbe {
+  ok: boolean;
+  responseMs: number;
+  details?: Record<string, any>;
+  error?: string;
+}
+
+export interface ServiceHealthResponse {
+  status: string;
+  timestamp: string;
+  services: {
+    database: ServiceHealthProbe;
+    email: ServiceHealthProbe;
+    socket: ServiceHealthProbe;
+    storage: ServiceHealthProbe;
+  };
+}
+
+export const fetchServiceHealth = () =>
+  axios.get<ServiceHealthResponse>(
+    `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:7777'}/health/services`
   ).then((r) => r.data);
 
 // Delete user

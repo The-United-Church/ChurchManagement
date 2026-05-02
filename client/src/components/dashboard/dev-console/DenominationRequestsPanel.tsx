@@ -1,505 +1,349 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogPortal,
-  DialogOverlay,
-} from '@/components/ui/dialog';
-import ConfirmDialog from '@/components/ui/confirm-dialog';
-import { toast } from '@/hooks/use-toast';
-import {
-  Search,
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Church,
-  Mail,
-  MapPin,
-  Phone,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  User,
-  AlertTriangle,
-} from 'lucide-react';
-import { format } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
 import {
   fetchDenominationRequests,
   approveDenominationRequestApi,
   rejectDenominationRequestApi,
   type DenominationRequestDTO,
 } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import ConfirmDialog from '@/components/ui/confirm-dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { format, formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  RefreshCw,
+  Loader2,
+  ChevronRight,
+} from 'lucide-react';
 
-type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected';
+type Status = 'pending' | 'approved' | 'rejected';
+
+const COLUMNS: { key: Status; label: string; tone: string; dot: string }[] = [
+  { key: 'pending',  label: 'Pending Review', tone: 'border-amber-500/30 bg-amber-500/5',   dot: 'bg-amber-400' },
+  { key: 'approved', label: 'Approved',       tone: 'border-emerald-500/30 bg-emerald-500/5', dot: 'bg-emerald-400' },
+  { key: 'rejected', label: 'Rejected',       tone: 'border-red-500/30 bg-red-500/5',         dot: 'bg-red-400' },
+];
 
 const DenominationRequestsPanel: React.FC = () => {
+  const { toast } = useToast();
   const [requests, setRequests] = useState<DenominationRequestDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState<string | null>(null);
 
-  // Approve confirm dialog
-  const [approveTarget, setApproveTarget] = useState<DenominationRequestDTO | null>(null);
-
-  // Reject dialog with reason input
+  const [detail, setDetail] = useState<DenominationRequestDTO | null>(null);
+  const [confirmApprove, setConfirmApprove] = useState<DenominationRequestDTO | null>(null);
   const [rejectTarget, setRejectTarget] = useState<DenominationRequestDTO | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [rejectError, setRejectError] = useState('');
 
-  const loadRequests = useCallback(async () => {
+  const load = async () => {
     setLoading(true);
     try {
       const res = await fetchDenominationRequests();
       setRequests(res.data || []);
-    } catch {
-      setRequests([]);
+    } catch (e: any) {
+      toast({ title: 'Failed to load', description: e?.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
+  useEffect(() => { load(); }, []);
 
-  const handleApproveConfirm = async () => {
-    if (!approveTarget) return;
-    setActionLoading(approveTarget.id);
-    setApproveTarget(null);
+  const grouped = useMemo(() => {
+    const g: Record<Status, DenominationRequestDTO[]> = { pending: [], approved: [], rejected: [] };
+    requests.forEach((r) => g[r.status]?.push(r));
+    Object.values(g).forEach((arr) =>
+      arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    );
+    return g;
+  }, [requests]);
+
+  const handleApprove = async (req: DenominationRequestDTO) => {
+    setWorking(req.id);
     try {
-      await approveDenominationRequestApi(approveTarget.id);
-      await loadRequests();
-    } catch (err: any) {
-      toast({ title: 'Failed to approve request', description: err.message, variant: 'destructive' });
+      await approveDenominationRequestApi(req.id);
+      toast({ title: 'Approved', description: `${req.denomination_name} approved` });
+      setConfirmApprove(null);
+      setDetail(null);
+      load();
+    } catch (e: any) {
+      toast({ title: 'Approval failed', description: e?.message, variant: 'destructive' });
     } finally {
-      setActionLoading(null);
+      setWorking(null);
     }
   };
 
-  const handleRejectConfirm = async () => {
+  const handleReject = async () => {
     if (!rejectTarget) return;
     if (!rejectReason.trim()) {
-      setRejectError('Please provide a reason for rejection.');
+      toast({ title: 'Reason required', variant: 'destructive' });
       return;
     }
-    setActionLoading(rejectTarget.id);
-    const target = rejectTarget;
-    setRejectTarget(null);
-    setRejectReason('');
-    setRejectError('');
+    setWorking(rejectTarget.id);
     try {
-      await rejectDenominationRequestApi(target.id, rejectReason.trim());
-      await loadRequests();
-    } catch (err: any) {
-      toast({ title: 'Failed to reject request', description: err.message, variant: 'destructive' });
+      await rejectDenominationRequestApi(rejectTarget.id, rejectReason.trim());
+      toast({ title: 'Rejected', description: `${rejectTarget.denomination_name} rejected` });
+      setRejectTarget(null);
+      setRejectReason('');
+      setDetail(null);
+      load();
+    } catch (e: any) {
+      toast({ title: 'Rejection failed', description: e?.message, variant: 'destructive' });
     } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const filtered = requests.filter((r) => {
-    if (filterStatus !== 'all' && r.status !== filterStatus) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.denomination_name.toLowerCase().includes(q) ||
-      r.email.toLowerCase().includes(q) ||
-      r.first_name.toLowerCase().includes(q) ||
-      r.last_name.toLowerCase().includes(q) ||
-      r.city?.toLowerCase().includes(q) ||
-      r.country?.toLowerCase().includes(q)
-    );
-  });
-
-  const counts = {
-    all: requests.length,
-    pending: requests.filter((r) => r.status === 'pending').length,
-    approved: requests.filter((r) => r.status === 'approved').length,
-    rejected: requests.filter((r) => r.status === 'rejected').length,
-  };
-
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <Badge variant="outline" className="gap-1 text-amber-700 border-amber-200 bg-amber-50">
-            <Clock className="h-3 w-3" /> Pending
-          </Badge>
-        );
-      case 'approved':
-        return (
-          <Badge variant="outline" className="gap-1 text-green-700 border-green-200 bg-green-50">
-            <CheckCircle2 className="h-3 w-3" /> Approved
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge variant="outline" className="gap-1 text-red-700 border-red-200 bg-red-50">
-            <XCircle className="h-3 w-3" /> Rejected
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      setWorking(null);
     }
   };
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Church className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-emerald-400" />
             Denomination Requests
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Review and approve denomination registration requests
+          <p className="text-xs text-zinc-500 mt-0.5">
+            {requests.length} total · {grouped.pending.length} awaiting review
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadRequests} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+        <button
+          onClick={load}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 text-xs font-medium disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
-        </Button>
+        </button>
       </div>
 
-      {/* Stat pills */}
-      <div className="flex flex-wrap gap-2">
-        {(['all', 'pending', 'approved', 'rejected'] as FilterStatus[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilterStatus(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              filterStatus === s
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}{' '}
-            <span className="ml-1 opacity-70">({counts[s]})</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name, email, denomination…"
-          className="pl-8"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Denomination</TableHead>
-                <TableHead>Requester</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-                  </TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                    {search || filterStatus !== 'all'
-                      ? 'No matching requests found'
-                      : 'No denomination requests yet'}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((req) => {
-                  const isExpanded = expandedId === req.id;
-                  const isActioning = actionLoading === req.id;
-                  return (
-                    <>
-                      <TableRow
-                        key={req.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setExpandedId(isExpanded ? null : req.id)}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Church className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                            {req.denomination_name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {req.first_name} {req.last_name}
-                        </TableCell>
-                        <TableCell className="text-sm">{req.email}</TableCell>
-                        <TableCell>{statusBadge(req.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(req.created_at), 'PP')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {req.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  className="h-7 gap-1 text-xs"
-                                  disabled={isActioning}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setApproveTarget(req);
-                                  }}
-                                >
-                                  {isActioning ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <CheckCircle2 className="h-3 w-3" />
-                                  )}
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="h-7 gap-1 text-xs"
-                                  disabled={isActioning}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRejectReason('');
-                                    setRejectError('');
-                                    setRejectTarget(req);
-                                  }}
-                                >
-                                  <XCircle className="h-3 w-3" />
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            <button
-                              className="text-muted-foreground ml-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedId(isExpanded ? null : req.id);
-                              }}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && (
-                        <TableRow key={`${req.id}-detail`}>
-                          <TableCell colSpan={6} className="bg-muted/30 px-6 py-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                              <div className="flex items-start gap-2">
-                                <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Full Name</p>
-                                  <p className="font-medium">
-                                    {req.first_name} {req.last_name}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Email</p>
-                                  <p className="font-medium">{req.email}</p>
-                                </div>
-                              </div>
-                              {req.phone && (
-                                <div className="flex items-start gap-2">
-                                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{req.phone}</p>
-                                  </div>
-                                </div>
-                              )}
-                              {(req.address || req.city || req.state || req.country) && (
-                                <div className="flex items-start gap-2">
-                                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Location</p>
-                                    <p className="font-medium">
-                                      {[req.address, req.city, req.state, req.country]
-                                        .filter(Boolean)
-                                        .join(', ')}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                              {req.reason && (
-                                <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2">
-                                  <Church className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">
-                                      Additional Information
-                                    </p>
-                                    <p className="font-medium whitespace-pre-wrap">{req.reason}</p>
-                                  </div>
-                                </div>
-                              )}
-                              {req.rejection_reason && (
-                                <div className="sm:col-span-2 lg:col-span-3 flex items-start gap-2">
-                                  <XCircle className="h-4 w-4 text-red-500 mt-0.5" />
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Rejection Reason</p>
-                                    <p className="font-medium text-red-700 whitespace-pre-wrap">
-                                      {req.rejection_reason}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                              {req.reviewed_at && (
-                                <div className="flex items-start gap-2">
-                                  <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Reviewed</p>
-                                    <p className="font-medium">
-                                      {format(new Date(req.reviewed_at), 'PPpp')}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* ── Approve confirm dialog ─────────────────────────────────────── */}
-      <ConfirmDialog
-        open={!!approveTarget}
-        onOpenChange={(o) => { if (!o) setApproveTarget(null); }}
-        title="Approve Denomination Request"
-        description={`This will create a user account and denomination for ${approveTarget?.first_name} ${approveTarget?.last_name} (${approveTarget?.email}), register "${approveTarget?.denomination_name}", and send their login credentials by email. This action cannot be undone.`}
-        onConfirm={handleApproveConfirm}
-        confirmLabel="Approve & Send Credentials"
-        variant="success"
-      />
-
-      {/* ── Reject dialog with reason input ───────────────────────────── */}
-      <Dialog
-        open={!!rejectTarget}
-        onOpenChange={(o) => {
-          if (!o) {
-            setRejectTarget(null);
-            setRejectReason('');
-            setRejectError('');
-          }
-        }}
-      >
-        <DialogPortal>
-          <DialogOverlay />
-          <DialogContent className="sm:max-w-md p-0 overflow-hidden gap-0 bg-white [&>button]:hidden">
-            {/* Red stripe */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-red-500 to-rose-600" />
-
-            {/* Header */}
-            <div className="px-6 pt-6 pb-2">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full border bg-red-50 border-red-100 mt-0.5">
-                  <XCircle className="h-6 w-6 text-red-600" strokeWidth={2} />
+      {loading && requests.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-zinc-600" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {COLUMNS.map((col) => (
+            <div key={col.key} className={`rounded-xl border ${col.tone} p-3 min-h-[400px]`}>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${col.dot}`} />
+                  <h3 className="text-sm font-semibold text-zinc-100">{col.label}</h3>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <h2 className="text-base font-semibold text-gray-900 leading-snug">Reject Denomination Request</h2>
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    Rejecting <strong>{rejectTarget?.denomination_name}</strong> from{' '}
-                    <strong>{rejectTarget?.first_name} {rejectTarget?.last_name}</strong>.
-                    The requester will receive an email with your reason.
-                  </p>
-                </div>
+                <span className="rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 px-2 py-0.5">
+                  {grouped[col.key].length}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {grouped[col.key].length === 0 ? (
+                  <div className="text-center text-xs text-zinc-600 py-12">No requests</div>
+                ) : (
+                  grouped[col.key].map((req) => (
+                    <RequestCard
+                      key={req.id}
+                      req={req}
+                      working={working === req.id}
+                      onView={() => setDetail(req)}
+                      onApprove={() => setConfirmApprove(req)}
+                      onReject={() => { setRejectTarget(req); setRejectReason(''); }}
+                    />
+                  ))
+                )}
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="mx-6 my-4 border-t border-gray-200" />
-
-            {/* Reason textarea */}
-            <div className="px-6 pb-2 space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Reason for rejection <span className="text-red-500">*</span>
-              </label>
-              <Textarea
-                placeholder="e.g. This denomination is already registered. Please contact support if you believe this is an error."
-                value={rejectReason}
-                onChange={(e) => {
-                  setRejectReason(e.target.value);
-                  if (e.target.value.trim()) setRejectError('');
-                }}
-                rows={4}
-                className="resize-none"
-              />
-              {rejectError && (
-                <p className="text-xs text-red-600 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {rejectError}
-                </p>
+      {/* Detail Dialog */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-2xl">
+          {detail && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-zinc-100">
+                  <Building2 className="h-5 w-5 text-emerald-400" />
+                  {detail.denomination_name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <DetailField label="Contact">
+                    {detail.first_name} {detail.last_name}
+                  </DetailField>
+                  <DetailField label="Status">
+                    <span className="capitalize">{detail.status}</span>
+                  </DetailField>
+                </div>
+                <DetailField label="Email" icon={Mail}><span className="font-mono text-xs">{detail.email}</span></DetailField>
+                {detail.phone && <DetailField label="Phone" icon={Phone}>{detail.phone}</DetailField>}
+                {(detail.address || detail.city || detail.state || detail.country) && (
+                  <DetailField label="Location" icon={MapPin}>
+                    {[detail.address, detail.city, detail.state, detail.country].filter(Boolean).join(', ')}
+                  </DetailField>
+                )}
+                {detail.reason && (
+                  <DetailField label="Reason for joining">
+                    <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed">{detail.reason}</p>
+                  </DetailField>
+                )}
+                {detail.rejection_reason && (
+                  <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-red-400 font-semibold mb-1">Rejection reason</div>
+                    <p className="text-xs text-red-200">{detail.rejection_reason}</p>
+                  </div>
+                )}
+                <DetailField label="Submitted">
+                  {format(new Date(detail.created_at), 'PPpp')}
+                </DetailField>
+              </div>
+              {detail.status === 'pending' && (
+                <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                    onClick={() => { setRejectTarget(detail); setRejectReason(''); }}
+                  >
+                    Reject
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                    onClick={() => setConfirmApprove(detail)}
+                  >
+                    Approve
+                  </Button>
+                </DialogFooter>
               )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 pb-6 pt-4 flex flex-row justify-end gap-2">
-              <Button
-                variant="outline"
-                className="min-w-[90px]"
-                onClick={() => {
-                  setRejectTarget(null);
-                  setRejectReason('');
-                  setRejectError('');
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={!rejectReason.trim()}
-                onClick={handleRejectConfirm}
-                className="min-w-[90px] gap-2 bg-red-600 hover:bg-red-700 text-white font-medium disabled:opacity-60"
-              >
-                <XCircle className="h-4 w-4" />
-                Reject &amp; Notify
-              </Button>
-            </div>
-          </DialogContent>
-        </DialogPortal>
+            </>
+          )}
+        </DialogContent>
       </Dialog>
-    </>
+
+      {/* Approve confirmation */}
+      <ConfirmDialog
+        open={!!confirmApprove}
+        onOpenChange={(o) => !o && setConfirmApprove(null)}
+        title="Approve denomination request?"
+        description={confirmApprove ? `This will create a denomination account for "${confirmApprove.denomination_name}" and email ${confirmApprove.email}.` : ''}
+        confirmLabel="Approve"
+        variant="success"
+        loading={working === confirmApprove?.id}
+        onConfirm={() => confirmApprove && handleApprove(confirmApprove)}
+      />
+
+      {/* Reject dialog */}
+      <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle>Reject Request</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-400">
+              Provide a reason for rejecting <strong className="text-zinc-100">{rejectTarget?.denomination_name}</strong>. The applicant will be notified.
+            </p>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Insufficient documentation provided…"
+              className="bg-zinc-900 border-zinc-800 text-zinc-100"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectTarget(null)} className="border-zinc-700 bg-zinc-900 text-zinc-300">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!rejectReason.trim() || working === rejectTarget?.id}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              {working === rejectTarget?.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Rejection'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
+
+const RequestCard: React.FC<{
+  req: DenominationRequestDTO;
+  working: boolean;
+  onView: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}> = ({ req, working, onView, onApprove, onReject }) => {
+  const initials = `${req.first_name?.[0] || ''}${req.last_name?.[0] || ''}`.toUpperCase();
+  const isPending = req.status === 'pending';
+
+  return (
+    <div
+      className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 hover:border-zinc-700 transition-colors cursor-pointer group"
+      onClick={onView}
+    >
+      <div className="flex items-start gap-2.5">
+        <div className="h-8 w-8 rounded-md bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">
+          {initials || '?'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm text-zinc-100 truncate">{req.denomination_name}</div>
+          <div className="text-[11px] text-zinc-500 truncate">{req.first_name} {req.last_name}</div>
+          <div className="font-mono text-[10px] text-zinc-600 truncate">{req.email}</div>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-400 flex-shrink-0 mt-1" />
+      </div>
+
+      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-zinc-800/60">
+        <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+          <Clock className="h-2.5 w-2.5" />
+          {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+        </span>
+        {isPending && (
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={onApprove}
+              disabled={working}
+              className="p-1 rounded hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-50"
+              title="Approve"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={onReject}
+              disabled={working}
+              className="p-1 rounded hover:bg-red-500/20 text-red-400 disabled:opacity-50"
+              title="Reject"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DetailField: React.FC<{ label: string; icon?: React.ElementType; children: React.ReactNode }> = ({
+  label,
+  icon: Icon,
+  children,
+}) => (
+  <div>
+    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">
+      {Icon && <Icon className="h-3 w-3" />}
+      {label}
+    </div>
+    <div className="text-sm text-zinc-200">{children}</div>
+  </div>
+);
 
 export default DenominationRequestsPanel;
