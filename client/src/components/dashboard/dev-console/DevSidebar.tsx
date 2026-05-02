@@ -64,7 +64,7 @@ const itemClasses = (active: boolean) =>
     'group relative flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm transition-all',
     active
       ? 'bg-gradient-to-r from-emerald-500/10 to-transparent text-emerald-300 shadow-[inset_2px_0_0_0_rgb(16,185,129)]'
-      : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100'
+      : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-gray-900 dark:hover:text-zinc-100'
   );
 
 const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, onToggle, badges }) => {
@@ -77,11 +77,11 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-200',
+        'hidden md:flex flex-col border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-all duration-200',
         collapsed ? 'w-16' : 'w-60'
       )}
     >
-      <div className="flex items-center justify-between p-3 border-b border-zinc-800">
+      <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-zinc-800">
         {!collapsed && (
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -89,12 +89,12 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
               <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
             <div className="leading-tight">
-              <div className="font-semibold text-sm text-zinc-100">Dev Console</div>
-              <div className="text-[10px] text-zinc-500 tracking-wider uppercase">v1.0 · Production</div>
+              <div className="font-semibold text-sm text-gray-900 dark:text-zinc-100">Dev Console</div>
+              <div className="text-[10px] text-gray-400 dark:text-zinc-500 tracking-wider uppercase">v1.0 · Production</div>
             </div>
           </div>
         )}
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900" onClick={onToggle}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 dark:text-zinc-500 hover:text-gray-800 dark:hover:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-900" onClick={onToggle}>
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
@@ -103,7 +103,7 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
         {groups.map((g) => (
           <div key={g.key} className="space-y-0.5">
             {!collapsed && (
-              <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+              <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-600">
                 {g.label}
               </div>
             )}
@@ -117,7 +117,7 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
                   className={itemClasses(active)}
                   title={collapsed ? label : undefined}
                 >
-                  <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-emerald-400' : 'text-zinc-500 group-hover:text-zinc-300')} />
+                  <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-emerald-400' : 'text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:hover:text-zinc-300')} />
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left">{label}</span>
@@ -127,7 +127,7 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
                         </span>
                       ) : (
                         shortcut && (
-                          <kbd className="hidden lg:inline px-1 py-0.5 text-[10px] font-mono rounded border border-zinc-800 text-zinc-600 group-hover:text-zinc-400">
+                          <kbd className="hidden lg:inline px-1 py-0.5 text-[10px] font-mono rounded border border-gray-100 dark:border-zinc-800 text-gray-400 dark:text-zinc-600 group-hover:text-gray-500 dark:group-hover:text-zinc-400">
                             {shortcut}
                           </kbd>
                         )
@@ -135,7 +135,7 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
                     </>
                   )}
                   {collapsed && badge && badge > 0 ? (
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-zinc-950" />
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-400 ring-2 ring-white dark:ring-zinc-950" />
                   ) : null}
                 </button>
               );
@@ -145,14 +145,14 @@ const DevSidebar: React.FC<DevSidebarProps> = ({ current, onChange, collapsed, o
       </nav>
 
       {!collapsed && (
-        <div className="border-t border-zinc-800 p-3">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-2.5">
+        <div className="border-t border-gray-100 dark:border-zinc-800 p-3">
+          <div className="rounded-lg border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 p-2.5">
             <div className="flex items-center gap-2 mb-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-medium text-zinc-300">All systems normal</span>
+              <span className="text-[11px] font-medium text-gray-600 dark:text-zinc-300">All systems normal</span>
             </div>
-            <div className="text-[10px] text-zinc-500">
-              Press <kbd className="px-1 py-0.5 rounded border border-zinc-800 text-zinc-400 font-mono">⌘K</kbd> for commands
+            <div className="text-[10px] text-gray-400 dark:text-zinc-500">
+              Press <kbd className="px-1 py-0.5 rounded border border-gray-100 dark:border-zinc-800 text-gray-500 dark:text-zinc-400 font-mono">⌘K</kbd> for commands
             </div>
           </div>
         </div>
@@ -166,7 +166,7 @@ export const MobileNav: React.FC<{
   onChange: (s: DevSection) => void;
   badges?: Partial<Record<DevSection, number>>;
 }> = ({ current, onChange, badges }) => (
-  <div className="flex md:hidden overflow-x-auto border-b border-zinc-800 bg-zinc-950 px-2 py-1.5 gap-1">
+  <div className="flex md:hidden overflow-x-auto border-b border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-2 py-1.5 gap-1">
     {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
       const active = current === id;
       const badge = badges?.[id];
@@ -176,7 +176,7 @@ export const MobileNav: React.FC<{
           onClick={() => onChange(id)}
           className={cn(
             'relative flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition-colors',
-            active ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-400 hover:bg-zinc-900'
+            active ? 'bg-emerald-500/15 text-emerald-300' : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-900'
           )}
         >
           <Icon className="h-3.5 w-3.5" />

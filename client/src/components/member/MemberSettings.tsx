@@ -111,6 +111,11 @@ const MemberSettings: React.FC = () => {
     }
   };
 
+  const handleSelectTheme = (nextTheme: Theme) => {
+    setTheme(nextTheme);
+    persistTheme(nextTheme);
+  };
+
   const handleSaveCurrency = async () => {
     setSavingCurrency(true);
     try {
@@ -200,7 +205,7 @@ const MemberSettings: React.FC = () => {
                       ? 'border-app-primary bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => setTheme(key)}
+                  onClick={() => handleSelectTheme(key)}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Icon className="h-4 w-4" />

@@ -1,6 +1,7 @@
 export type Theme = 'light' | 'dark' | 'system';
 
 export const THEME_STORAGE_KEY = 'app_theme';
+export const THEME_CHANGE_EVENT = 'app-theme-change';
 export const DEFAULT_THEME: Theme = 'system';
 
 export function normalizeTheme(value: unknown): Theme {
@@ -20,6 +21,14 @@ export function resolveTheme(theme: Theme): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+export function getAppliedResolvedTheme(): 'light' | 'dark' {
+  if (typeof document !== 'undefined') {
+    const current = document.documentElement.dataset.resolvedTheme;
+    if (current === 'light' || current === 'dark') return current;
+  }
+  return resolveTheme(getStoredTheme());
+}
+
 export function applyTheme(theme: Theme) {
   if (typeof document === 'undefined') return;
 
@@ -31,6 +40,12 @@ export function applyTheme(theme: Theme) {
   root.dataset.theme = normalizedTheme;
   root.dataset.resolvedTheme = resolvedTheme;
   root.style.colorScheme = resolvedTheme;
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(THEME_CHANGE_EVENT, {
+      detail: { theme: normalizedTheme, resolvedTheme },
+    }));
+  }
 }
 
 export function persistTheme(theme: Theme) {

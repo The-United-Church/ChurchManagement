@@ -179,7 +179,7 @@ const AlertRibbon: React.FC<{
   const toneClasses: Record<string, string> = {
     amber: 'border-amber-500/30 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20',
     blue: 'border-blue-500/30 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20',
-    zinc: 'border-zinc-700 bg-zinc-800/40 text-zinc-300 hover:bg-zinc-800/70',
+    zinc: 'border-gray-200 dark:border-zinc-700 bg-gray-100/40 dark:bg-zinc-800/40 text-gray-600 dark:text-zinc-300 hover:bg-gray-100/70 dark:hover:bg-zinc-800/70',
   };
 
   return (
@@ -212,15 +212,15 @@ const MetricCard: React.FC<{
   color: string;
   icon: React.ElementType;
 }> = ({ title, value, delta, deltaPositive, spark, color, icon: Icon }) => (
-  <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-4 transition-colors hover:border-zinc-700">
+  <div className="relative overflow-hidden rounded-xl border border-gray-100 dark:border-zinc-800 bg-gradient-to-br from-gray-50/80 dark:from-zinc-900/80 to-white dark:to-zinc-950 p-4 transition-colors hover:border-gray-200 dark:hover:border-zinc-700">
     <div
       className="absolute inset-x-0 top-0 h-px"
       style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
     />
     <div className="flex items-start justify-between mb-3">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">{title}</p>
-        <p className="text-2xl font-semibold text-zinc-100 mt-1 tabular-nums">{value}</p>
+        <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400 dark:text-zinc-500">{title}</p>
+        <p className="text-2xl font-semibold text-gray-900 dark:text-zinc-100 mt-1 tabular-nums">{value}</p>
       </div>
       <div className="rounded-lg p-1.5" style={{ backgroundColor: `${color}1f` }}>
         <Icon className="h-4 w-4" style={{ color }} />
@@ -250,15 +250,15 @@ const HealthGauge: React.FC<{ score: number; health: HealthInfo | null }> = ({ s
   const label = score >= 80 ? 'Excellent' : score >= 50 ? 'Stable' : 'Degraded';
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+    <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40 p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-zinc-200">Platform Health</h3>
-        <span className="text-[10px] uppercase tracking-wider text-zinc-500">Live</span>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Platform Health</h3>
+        <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500">Live</span>
       </div>
       <div className="flex items-center gap-5">
         <div className="relative h-32 w-32 flex-shrink-0">
           <svg className="-rotate-90" width="128" height="128" viewBox="0 0 128 128">
-            <circle cx="64" cy="64" r={radius} stroke="rgb(39 39 42)" strokeWidth="10" fill="none" />
+            <circle cx="64" cy="64" r={radius} className="stroke-gray-200 dark:stroke-zinc-800" strokeWidth="10" fill="none" />
             <circle
               cx="64"
               cy="64"
@@ -274,21 +274,21 @@ const HealthGauge: React.FC<{ score: number; health: HealthInfo | null }> = ({ s
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-bold tabular-nums" style={{ color }}>{score}</span>
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wider">/ 100</span>
+            <span className="text-[10px] text-gray-400 dark:text-zinc-500 uppercase tracking-wider">/ 100</span>
           </div>
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-500">Status</span>
+            <span className="text-gray-400 dark:text-zinc-500">Status</span>
             <span style={{ color }} className="font-medium">{label}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-500">API</span>
-            <span className="text-zinc-200 font-medium">{health?.status || 'Down'}</span>
+            <span className="text-gray-400 dark:text-zinc-500">API</span>
+            <span className="text-gray-800 dark:text-zinc-200 font-medium">{health?.status || 'Down'}</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-500">Last check</span>
-            <span className="text-zinc-200 font-mono text-[10px]">
+            <span className="text-gray-400 dark:text-zinc-500">Last check</span>
+            <span className="text-gray-800 dark:text-zinc-200 font-mono text-[10px]">
               {health ? new Date(health.timestamp).toLocaleTimeString() : '—'}
             </span>
           </div>
@@ -301,13 +301,13 @@ const HealthGauge: React.FC<{ score: number; health: HealthInfo | null }> = ({ s
 const UsersByRoleDonut: React.FC<{ stats: UserStats | null; loading: boolean }> = ({ stats, loading }) => {
   const data = stats?.usersByRole?.map((r) => ({ name: r.role, value: r.count })) ?? [];
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+    <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40 p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-zinc-200">Users by Role</h3>
-        <Users className="h-4 w-4 text-zinc-500" />
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Users by Role</h3>
+        <Users className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
       </div>
       {data.length === 0 ? (
-        <p className="text-sm text-zinc-500 py-8 text-center">{loading ? 'Loading…' : 'No data'}</p>
+        <p className="text-sm text-gray-400 dark:text-zinc-500 py-8 text-center">{loading ? 'Loading…' : 'No data'}</p>
       ) : (
         <div className="flex items-center gap-4">
           <div className="relative h-32 w-32 flex-shrink-0">
@@ -321,16 +321,16 @@ const UsersByRoleDonut: React.FC<{ stats: UserStats | null; loading: boolean }> 
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-zinc-100 tabular-nums">{stats?.totalUsers ?? 0}</span>
-              <span className="text-[9px] text-zinc-500 uppercase">Total</span>
+              <span className="text-2xl font-bold text-gray-900 dark:text-zinc-100 tabular-nums">{stats?.totalUsers ?? 0}</span>
+              <span className="text-[9px] text-gray-400 dark:text-zinc-500 uppercase">Total</span>
             </div>
           </div>
           <div className="flex-1 min-w-0 space-y-1.5">
             {data.slice(0, 5).map((d, i) => (
               <div key={d.name} className="flex items-center gap-2 text-xs">
                 <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: ROLE_COLORS[i % ROLE_COLORS.length] }} />
-                <span className="capitalize text-zinc-300 truncate flex-1">{d.name}</span>
-                <span className="text-zinc-100 font-medium tabular-nums">{d.value}</span>
+                <span className="capitalize text-gray-600 dark:text-zinc-300 truncate flex-1">{d.name}</span>
+                <span className="text-gray-900 dark:text-zinc-100 font-medium tabular-nums">{d.value}</span>
               </div>
             ))}
           </div>
@@ -348,10 +348,10 @@ const SystemSnapshot: React.FC<{
   visits30d: number;
   health: HealthInfo | null;
 }> = ({ rolesCount, totalUsers, activity30d, onlineUsers, visits30d, health }) => (
-  <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+  <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40 p-5">
     <div className="flex items-center justify-between mb-3">
-      <h3 className="text-sm font-semibold text-zinc-200">System Snapshot</h3>
-      <Server className="h-4 w-4 text-zinc-500" />
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">System Snapshot</h3>
+      <Server className="h-4 w-4 text-gray-400 dark:text-zinc-500" />
     </div>
     <div className="space-y-3">
       <SnapshotRow icon={Shield} label="Roles defined" value={rolesCount} />
@@ -359,9 +359,9 @@ const SystemSnapshot: React.FC<{
       <SnapshotRow icon={Wifi} label="Online users" value={formatNumber(onlineUsers)} />
       <SnapshotRow icon={Eye} label="Visits (30d)" value={formatNumber(visits30d)} />
       <SnapshotRow icon={Activity} label="Events (30d)" value={formatNumber(activity30d)} />
-      <div className="pt-2 border-t border-zinc-800">
+      <div className="pt-2 border-t border-gray-100 dark:border-zinc-800">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500">API uptime</span>
+          <span className="text-xs text-gray-400 dark:text-zinc-500">API uptime</span>
           <span className={`text-xs font-medium ${health?.status === 'OK' ? 'text-emerald-400' : 'text-red-400'}`}>
             {health?.status === 'OK' ? '99.9%' : 'Down'}
           </span>
@@ -373,10 +373,10 @@ const SystemSnapshot: React.FC<{
 
 const SnapshotRow: React.FC<{ icon: React.ElementType; label: string; value: number | string }> = ({ icon: Icon, label, value }) => (
   <div className="flex items-center justify-between">
-    <span className="flex items-center gap-2 text-xs text-zinc-400">
-      <Icon className="h-3.5 w-3.5 text-zinc-600" /> {label}
+    <span className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
+      <Icon className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-600" /> {label}
     </span>
-    <span className="text-sm text-zinc-100 font-medium tabular-nums">{value}</span>
+    <span className="text-sm text-gray-900 dark:text-zinc-100 font-medium tabular-nums">{value}</span>
   </div>
 );
 
@@ -385,15 +385,15 @@ const LiveTicker: React.FC<{
   loading: boolean;
   onNavigate: (s: DevSection) => void;
 }> = ({ activities, loading, onNavigate }) => (
-  <div className="rounded-xl border border-zinc-800 bg-zinc-900/40">
-    <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
+  <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40">
+    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-zinc-800">
       <div className="flex items-center gap-2">
         <span className="relative flex h-2 w-2">
           <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
           <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
         </span>
-        <h3 className="text-sm font-semibold text-zinc-200">Recent Activity</h3>
-        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Streaming</span>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Recent Activity</h3>
+        <span className="text-[10px] text-gray-400 dark:text-zinc-500 uppercase tracking-wider">Streaming</span>
       </div>
       <button
         onClick={() => onNavigate('live')}
@@ -402,28 +402,28 @@ const LiveTicker: React.FC<{
         Open Live Monitor <ArrowUpRight className="h-3 w-3" />
       </button>
     </div>
-    <div className="max-h-[420px] overflow-y-auto divide-y divide-zinc-800/50">
+    <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-100/50 dark:divide-zinc-800/50">
       {activities.length === 0 ? (
-        <div className="py-12 text-center text-sm text-zinc-500">
+        <div className="py-12 text-center text-sm text-gray-400 dark:text-zinc-500">
           {loading ? 'Loading activity stream…' : 'No recent activity'}
         </div>
       ) : (
         activities.map((a) => {
           const action = (a.action || '').toLowerCase();
           return (
-            <div key={a.id} className="flex items-start gap-3 px-5 py-3 hover:bg-zinc-900/40 transition-colors">
-              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border mt-0.5 flex-shrink-0 ${actionColorsDark[action] || 'bg-zinc-800 text-zinc-300 border-zinc-700'}`}>
+            <div key={a.id} className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50/40 dark:hover:bg-zinc-900/40 transition-colors">
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border mt-0.5 flex-shrink-0 ${actionColorsDark[action] || 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 border-gray-200 dark:border-zinc-700'}`}>
                 {a.action}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-zinc-200 truncate">{a.description}</p>
-                <p className="text-[11px] text-zinc-500 mt-0.5 flex items-center gap-2 font-mono">
+                <p className="text-sm text-gray-800 dark:text-zinc-200 truncate">{a.description}</p>
+                <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5 flex items-center gap-2 font-mono">
                   <span className="truncate">{a.user?.email || 'system'}</span>
-                  <span className="text-zinc-700">·</span>
+                  <span className="text-gray-300 dark:text-zinc-700">·</span>
                   <span className="capitalize">{a.entityType?.replace('_', ' ')}</span>
                 </p>
               </div>
-              <span className="text-[11px] text-zinc-500 whitespace-nowrap flex items-center gap-1 flex-shrink-0">
+              <span className="text-[11px] text-gray-400 dark:text-zinc-500 whitespace-nowrap flex items-center gap-1 flex-shrink-0">
                 <Clock className="h-3 w-3" />
                 {timeAgo(a.createdAt)}
               </span>

@@ -106,18 +106,18 @@ const DenominationRequestsPanel: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <Building2 className="h-4 w-4 text-emerald-400" />
             Denomination Requests
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">
             {requests.length} total · {grouped.pending.length} awaiting review
           </p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 text-xs font-medium disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-zinc-100 text-xs font-medium disabled:opacity-50"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -126,7 +126,7 @@ const DenominationRequestsPanel: React.FC = () => {
 
       {loading && requests.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400 dark:text-zinc-600" />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -135,16 +135,16 @@ const DenominationRequestsPanel: React.FC = () => {
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${col.dot}`} />
-                  <h3 className="text-sm font-semibold text-zinc-100">{col.label}</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{col.label}</h3>
                 </div>
-                <span className="rounded-full bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-300 px-2 py-0.5">
+                <span className="rounded-full bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 text-xs font-mono text-gray-600 dark:text-zinc-300 px-2 py-0.5">
                   {grouped[col.key].length}
                 </span>
               </div>
 
               <div className="space-y-2">
                 {grouped[col.key].length === 0 ? (
-                  <div className="text-center text-xs text-zinc-600 py-12">No requests</div>
+                  <div className="text-center text-xs text-gray-400 dark:text-zinc-600 py-12">No requests</div>
                 ) : (
                   grouped[col.key].map((req) => (
                     <RequestCard
@@ -165,11 +165,11 @@ const DenominationRequestsPanel: React.FC = () => {
 
       {/* Detail Dialog */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-2xl">
+        <DialogContent className="bg-white dark:bg-zinc-950 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100 max-w-2xl">
           {detail && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-zinc-100">
+                <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-zinc-100">
                   <Building2 className="h-5 w-5 text-emerald-400" />
                   {detail.denomination_name}
                 </DialogTitle>
@@ -192,7 +192,7 @@ const DenominationRequestsPanel: React.FC = () => {
                 )}
                 {detail.reason && (
                   <DetailField label="Reason for joining">
-                    <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed">{detail.reason}</p>
+                    <p className="text-gray-600 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">{detail.reason}</p>
                   </DetailField>
                 )}
                 {detail.rejection_reason && (
@@ -241,24 +241,24 @@ const DenominationRequestsPanel: React.FC = () => {
 
       {/* Reject dialog */}
       <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-white dark:bg-zinc-950 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100">
           <DialogHeader>
             <DialogTitle>Reject Request</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-zinc-400">
-              Provide a reason for rejecting <strong className="text-zinc-100">{rejectTarget?.denomination_name}</strong>. The applicant will be notified.
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
+              Provide a reason for rejecting <strong className="text-gray-900 dark:text-zinc-100">{rejectTarget?.denomination_name}</strong>. The applicant will be notified.
             </p>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. Insufficient documentation provided…"
-              className="bg-zinc-900 border-zinc-800 text-zinc-100"
+              className="bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100"
               rows={4}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTarget(null)} className="border-zinc-700 bg-zinc-900 text-zinc-300">
+            <Button variant="outline" onClick={() => setRejectTarget(null)} className="border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-300">
               Cancel
             </Button>
             <Button
@@ -287,7 +287,7 @@ const RequestCard: React.FC<{
 
   return (
     <div
-      className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 hover:border-zinc-700 transition-colors cursor-pointer group"
+      className="rounded-lg border border-gray-100 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/60 p-3 hover:border-gray-200 dark:hover:border-zinc-700 transition-colors cursor-pointer group"
       onClick={onView}
     >
       <div className="flex items-start gap-2.5">
@@ -295,15 +295,15 @@ const RequestCard: React.FC<{
           {initials || '?'}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm text-zinc-100 truncate">{req.denomination_name}</div>
-          <div className="text-[11px] text-zinc-500 truncate">{req.first_name} {req.last_name}</div>
-          <div className="font-mono text-[10px] text-zinc-600 truncate">{req.email}</div>
+          <div className="font-semibold text-sm text-gray-900 dark:text-zinc-100 truncate">{req.denomination_name}</div>
+          <div className="text-[11px] text-gray-400 dark:text-zinc-500 truncate">{req.first_name} {req.last_name}</div>
+          <div className="font-mono text-[10px] text-gray-400 dark:text-zinc-600 truncate">{req.email}</div>
         </div>
-        <ChevronRight className="h-3.5 w-3.5 text-zinc-700 group-hover:text-zinc-400 flex-shrink-0 mt-1" />
+        <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-zinc-700 group-hover:text-gray-500 dark:group-hover:text-zinc-400 flex-shrink-0 mt-1" />
       </div>
 
-      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-zinc-800/60">
-        <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-gray-100/60 dark:border-zinc-800/60">
+        <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-zinc-500">
           <Clock className="h-2.5 w-2.5" />
           {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
         </span>
@@ -338,11 +338,11 @@ const DetailField: React.FC<{ label: string; icon?: React.ElementType; children:
   children,
 }) => (
   <div>
-    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">
+    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 font-semibold mb-1">
       {Icon && <Icon className="h-3 w-3" />}
       {label}
     </div>
-    <div className="text-sm text-zinc-200">{children}</div>
+    <div className="text-sm text-gray-800 dark:text-zinc-200">{children}</div>
   </div>
 );
 

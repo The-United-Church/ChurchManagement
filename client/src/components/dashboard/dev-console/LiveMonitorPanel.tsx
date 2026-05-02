@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getAppliedResolvedTheme, getStoredTheme, resolveTheme, THEME_CHANGE_EVENT } from '@/lib/theme';
 import { fetchRecentActivities, fetchActivityStats } from '@/lib/api';
 import { Pause, Play, Trash2, Filter, Radio, Activity as ActivityIcon, ArrowDownToLine } from 'lucide-react';
 import { actionAccent, timeAgo } from './helpers';
@@ -8,7 +9,29 @@ const POLL_INTERVAL = 3000; // ms
 
 const ACTIONS = ['create', 'update', 'delete', 'approve', 'reject', 'login', 'logout', 'register', 'status_change'];
 
+function useIsDark() {
+  const [dark, setDark] = useState(() => getAppliedResolvedTheme() === 'dark');
+  useEffect(() => {
+    const update = () => setDark(getAppliedResolvedTheme() === 'dark');
+    const updateSystemTheme = () => {
+      if (getStoredTheme() === 'system') setDark(resolveTheme('system') === 'dark');
+    };
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    update();
+    window.addEventListener('storage', update);
+    window.addEventListener(THEME_CHANGE_EVENT, update);
+    mediaQuery.addEventListener?.('change', updateSystemTheme);
+    return () => {
+      window.removeEventListener('storage', update);
+      window.removeEventListener(THEME_CHANGE_EVENT, update);
+      mediaQuery.removeEventListener?.('change', updateSystemTheme);
+    };
+  }, []);
+  return dark;
+}
+
 const LiveMonitorPanel: React.FC = () => {
+  const isDark = useIsDark();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [paused, setPaused] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -87,15 +110,15 @@ const LiveMonitorPanel: React.FC = () => {
       {/* Header bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <Radio className="h-4 w-4 text-emerald-400" />
             Live Activity Monitor
-            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500 ml-1">
+            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 ml-1">
               <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
               {connected ? 'Connected' : 'Reconnecting…'}
             </span>
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Real-time activity stream · polling every {POLL_INTERVAL / 1000}s · {logs.length} events buffered</p>
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">Real-time activity stream · polling every {POLL_INTERVAL / 1000}s · {logs.length} events buffered</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -104,7 +127,7 @@ const LiveMonitorPanel: React.FC = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
               paused
                 ? 'border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
-                : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'
+                : 'border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
           >
             {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
@@ -115,7 +138,7 @@ const LiveMonitorPanel: React.FC = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
               autoScroll
                 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800'
+                : 'border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800'
             }`}
           >
             <ArrowDownToLine className="h-3.5 w-3.5" />
@@ -123,7 +146,7 @@ const LiveMonitorPanel: React.FC = () => {
           </button>
           <button
             onClick={() => { setLogs([]); seenIds.current.clear(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-red-300 text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-red-300 text-xs font-medium transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Clear
@@ -133,15 +156,15 @@ const LiveMonitorPanel: React.FC = () => {
 
       {/* Action counters */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold flex items-center gap-1">
+        <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 font-semibold flex items-center gap-1">
           <Filter className="h-3 w-3" /> Filter
         </span>
         <button
           onClick={() => setFilter(null)}
           className={`px-2.5 py-1 rounded-full border text-[11px] font-mono transition-colors ${
             filter === null
-              ? 'border-zinc-600 bg-zinc-800 text-zinc-100'
-              : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800/50'
+              ? 'border-gray-300 dark:border-zinc-600 bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-100'
+              : 'border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 text-gray-500 dark:text-zinc-400 hover:bg-gray-100/50 dark:hover:bg-zinc-800/50'
           }`}
         >
           ALL · {logs.length}
@@ -156,9 +179,9 @@ const LiveMonitorPanel: React.FC = () => {
               onClick={() => setFilter(active ? null : a)}
               className="px-2.5 py-1 rounded-full border text-[11px] font-mono transition-colors flex items-center gap-1.5"
               style={{
-                borderColor: active ? actionAccent[a] : 'rgb(39 39 42)',
-                backgroundColor: active ? `${actionAccent[a]}1f` : 'rgb(24 24 27 / 0.5)',
-                color: active ? actionAccent[a] : 'rgb(161 161 170)',
+                borderColor: active ? actionAccent[a] : (isDark ? '#27272a' : '#e5e7eb'),
+                backgroundColor: active ? `${actionAccent[a]}1f` : (isDark ? 'rgba(24,24,27,0.5)' : 'rgba(249,250,251,0.8)'),
+                color: active ? actionAccent[a] : (isDark ? '#a1a1aa' : '#6b7280'),
               }}
             >
               <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: actionAccent[a] }} />
@@ -169,13 +192,13 @@ const LiveMonitorPanel: React.FC = () => {
       </div>
 
       {/* Terminal Stream */}
-      <div className="rounded-xl border border-zinc-800 bg-black/60 overflow-hidden shadow-2xl">
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-zinc-800 bg-zinc-950">
+      <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-white/60 dark:bg-black/60 overflow-hidden shadow-2xl">
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950">
           <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
-          <span className="ml-3 text-[11px] font-mono text-zinc-500">~/dev-console/live-monitor</span>
-          <span className="ml-auto text-[10px] font-mono text-zinc-600">
+          <span className="ml-3 text-[11px] font-mono text-gray-400 dark:text-zinc-500">~/dev-console/live-monitor</span>
+          <span className="ml-auto text-[10px] font-mono text-gray-400 dark:text-zinc-600">
             {filtered.length} {filter ? `· filtered (${filter})` : 'events'}
           </span>
         </div>
@@ -189,7 +212,7 @@ const LiveMonitorPanel: React.FC = () => {
           className="h-[480px] overflow-y-auto font-mono text-[12px] leading-6 px-4 py-3 bg-[radial-gradient(ellipse_at_top,_rgba(16,185,129,0.04),_transparent_70%)]"
         >
           {filtered.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-xs">
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 text-xs">
               <ActivityIcon className="h-8 w-8 mb-2 opacity-30" />
               {paused ? 'Stream paused' : filter ? `Waiting for ${filter} events…` : 'Waiting for events…'}
             </div>
@@ -200,23 +223,23 @@ const LiveMonitorPanel: React.FC = () => {
               const ts = new Date(log.createdAt);
               const timeStr = ts.toISOString().split('T')[1].split('.')[0];
               return (
-                <div key={log.id} className="flex items-start gap-2 hover:bg-zinc-900/30 -mx-2 px-2 rounded">
-                  <span className="text-zinc-600 select-none flex-shrink-0">{timeStr}</span>
+                <div key={log.id} className="flex items-start gap-2 hover:bg-gray-50/30 dark:hover:bg-zinc-900/30 -mx-2 px-2 rounded">
+                  <span className="text-gray-400 dark:text-zinc-600 select-none flex-shrink-0">{timeStr}</span>
                   <span
                     className="px-1.5 rounded text-[10px] font-bold flex-shrink-0 uppercase"
                     style={{ color: accent, backgroundColor: `${accent}1a` }}
                   >
                     {log.action}
                   </span>
-                  <span className="text-zinc-500 flex-shrink-0">{log.entityType?.padEnd(8) || 'unknown'}</span>
-                  <span className="text-zinc-300 flex-1 min-w-0 break-words">{log.description}</span>
-                  <span className="text-zinc-600 flex-shrink-0 hidden md:inline">{log.user?.email || 'system'}</span>
+                  <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0">{log.entityType?.padEnd(8) || 'unknown'}</span>
+                  <span className="text-gray-600 dark:text-zinc-300 flex-1 min-w-0 break-words">{log.description}</span>
+                  <span className="text-gray-400 dark:text-zinc-600 flex-shrink-0 hidden md:inline">{log.user?.email || 'system'}</span>
                 </div>
               );
             })
           )}
         </div>
-        <div className="flex items-center justify-between px-4 py-1.5 border-t border-zinc-800 bg-zinc-950 text-[10px] font-mono text-zinc-600">
+        <div className="flex items-center justify-between px-4 py-1.5 border-t border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-[10px] font-mono text-gray-400 dark:text-zinc-600">
           <span>● {paused ? 'PAUSED' : 'STREAMING'}</span>
           <span>{timeAgo(new Date().toISOString())} · last poll</span>
         </div>
@@ -250,7 +273,7 @@ const ActivityHeatmap: React.FC<{ data: { date: string; count: number }[] }> = (
   }
 
   const colorFor = (count: number) => {
-    if (count === 0) return 'rgb(24 24 27)';
+    if (count === 0) return 'var(--heatmap-empty, #f3f4f6)';
     const intensity = Math.min(1, count / max);
     const alpha = 0.2 + intensity * 0.8;
     return `rgba(16, 185, 129, ${alpha})`;
@@ -259,19 +282,19 @@ const ActivityHeatmap: React.FC<{ data: { date: string; count: number }[] }> = (
   const total = days.reduce((s, d) => s + d.count, 0);
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+    <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40 p-5">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-200">Activity Heatmap</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">{total.toLocaleString()} events in the last 90 days</p>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-zinc-200">Activity Heatmap</h3>
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">{total.toLocaleString()} events in the last 90 days</p>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-zinc-500">
           <span>Less</span>
           {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
             <span
               key={i}
-              className="h-2.5 w-2.5 rounded-sm border border-zinc-800"
-              style={{ backgroundColor: v === 0 ? 'rgb(24 24 27)' : `rgba(16, 185, 129, ${0.2 + v * 0.8})` }}
+              className="h-2.5 w-2.5 rounded-sm border border-gray-100 dark:border-zinc-800"
+              style={{ backgroundColor: v === 0 ? 'var(--heatmap-empty, #f3f4f6)' : `rgba(16, 185, 129, ${0.2 + v * 0.8})` }}
             />
           ))}
           <span>More</span>
@@ -285,7 +308,7 @@ const ActivityHeatmap: React.FC<{ data: { date: string; count: number }[] }> = (
                 day ? (
                   <div
                     key={di}
-                    className="h-2.5 w-2.5 rounded-[2px] border border-zinc-800/60 hover:ring-1 hover:ring-emerald-400 transition-all cursor-pointer"
+                    className="h-2.5 w-2.5 rounded-[2px] border border-gray-100/60 dark:border-zinc-800/60 hover:ring-1 hover:ring-emerald-400 transition-all cursor-pointer"
                     style={{ backgroundColor: colorFor(day.count) }}
                     title={`${day.date.toDateString()} · ${day.count} events`}
                   />

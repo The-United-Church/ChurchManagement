@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
+import { applyTheme, getAppliedResolvedTheme, getStoredTheme, normalizeTheme, resolveTheme, THEME_CHANGE_EVENT, THEME_STORAGE_KEY, type Theme } from '@/lib/theme';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import {
   fetchWebsiteVisitStats,
 } from '@/lib/api';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useProfile } from '@/hooks/useAuthQuery';
 import { useChurch } from '@/components/church/ChurchProvider';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Shield, RefreshCw, CheckCircle2, AlertCircle, Search, Bell, Command as CommandIcon, ArrowLeft } from 'lucide-react';
@@ -43,14 +45,44 @@ const SECTION_KEYS: Record<string, DevSection> = {
 
 const SuperAdmin = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { data: profile } = useProfile();
   const { effectiveRole } = useChurch();
   const navigate = useNavigate();
+
+  const userTheme = useMemo<Theme>(() => {
+    const remoteTheme = (profile as { settings?: { appearance?: { theme?: unknown } } } | undefined)?.settings?.appearance?.theme;
+    const localTheme = typeof window !== 'undefined' ? window.localStorage.getItem(THEME_STORAGE_KEY) : null;
+    return localTheme ? normalizeTheme(localTheme) : remoteTheme ? normalizeTheme(remoteTheme) : getStoredTheme();
+  }, [profile]);
 
   const [section, setSection] = useState<DevSection>('overview');
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mountedAt] = useState(() => Date.now());
   const [now, setNow] = useState(Date.now());
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => getAppliedResolvedTheme());
+
+  useLayoutEffect(() => {
+    applyTheme(userTheme);
+    setResolvedTheme(resolveTheme(userTheme));
+  }, [userTheme]);
+
+  useEffect(() => {
+    const update = () => setResolvedTheme(getAppliedResolvedTheme());
+    const updateSystemTheme = () => {
+      if (userTheme === 'system') setResolvedTheme(resolveTheme('system'));
+    };
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    update();
+    window.addEventListener('storage', update);
+    window.addEventListener(THEME_CHANGE_EVENT, update);
+    mediaQuery.addEventListener?.('change', updateSystemTheme);
+    return () => {
+      window.removeEventListener('storage', update);
+      window.removeEventListener(THEME_CHANGE_EVENT, update);
+      mediaQuery.removeEventListener?.('change', updateSystemTheme);
+    };
+  }, [userTheme]);
 
   // Data
   const [displayUsers, setDisplayUsers] = useState<DisplayUser[]>([]);
@@ -183,7 +215,7 @@ const SuperAdmin = () => {
   const uptimeSecs = Math.floor((now - mountedAt) / 1000);
 
   return (
-    <div className="dark flex h-screen bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30">
+    <div className={`${resolvedTheme === 'dark' ? 'dark' : ''} flex h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 selection:bg-emerald-500/30`}>
       <DevSidebar current={section} onChange={setSection} collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} badges={badges} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header
@@ -196,7 +228,7 @@ const SuperAdmin = () => {
           onOpenPalette={() => setPaletteOpen(true)}
         />
         <MobileNav current={section} onChange={setSection} badges={badges} />
-        <main className="flex-1 overflow-y-auto bg-gradient-to-b from-zinc-950 via-zinc-950 to-black p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-b from-white dark:from-zinc-950 via-white dark:via-zinc-950 to-gray-50 dark:to-black p-4 md:p-6">
           {section === 'overview' && (
             <OverviewPanel
               stats={stats}
@@ -247,31 +279,31 @@ const Header: React.FC<{
 }> = ({ health, loading, uptime, alerts, onBack, onRefresh, onOpenPalette }) => {
   const isHealthy = health?.status === 'OK';
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+    <header className="border-b border-gray-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm px-4 md:px-6 py-3 flex items-center justify-between gap-4">
       <div className="flex items-center gap-4 min-w-0">
         <Button
           variant="outline"
           size="sm"
           onClick={onBack}
-          className="h-8 border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+          className="h-8 border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-gray-900 dark:hover:text-zinc-100"
         >
           <ArrowLeft className="h-3.5 w-3.5 mr-1" />
           <span className="hidden sm:inline">Dashboard</span>
         </Button>
         <div className="min-w-0">
-          <h1 className="text-base md:text-lg font-semibold tracking-tight flex items-center gap-2 text-zinc-100">
+          <h1 className="text-base md:text-lg font-semibold tracking-tight flex items-center gap-2 text-gray-900 dark:text-zinc-100">
             <Shield className="h-4 w-4 text-emerald-400" />
             Developer Console
-            <span className="hidden md:inline text-[10px] font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 rounded px-1.5 py-0.5">
+            <span className="hidden md:inline text-[10px] font-mono text-gray-400 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded px-1.5 py-0.5">
               {window.location.hostname.includes('localhost') ? 'DEV' : 'PROD'}
             </span>
           </h1>
-          <p className="text-[11px] text-zinc-500 mt-0.5 hidden sm:flex items-center gap-3">
+          <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-0.5 hidden sm:flex items-center gap-3">
             <span className="flex items-center gap-1">
               <span className={`h-1.5 w-1.5 rounded-full ${isHealthy ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
               {isHealthy ? 'All systems operational' : 'Service degraded'}
             </span>
-            <span className="text-zinc-700">·</span>
+            <span className="text-gray-300 dark:text-zinc-700">·</span>
             <span className="font-mono">Session {formatUptime(uptime)}</span>
           </p>
         </div>
@@ -280,18 +312,18 @@ const Header: React.FC<{
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenPalette}
-          className="hidden md:flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+          className="hidden md:flex items-center gap-2 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 hover:bg-gray-50 dark:hover:bg-zinc-900 px-2.5 py-1.5 text-xs text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200 transition-colors"
         >
           <Search className="h-3.5 w-3.5" />
           <span>Search commands…</span>
-          <kbd className="ml-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] font-mono">
+          <kbd className="ml-2 flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 text-[10px] font-mono">
             <CommandIcon className="h-2.5 w-2.5" />K
           </kbd>
         </button>
 
         <button
           onClick={onOpenPalette}
-          className="md:hidden flex items-center justify-center h-8 w-8 rounded-md border border-zinc-800 bg-zinc-900/50 text-zinc-400"
+          className="md:hidden flex items-center justify-center h-8 w-8 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 text-gray-500 dark:text-zinc-400"
         >
           <Search className="h-4 w-4" />
         </button>
@@ -299,7 +331,7 @@ const Header: React.FC<{
         {alerts > 0 && (
           <div className="relative">
             <Bell className="h-4 w-4 text-amber-400" />
-            <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-1 rounded-full bg-amber-500 text-[9px] font-bold text-zinc-950 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-1 rounded-full bg-amber-500 text-[9px] font-bold text-gray-900 dark:text-zinc-950 flex items-center justify-center">
               {alerts}
             </span>
           </div>
@@ -322,7 +354,7 @@ const Header: React.FC<{
           size="sm"
           onClick={onRefresh}
           disabled={loading}
-          className="border-zinc-800 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-900 hover:text-zinc-100"
+          className="border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/50 text-gray-600 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900 hover:text-gray-900 dark:hover:text-zinc-100"
         >
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Refresh</span>

@@ -38,7 +38,7 @@ const PIPELINE_STAGES: { key: string; label: string; matches: Status[] }[] = [
 const STATUS_COLORS: Record<Status, { tone: string; text: string; dot: string; gradient: string }> = {
   pending:  { tone: 'border-amber-500/30 bg-amber-500/5',     text: 'text-amber-300',   dot: 'bg-amber-400',   gradient: 'from-amber-500 to-amber-600' },
   active:   { tone: 'border-emerald-500/30 bg-emerald-500/5', text: 'text-emerald-300', dot: 'bg-emerald-400', gradient: 'from-emerald-500 to-emerald-600' },
-  inactive: { tone: 'border-zinc-700 bg-zinc-900/40',         text: 'text-zinc-400',    dot: 'bg-zinc-500',    gradient: 'from-zinc-600 to-zinc-700' },
+  inactive: { tone: 'border-gray-200 dark:border-zinc-700 bg-gray-50/40 dark:bg-zinc-900/40',         text: 'text-gray-500 dark:text-zinc-400',    dot: 'bg-gray-300 dark:bg-zinc-500',    gradient: 'from-gray-300 to-gray-400 dark:from-zinc-600 dark:to-zinc-700' },
   rejected: { tone: 'border-red-500/30 bg-red-500/5',         text: 'text-red-300',     dot: 'bg-red-400',     gradient: 'from-red-500 to-red-600' },
 };
 
@@ -160,18 +160,18 @@ const CustomDomainsPanel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2">
             <Globe className="h-4 w-4 text-emerald-400" />
             Custom Domains
           </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5">
             {domains.length} total · {counts.pending} pending · {counts.active} live
           </p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 text-xs font-medium disabled:opacity-50 w-fit"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 hover:text-gray-900 dark:hover:text-zinc-100 text-xs font-medium disabled:opacity-50 w-fit"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           Refresh
@@ -187,14 +187,14 @@ const CustomDomainsPanel: React.FC = () => {
             className={`text-left rounded-xl border p-3 transition-all ${
               statusFilter === s
                 ? `${STATUS_COLORS[s].tone} ring-1 ring-current ${STATUS_COLORS[s].text}`
-                : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700'
+                : 'border-gray-100 dark:border-zinc-800 bg-gray-50/40 dark:bg-zinc-900/40 hover:border-gray-200 dark:hover:border-zinc-700'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{s}</span>
+              <span className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-zinc-500 font-semibold">{s}</span>
               <span className={`h-1.5 w-1.5 rounded-full ${STATUS_COLORS[s].dot}`} />
             </div>
-            <div className={`text-2xl font-semibold tabular-nums mt-1 ${statusFilter === s ? STATUS_COLORS[s].text : 'text-zinc-100'}`}>
+            <div className={`text-2xl font-semibold tabular-nums mt-1 ${statusFilter === s ? STATUS_COLORS[s].text : 'text-gray-900 dark:text-zinc-100'}`}>
               {counts[s]}
             </div>
           </button>
@@ -204,18 +204,18 @@ const CustomDomainsPanel: React.FC = () => {
       {/* Search */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-zinc-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search domains, churches…"
-            className="w-full bg-zinc-900/50 border border-zinc-800 rounded-md pl-8 pr-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-zinc-700"
+            className="w-full bg-gray-50/50 dark:bg-zinc-900/50 border border-gray-100 dark:border-zinc-800 rounded-md pl-8 pr-3 py-1.5 text-sm text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-600 outline-none focus:border-gray-200 dark:focus:border-zinc-700"
           />
         </div>
         {statusFilter !== 'all' && (
           <button
             onClick={() => setStatusFilter('all')}
-            className="text-xs text-zinc-500 hover:text-zinc-300"
+            className="text-xs text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
           >
             Clear filter
           </button>
@@ -225,12 +225,12 @@ const CustomDomainsPanel: React.FC = () => {
       {/* Pipeline cards */}
       {loading && domains.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-zinc-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400 dark:text-zinc-600" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-12 text-center">
-          <Globe className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
-          <p className="text-sm text-zinc-500">No domains found</p>
+        <div className="rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/30 dark:bg-zinc-900/30 p-12 text-center">
+          <Globe className="h-8 w-8 text-gray-300 dark:text-zinc-700 mx-auto mb-2" />
+          <p className="text-sm text-gray-400 dark:text-zinc-500">No domains found</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -284,24 +284,24 @@ const CustomDomainsPanel: React.FC = () => {
       />
 
       <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="bg-white dark:bg-zinc-950 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100">
           <DialogHeader>
             <DialogTitle>Reject Domain Request</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-zinc-400">
-              Provide a reason for rejecting <strong className="text-zinc-100 font-mono">{rejectTarget?.domain}</strong>.
+            <p className="text-sm text-gray-500 dark:text-zinc-400">
+              Provide a reason for rejecting <strong className="text-gray-900 dark:text-zinc-100 font-mono">{rejectTarget?.domain}</strong>.
             </p>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. Domain ownership not verified…"
-              className="bg-zinc-900 border-zinc-800 text-zinc-100"
+              className="bg-gray-50 dark:bg-zinc-900 border-gray-100 dark:border-zinc-800 text-gray-900 dark:text-zinc-100"
               rows={4}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTarget(null)} className="border-zinc-700 bg-zinc-900 text-zinc-300">
+            <Button variant="outline" onClick={() => setRejectTarget(null)} className="border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-zinc-300">
               Cancel
             </Button>
             <Button
@@ -349,19 +349,19 @@ const DomainCard: React.FC<{
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-sm font-semibold text-zinc-100 truncate">{d.domain}</span>
+              <span className="font-mono text-sm font-semibold text-gray-900 dark:text-zinc-100 truncate">{d.domain}</span>
               <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] uppercase tracking-wider font-semibold ${tone.tone} ${tone.text}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${tone.dot} ${d.status === 'active' ? 'animate-pulse' : ''}`} />
                 {d.status}
               </span>
             </div>
-            <div className="text-xs text-zinc-400 mt-0.5 truncate">
+            <div className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5 truncate">
               {d.display_name || d.church_name || '—'}
-              {d.branch?.name && <span className="text-zinc-500"> · {d.branch.name}</span>}
-              {d.denomination?.denomination_name && <span className="text-zinc-600"> · {d.denomination.denomination_name}</span>}
+              {d.branch?.name && <span className="text-gray-400 dark:text-zinc-500"> · {d.branch.name}</span>}
+              {d.denomination?.denomination_name && <span className="text-gray-400 dark:text-zinc-600"> · {d.denomination.denomination_name}</span>}
             </div>
             {d.created_at && (
-              <div className="text-[10px] text-zinc-600 mt-0.5">
+              <div className="text-[10px] text-gray-400 dark:text-zinc-600 mt-0.5">
                 Submitted {format(new Date(d.created_at), 'MMM d, yyyy')}
               </div>
             )}
@@ -371,7 +371,7 @@ const DomainCard: React.FC<{
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={onCopy}
-            className="flex items-center gap-1 px-2 py-1 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 text-xs"
+            className="flex items-center gap-1 px-2 py-1 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs"
             title="Copy domain"
           >
             {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
@@ -382,7 +382,7 @@ const DomainCard: React.FC<{
               href={previewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2 py-1 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 text-xs"
+              className="flex items-center gap-1 px-2 py-1 rounded-md border border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-400 hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs"
               title="Open live site"
             >
               <ExternalLink className="h-3 w-3" />
@@ -394,7 +394,7 @@ const DomainCard: React.FC<{
 
       {/* Pipeline progress */}
       <div className="mt-3">
-        <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1.5">
+        <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-zinc-500 mb-1.5">
           {PIPELINE_STAGES.map((stage, i) => {
             const reached =
               (stage.key === 'submitted') ||
@@ -403,7 +403,7 @@ const DomainCard: React.FC<{
             return (
               <span
                 key={stage.key}
-                className={`uppercase tracking-wider font-semibold ${reached ? tone.text : 'text-zinc-700'}`}
+                className={`uppercase tracking-wider font-semibold ${reached ? tone.text : 'text-gray-300 dark:text-zinc-700'}`}
                 style={{ flex: i === PIPELINE_STAGES.length - 1 ? 'none' : 1 }}
               >
                 {stage.label}
@@ -411,13 +411,13 @@ const DomainCard: React.FC<{
             );
           })}
         </div>
-        <div className="h-1.5 rounded-full bg-zinc-800/80 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-gray-100/80 dark:bg-zinc-800/80 overflow-hidden">
           <div
             className={`h-full bg-gradient-to-r ${tone.gradient} transition-all`}
             style={{ width: `${progress.pct}%` }}
           />
         </div>
-        <div className="text-[10px] text-zinc-500 mt-1">{progress.label}</div>
+        <div className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1">{progress.label}</div>
       </div>
 
       {/* Rejection reason */}
@@ -429,7 +429,7 @@ const DomainCard: React.FC<{
       )}
 
       {/* Actions */}
-      <div className="mt-3 pt-3 border-t border-zinc-800/60 flex items-center gap-2 flex-wrap">
+      <div className="mt-3 pt-3 border-t border-gray-100/60 dark:border-zinc-800/60 flex items-center gap-2 flex-wrap">
         {d.status === 'pending' && (
           <>
             <Button
@@ -476,7 +476,7 @@ const DomainCard: React.FC<{
             Reactivate
           </Button>
         )}
-        {working && <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-500" />}
+        {working && <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400 dark:text-zinc-500" />}
       </div>
     </div>
   );
