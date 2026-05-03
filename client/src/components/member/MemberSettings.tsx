@@ -12,6 +12,7 @@ import {
   Eye,
   Loader2,
   Mail,
+  MapPin,
   MessageCircle,
   Monitor,
   Moon,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useAuthQuery';
+import { useLocationBroadcast } from '@/hooks/useLocationBroadcast';
 import { updateSettingsApi } from '@/lib/api';
 import { applyTheme, getStoredTheme, normalizeTheme, persistTheme, type Theme } from '@/lib/theme';
 import MemberProfile from './MemberProfile';
@@ -27,6 +29,7 @@ import MemberProfile from './MemberProfile';
 const MemberSettings: React.FC = () => {
   const { data: profile } = useProfile();
   const queryClient = useQueryClient();
+  const liveLocation = useLocationBroadcast();
 
   // ── Theme ──────────────────────────────────────────────────────────────────
   const [theme, setTheme] = useState<Theme>(
@@ -289,6 +292,55 @@ const MemberSettings: React.FC = () => {
               Apply Theme
             </Button>
             <p className="text-sm text-gray-600">Changes will be applied immediately</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Live Location
+            {liveLocation.isTracking && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs font-medium border border-emerald-200">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600"></span>
+                </span>
+                Live
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Share your real-time GPS location with your branch admin. You can turn this off at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+            <div className="space-y-1">
+              <Label className="text-base font-medium">Share live location</Label>
+              <p className="text-sm text-gray-600">
+                When on, your admin can see your live position on the Member Map. We never store your trail on our servers — it's wiped the moment you turn this off or close the app.
+              </p>
+              {liveLocation.lastPosition && (
+                <p className="text-xs text-muted-foreground">
+                  Last sent: {liveLocation.lastPosition.lat.toFixed(5)}, {liveLocation.lastPosition.lng.toFixed(5)}
+                  {' '}±{Math.round(liveLocation.lastPosition.accuracy)}m
+                </p>
+              )}
+              {!liveLocation.supported && (
+                <p className="text-xs text-red-600">Geolocation is not supported on this device.</p>
+              )}
+              {liveLocation.error && (
+                <p className="text-xs text-red-600">{liveLocation.error}</p>
+              )}
+            </div>
+            <Switch
+              checked={liveLocation.isTracking}
+              disabled={!liveLocation.supported}
+              onCheckedChange={() => liveLocation.toggle()}
+              aria-label="Toggle live location sharing"
+            />
           </div>
         </CardContent>
       </Card>

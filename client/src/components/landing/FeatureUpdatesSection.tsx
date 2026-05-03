@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, CalendarDays, QrCode, MapPin, Repeat, Image, Users, Eye, Copy, Globe, Palette, LayoutTemplate, Map, Navigation, Pin, Shield } from 'lucide-react';
+import { CheckCircle2, Clock, ChevronDown, ChevronUp, Sparkles, CalendarDays, QrCode, MapPin, Repeat, Image, Users, Eye, Copy, Globe, Palette, LayoutTemplate, Map, Navigation, Pin, Shield, Radio, BatteryCharging, Activity } from 'lucide-react';
 
 interface Release {
   period: string;
@@ -114,6 +114,39 @@ const releases: Release[] = [
       {
         icon: <Users className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />,
         text: 'Self-signup toggle — choose whether visitors who arrive via your custom domain can request to join the branch or are redirected away.',
+      },
+    ],
+  },
+  {
+    period: 'May 2026',
+    tag: 'Released',
+    title: 'Real-Time Member GPS Tracking',
+    description:
+      'A privacy-first live location layer on top of the Member Map. Members opt in from Settings, and admins watch their pins move on the map in real time — with movement trails, instant arrival toasts, and one-click follow.',
+    features: [
+      {
+        icon: <Radio className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: 'Live GPS broadcast — members flip a single switch in Settings to share their real-time location with their branch admin via Socket.IO.',
+      },
+      {
+        icon: <Activity className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: 'Movement trails on the map — admin sees a pulsing live marker that animates as the member moves, with a dotted polyline showing their last 8 positions.',
+      },
+      {
+        icon: <Navigation className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: '"Follow live" mode — one click auto-fits the map to the bounds of every member currently sharing, so dispatchers always see the whole pack.',
+      },
+      {
+        icon: <Users className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: 'Live count pill + roster — a green "● N live" badge in the header plus a chip-list of every active member; tap a chip to fly straight to their pin.',
+      },
+      {
+        icon: <BatteryCharging className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: 'Battery-aware throttling — emit interval automatically slows from 3s to 15s as battery drops below 20%, protecting member devices on long days.',
+      },
+      {
+        icon: <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />,
+        text: 'Privacy by design — nothing persists. Live positions live in server memory only and disappear the moment the member toggles off, closes the tab, or loses connection.',
       },
     ],
   },
