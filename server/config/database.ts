@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "../models/user.model";
+import path from "path";
 import dotenv from "dotenv";
 import { ActivityLog } from "../models/activity-log.model";
 import { Denomination, Branch, BranchMembership, BranchJoinRequest, BranchInvite, DenominationRequest, CustomDomain } from "../models/church";
@@ -41,6 +42,6 @@ export const AppDataSource = new DataSource({
                 FollowUpNotificationLog,
                 FollowUpSavedFilter
             ],
-    migrations: ["./migrations/*.ts"],
-    subscribers: ['./subscribers/*.ts'],
+    migrations: [path.join(__dirname, '../migrations/*.js')],
+    subscribers: [path.join(__dirname, '../subscribers/*.js')],
 }); 

@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import type { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddFollowupNotificationLogs20260503120000 implements MigrationInterface {
   name = "AddFollowupNotificationLogs20260503120000";
