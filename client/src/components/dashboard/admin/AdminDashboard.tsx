@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Target
 } from 'lucide-react';
+import { useFollowUpStats } from '@/hooks/useFollowUpsCrud';
 
 // Mock data - replace with backend API data when endpoints are available
 const mockData = {
@@ -36,6 +37,11 @@ const mockData = {
 };
 
 const AdminDashboard: React.FC = () => {
+  const { data: followUpStats } = useFollowUpStats();
+  const fuPending = followUpStats?.pending ?? 0;
+  const fuPendingThisMonth = followUpStats?.pendingThisMonth ?? 0;
+  const fuDone = followUpStats?.completed ?? 0;
+
   const averageAttendance =
     mockData.attendanceLast30Days.length > 0
       ? Math.round(
@@ -45,10 +51,8 @@ const AdminDashboard: React.FC = () => {
       : 0;
 
   const followUpProgress =
-    mockData.doneFollowUps + mockData.pendingFollowUps > 0
-      ? Math.round(
-          (mockData.doneFollowUps / (mockData.doneFollowUps + mockData.pendingFollowUps)) * 100
-        )
+    fuDone + fuPending > 0
+      ? Math.round((fuDone / (fuDone + fuPending)) * 100)
       : 0;
 
   return (
@@ -176,7 +180,7 @@ const AdminDashboard: React.FC = () => {
                 <Clock className="h-3 w-3 md:h-4 md:w-4 text-orange-600" />
                 <span className="text-xs md:text-sm">Pending Follow-ups</span>
               </div>
-              <span className="font-bold text-orange-600 text-sm md:text-base">{mockData.pendingFollowUps}</span>
+              <span className="font-bold text-orange-600 text-sm md:text-base">{fuPending}</span>
             </div>
             
             <div className="flex items-center justify-between">
@@ -184,7 +188,7 @@ const AdminDashboard: React.FC = () => {
                 <Calendar className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
                 <span className="text-xs md:text-sm">This Month</span>
               </div>
-              <span className="font-bold text-blue-600 text-sm md:text-base">{mockData.pendingFollowUpsThisMonth}</span>
+              <span className="font-bold text-blue-600 text-sm md:text-base">{fuPendingThisMonth}</span>
             </div>
             
             <div className="flex items-center justify-between">
@@ -192,7 +196,7 @@ const AdminDashboard: React.FC = () => {
                 <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                 <span className="text-xs md:text-sm">Completed</span>
               </div>
-              <span className="font-bold text-green-600 text-sm md:text-base">{mockData.doneFollowUps}</span>
+              <span className="font-bold text-green-600 text-sm md:text-base">{fuDone}</span>
             </div>
             
             <div className="space-y-2">

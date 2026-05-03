@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useChurch } from '@/components/church/ChurchProvider';
+import { useFollowUpStats } from '@/hooks/useFollowUpsCrud';
 import { useNavigate } from 'react-router-dom';
 import ChurchSelector from '@/components/church/ChurchSelector';
 
@@ -52,6 +53,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, collapsed = false, onToggleCollapse }) => {
   const { user, logout } = useAuth();
   const { effectiveRole, branchRole, currentChurch } = useChurch();
+  const { data: followUpStats } = useFollowUpStats();
   const navigate = useNavigate();
   const [contributionsOpen, setContributionsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -128,7 +130,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, colla
       label: 'Follow Ups',
       icon: ClipboardList,
       visible: canViewAnalytics || isBranchCoordinator,
-      badge: '15'
+      badge: (() => {
+        const n = (followUpStats?.pending ?? 0) + (followUpStats?.overdue ?? 0);
+        return n > 0 ? String(n) : undefined;
+      })()
     },
     {
       id: 'calendar',

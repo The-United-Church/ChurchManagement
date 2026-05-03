@@ -12,6 +12,10 @@ export interface SecuritySettings {
 export interface NotificationSettings {
   email: boolean;
   push: boolean;
+  whatsapp?: boolean;
+  followUpsEmail?: boolean;
+  followUpsInApp?: boolean;
+  followUpsWhatsapp?: boolean;
   communityUpdates: boolean;
   directMessages: boolean;
   mentions: boolean;

@@ -7,6 +7,7 @@ import { Denomination, Branch, BranchMembership, BranchJoinRequest, BranchInvite
 import { Person } from "../models/person.model";
 import { Event, EventAttendance, GuestAttendance } from "../models/event";
 import { WebsiteVisit } from "../models/website-visit.model";
+import { FollowUp, FollowUpContactLog, FollowUpNotificationLog, FollowUpSavedFilter } from "../models/follow-up.model";
 dotenv.config();
 
 export const AppDataSource = new DataSource({
@@ -34,7 +35,11 @@ export const AppDataSource = new DataSource({
                 Event,
                 EventAttendance,
                 GuestAttendance,
-                WebsiteVisit
+                WebsiteVisit,
+                FollowUp,
+                FollowUpContactLog,
+                FollowUpNotificationLog,
+                FollowUpSavedFilter
             ],
     migrations: ["./migrations/*.ts"],
     subscribers: ['./subscribers/*.ts'],

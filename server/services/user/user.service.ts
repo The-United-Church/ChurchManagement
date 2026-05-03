@@ -203,8 +203,14 @@ export class UserService {
     const respectPrivacy = !includePrivatePresence;
     const skip = (page - 1) * limit;
 
-    const applyCommonFilters = (qb: any) => {
-      if (role) qb.andWhere('user.role = :role', { role });
+    const applyCommonFilters = (qb: any, useBranchRole = false) => {
+      if (role) {
+        if (useBranchRole) {
+          qb.andWhere('bm.role = :role', { role });
+        } else {
+          qb.andWhere('user.role = :role', { role });
+        }
+      }
       if (excludeUserId) qb.andWhere('user.id != :excludeUserId', { excludeUserId });
       if (search?.trim()) {
         qb.andWhere(
@@ -217,7 +223,7 @@ export class UserService {
     if (branchId) {
       const qb = this.userRepository.createQueryBuilder('user')
         .innerJoinAndSelect('user.branchMemberships', 'bm', 'bm.branch_id = :branchId', { branchId });
-      applyCommonFilters(qb);
+      applyCommonFilters(qb, true);
       const [users, total] = await qb.orderBy('user.createdAt', 'DESC').skip(skip).take(limit).getManyAndCount();
       const data = users.map((u) => ({
         ...this.serializeUserWithPresence(u, respectPrivacy),

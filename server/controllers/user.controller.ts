@@ -113,8 +113,10 @@ export class UserController {
       const branchId = (req as any).branchId as string | undefined;
       const requesterId = (req as any).user?.id as string | undefined;
       const requesterRole = (req as any).user?.role as string | undefined;
+      const requesterBranchRole = (req as any).user?.branchRole as string | undefined;
       const denominationIds = (req as any).user?.denominationIds as string[] | undefined;
       const isAdminLike = requesterRole === 'admin' || requesterRole === 'super_admin';
+      const isPrivileged = isAdminLike || requesterBranchRole === 'admin' || requesterBranchRole === 'coordinator';
       const isSuperAdmin = requesterRole === 'super_admin';
 
       // Non-admin users must be scoped to an active branch selected via X-Branch-Id.
@@ -140,7 +142,7 @@ export class UserController {
         branchId,
         excludeUserId: requesterId,
         denominationIds: scopedDenomIds,
-        role: (role && typeof role === 'string' && isAdminLike) ? role : undefined,
+        role: (role && typeof role === 'string' && isPrivileged) ? role : undefined,
         includePrivatePresence: isSuperAdmin,
       });
 

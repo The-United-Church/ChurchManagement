@@ -288,6 +288,47 @@ export async function scheduleRecurringEvents(): Promise<void> {
   logger.info(`[CronService] Rescheduled ${updates.length} recurring event(s)`);
 }
 
+/**
+ * Follow-up automation, run hourly:
+ *   • Escalate overdue follow-ups to URGENT priority
+ *   • Detect absent members per-branch and create absent_member follow-ups
+ *   • Detect today's birthdays per-branch and create birthday follow-ups
+ */
+async function processFollowUpAutomation(): Promise<void> {
+  try {
+    const { FollowUpService } = await import("./follow-up.service");
+    const svc = new FollowUpService();
+
+    const escalated = await svc.escalateOverdue(3);
+    if (escalated > 0) logger.info(`[CronService] Escalated ${escalated} overdue follow-up(s)`);
+
+    const overdueNotifications = await svc.notifySevenDayOverdue();
+    if (overdueNotifications > 0) logger.info(`[CronService] Sent ${overdueNotifications} overdue follow-up notification recipient(s)`);
+
+    const highPriorityReminders = await svc.notifyHighPriorityDaily();
+    if (highPriorityReminders > 0) logger.info(`[CronService] Sent ${highPriorityReminders} high-priority follow-up reminder recipient(s)`);
+
+    // Per-branch automation
+    const branchRows: { id: string }[] = await AppDataSource.query(
+      `SELECT id FROM branches`,
+    );
+    let absentTotal = 0;
+    let birthdaysTotal = 0;
+    for (const b of branchRows) {
+      try {
+        absentTotal += await svc.detectAbsenteesForBranch(b.id, 1);
+        birthdaysTotal += await svc.detectBirthdaysForBranch(b.id);
+      } catch (err) {
+        logger.error(`[CronService] FollowUp automation failed for branch ${b.id}:`, err);
+      }
+    }
+    if (absentTotal > 0) logger.info(`[CronService] Created ${absentTotal} absent-member follow-up(s)`);
+    if (birthdaysTotal > 0) logger.info(`[CronService] Created ${birthdaysTotal} birthday follow-up(s)`);
+  } catch (err) {
+    logger.error("[CronService] Follow-up automation error:", err);
+  }
+}
+
 export function startCronJobs(): void {
   // Run every minute
   cron.schedule("* * * * *", async () => {
@@ -307,6 +348,13 @@ export function startCronJobs(): void {
     }
   });
 
-  logger.info("[CronService] Scheduled jobs started (every minute)");
+  // Follow-up automation runs hourly (cheaper, branch-wide scan)
+  cron.schedule("0 * * * *", async () => {
+    await processFollowUpAutomation();
+  });
+
+  logger.info("[CronService] Scheduled jobs started (events: every min, follow-ups: hourly)");
 }
+
+export { processFollowUpAutomation };
 

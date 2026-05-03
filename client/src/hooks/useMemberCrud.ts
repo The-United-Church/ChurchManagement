@@ -35,6 +35,7 @@ export function useMemberCrud() {
   const limit = PAGE_SIZE;
   const [searchTerm, setSearchTermState] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [roleFilter, setRoleFilterState] = useState('');
 
   // Debounce search and reset to page 1 on new search
   useEffect(() => {
@@ -48,9 +49,9 @@ export function useMemberCrud() {
   const branchId = currentBranch?.id;
 
   const { data: result = { data: [] as MemberDTO[], total: 0, activeCount: 0, adminCount: 0 }, isLoading: loading } = useQuery({
-    queryKey: queryKeys.members(branchId, page, limit, debouncedSearch),
+    queryKey: queryKeys.members(branchId, page, limit, debouncedSearch, roleFilter),
     queryFn: async () => {
-      const res = await fetchMembersApi({ page, limit, search: debouncedSearch || undefined });
+      const res = await fetchMembersApi({ page, limit, search: debouncedSearch || undefined, role: roleFilter || undefined });
       return { data: res.data ?? [], total: res.total ?? 0, activeCount: res.activeCount ?? 0, adminCount: res.adminCount ?? 0 };
     },
     staleTime: 30 * 1000,
@@ -64,6 +65,7 @@ export function useMemberCrud() {
 
   const setPage = (p: number) => setPageState(Math.max(1, Math.min(p, totalPages)));
   const setSearchTerm = (s: string) => setSearchTermState(s);
+  const setRoleFilter = (r: string) => { setRoleFilterState(r); setPageState(1); };
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['members', branchId ?? 'all'] });
@@ -200,6 +202,8 @@ export function useMemberCrud() {
     searchTerm,
     setPage,
     setSearchTerm,
+    roleFilter,
+    setRoleFilter,
     load,
     create,
     update,

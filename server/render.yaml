@@ -10,12 +10,134 @@ services:
       - key: DB_URL
         sync: false   # set this manually in Render dashboard
 
+  # ── Event status crons ──────────────────────────────────────────────────────
+
   - type: cron
-    name: update-event-status
+    name: publish-scheduled-events
     env: node
     schedule: "*/5 * * * *"
     buildCommand: npm install && npm run build
-    startCommand: node dist/jobs/updateEventStatus.js
+    startCommand: node dist/jobs/publishScheduledEvents.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"
+
+  - type: cron
+    name: mark-ongoing-events
+    env: node
+    schedule: "* * * * *"
+    buildCommand: npm install && npm run build
+    startCommand: node dist/jobs/markOngoingEvents.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"
+
+  - type: cron
+    name: close-elapsed-events
+    env: node
+    schedule: "*/5 * * * *"
+    buildCommand: npm install && npm run build
+    startCommand: node dist/jobs/closeElapsedEvents.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"
+
+  - type: cron
+    name: open-attendance-at-start
+    env: node
+    schedule: "* * * * *"
+    buildCommand: npm install && npm run build
+    startCommand: node dist/jobs/openAttendanceAtStart.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"
+
+  - type: cron
+    name: close-attendance-after-end
+    env: node
+    schedule: "*/5 * * * *"
+    buildCommand: npm install && npm run build
+    startCommand: node dist/jobs/closeAttendanceAfterEnd.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"
+
+  - type: cron
+    name: schedule-recurring-events
+    env: node
+    schedule: "0 * * * *"
+    buildCommand: npm install && npm run build
+    startCommand: node dist/jobs/scheduleRecurringEvents.js
     envVars:
       - key: NODE_ENV
         value: production

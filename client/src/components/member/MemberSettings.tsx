@@ -7,9 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
+  Bell,
   DollarSign,
   Eye,
   Loader2,
+  Mail,
+  MessageCircle,
   Monitor,
   Moon,
   Palette,
@@ -55,6 +58,15 @@ const MemberSettings: React.FC = () => {
   const [showOnlineStatus, setShowOnlineStatus] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
 
+  // ── Notifications ────────────────────────────────────────────────────────
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [whatsappNotifications, setWhatsappNotifications] = useState(false);
+  const [followUpsEmail, setFollowUpsEmail] = useState(true);
+  const [followUpsInApp, setFollowUpsInApp] = useState(true);
+  const [followUpsWhatsapp, setFollowUpsWhatsapp] = useState(false);
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
   // Hydrate from profile settings on load
   useEffect(() => {
     if (!profile?.settings) return;
@@ -80,6 +92,15 @@ const MemberSettings: React.FC = () => {
       if (typeof p.showActivityStatus === 'boolean') setShowActivityStatus(p.showActivityStatus);
       if (typeof p.allowDirectMessage === 'boolean') setAllowDirectMessage(p.allowDirectMessage);
       if (typeof p.showOnlineStatus === 'boolean') setShowOnlineStatus(p.showOnlineStatus);
+    }
+    if (s.notifications) {
+      const n = s.notifications;
+      if (typeof n.email === 'boolean') setEmailNotifications(n.email);
+      if (typeof n.push === 'boolean') setPushNotifications(n.push);
+      if (typeof n.whatsapp === 'boolean') setWhatsappNotifications(n.whatsapp);
+      if (typeof n.followUpsEmail === 'boolean') setFollowUpsEmail(n.followUpsEmail);
+      if (typeof n.followUpsInApp === 'boolean') setFollowUpsInApp(n.followUpsInApp);
+      if (typeof n.followUpsWhatsapp === 'boolean') setFollowUpsWhatsapp(n.followUpsWhatsapp);
     }
   }, [profile?.settings]);
 
@@ -172,6 +193,28 @@ const MemberSettings: React.FC = () => {
     setShowActivityStatus(false);
     setAllowDirectMessage(true);
     setShowOnlineStatus(false);
+  };
+
+  const handleSaveNotifications = async () => {
+    setSavingNotifications(true);
+    try {
+      await updateSettingsApi({
+        notifications: {
+          email: emailNotifications,
+          push: pushNotifications,
+          whatsapp: whatsappNotifications,
+          followUpsEmail,
+          followUpsInApp,
+          followUpsWhatsapp,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'profile'] });
+      toast.success('Notification settings saved');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to save notification settings');
+    } finally {
+      setSavingNotifications(false);
+    }
   };
 
   // ── Render helpers ─────────────────────────────────────────────────────────
@@ -325,6 +368,80 @@ const MemberSettings: React.FC = () => {
       </div>
     );
   };
+
+  const renderNotificationSettings = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notification Settings
+          </CardTitle>
+          <CardDescription>Choose how you want to receive church and follow-up updates</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {[
+            {
+              label: 'Email notifications',
+              description: 'Allow Church Flow to send account and ministry emails.',
+              icon: Mail,
+              value: emailNotifications,
+              onChange: setEmailNotifications,
+            },
+            {
+              label: 'In-app notifications',
+              description: 'Show unread notifications in the notification bell.',
+              icon: Bell,
+              value: pushNotifications,
+              onChange: setPushNotifications,
+            },
+            {
+              label: 'WhatsApp notifications',
+              description: 'Allow WhatsApp delivery when a WhatsApp provider is configured.',
+              icon: MessageCircle,
+              value: whatsappNotifications,
+              onChange: setWhatsappNotifications,
+            },
+          ].map(({ label, description, icon: Icon, value, onChange }) => (
+            <div key={label} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg">
+              <div className="flex gap-3">
+                <Icon className="h-5 w-5 text-gray-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-sm">{label}</h4>
+                  <p className="text-sm text-gray-600">{description}</p>
+                </div>
+              </div>
+              <Switch checked={value} onCheckedChange={(v) => onChange(v)} />
+            </div>
+          ))}
+
+          <div className="border rounded-lg p-4 space-y-4">
+            <div>
+              <h4 className="font-medium">Follow-up notifications</h4>
+              <p className="text-sm text-gray-600">Used for assignments, overdue alerts, and high-priority reminders.</p>
+            </div>
+            <div className="grid gap-3">
+              {[
+                { label: 'Follow-up in-app alerts', value: followUpsInApp, onChange: setFollowUpsInApp },
+                { label: 'Follow-up email alerts', value: followUpsEmail, onChange: setFollowUpsEmail },
+                { label: 'Follow-up WhatsApp alerts', value: followUpsWhatsapp, onChange: setFollowUpsWhatsapp },
+              ].map(({ label, value, onChange }) => (
+                <div key={label} className="flex items-center justify-between gap-3">
+                  <span className="text-sm">{label}</span>
+                  <Switch checked={value} onCheckedChange={(v) => onChange(v)} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button onClick={handleSaveNotifications} disabled={savingNotifications} className="w-full sm:w-auto">
+            {savingNotifications && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Save Notification Settings
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   const renderDirectorySettings = () => (
     <div className="space-y-6">
@@ -499,6 +616,7 @@ const MemberSettings: React.FC = () => {
           <TabsTrigger value="account" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Account</TabsTrigger>
           <TabsTrigger value="general" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">General</TabsTrigger>
           <TabsTrigger value="currency" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Currency</TabsTrigger>
+          <TabsTrigger value="notifications" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Notifications</TabsTrigger>
           <TabsTrigger value="privacy" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium">Privacy</TabsTrigger>
         </TabsList>
 
@@ -512,6 +630,10 @@ const MemberSettings: React.FC = () => {
 
         <TabsContent value="currency">
           {renderCurrencySettings()}
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          {renderNotificationSettings()}
         </TabsContent>
 
         <TabsContent value="privacy">

@@ -18,6 +18,7 @@ import MemberDirectory from '../member/MemberDirectory';
 import MemberLocationMap from '../member/MemberLocationMap';
 import MemberSettings from '../member/MemberSettings';
 import { EventListPage } from '../event/EventListPage';
+import FollowUpsManagement from '../dashboard/followups/FollowUpsManagement';
 
 interface MainLayoutProps {
   children?: React.ReactNode;
@@ -91,8 +92,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       case 'followups':
         return (
           <div className="p-4 md:p-6">
-            <h2 className="text-xl md:text-2xl font-bold mb-4">Follow Ups</h2>
-            <p className="text-gray-600">Follow-up tracking features will be implemented here.</p>
+            <FollowUpsManagement />
           </div>
         );
       case 'calendar':

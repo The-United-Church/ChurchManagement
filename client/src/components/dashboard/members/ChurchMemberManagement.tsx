@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   UserPlus,
   Search,
@@ -206,7 +207,7 @@ const MemberList: React.FC<MemberListProps> = ({ members, selectedIds, onToggleS
 // -- Main Component ---------------------------------------------------------
 const ChurchMemberManagement: React.FC = () => {
   const { currentChurch, currentBranch, effectiveRole, branchRole } = useChurch();
-  const { members, loading, saving, load, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, create, update, setBranchStatus, remove, removeMany, importMembers, activeCount, adminCount } = useMemberCrud();
+  const { members, loading, saving, load, total, page, totalPages, limit, searchTerm, setPage, setSearchTerm, roleFilter, setRoleFilter, create, update, setBranchStatus, remove, removeMany, importMembers, activeCount, adminCount } = useMemberCrud();
   const { people, load: loadPeople } = usePeopleCrud();
 
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
@@ -351,14 +352,27 @@ const ChurchMemberManagement: React.FC = () => {
                 </Button>
               )}
             </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search by name, email, phone..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Select value={roleFilter || 'all'} onValueChange={(v) => setRoleFilter(v === 'all' ? '' : v)}>
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="coordinator">Coordinator</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search by name, email, phone..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>

@@ -47,16 +47,24 @@ export function useRealtimeSync({ socket, branchId }: UseRealtimeSyncOptions) {
       queryClient.invalidateQueries({ queryKey: queryKeys.directory(branchId) });
     };
 
+    const onFollowUpsChanged = () => {
+      queryClient.invalidateQueries({ queryKey: ['followUps'] });
+      queryClient.invalidateQueries({ queryKey: ['followUpStats'] });
+      queryClient.invalidateQueries({ queryKey: ['followUpFunnel'] });
+    };
+
     socket.on('people:changed', onPeopleChanged);
     socket.on('members:changed', onMembersChanged);
     socket.on('churches:changed', onChurchesChanged);
     socket.on('presence:changed', onPresenceChanged);
+    socket.on('followups:changed', onFollowUpsChanged);
 
     return () => {
       socket.off('people:changed', onPeopleChanged);
       socket.off('members:changed', onMembersChanged);
       socket.off('churches:changed', onChurchesChanged);
       socket.off('presence:changed', onPresenceChanged);
+      socket.off('followups:changed', onFollowUpsChanged);
     };
   }, [socket, branchId, queryClient]);
 }

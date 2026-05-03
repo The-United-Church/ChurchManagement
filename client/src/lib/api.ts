@@ -224,11 +224,12 @@ export interface MemberDTO {
   is_online?: boolean;
 }
 
-export const fetchMembersApi = (params?: { page?: number; limit?: number; search?: string }) => {
+export const fetchMembersApi = (params?: { page?: number; limit?: number; search?: string; role?: string }) => {
   const p = new URLSearchParams();
   if (params?.page) p.set('page', String(params.page));
   if (params?.limit) p.set('limit', String(params.limit));
   if (params?.search) p.set('search', params.search);
+  if (params?.role) p.set('role', params.role);
   const qs = p.toString() ? `?${p.toString()}` : '';
   return request<{ data: MemberDTO[]; total: number; activeCount: number; adminCount: number; page: number; limit: number; status: number; message: string }>(`/user${qs}`);
 };
@@ -576,6 +577,10 @@ export interface UserSettings {
   notifications?: {
     email?: boolean;
     push?: boolean;
+    whatsapp?: boolean;
+    followUpsEmail?: boolean;
+    followUpsInApp?: boolean;
+    followUpsWhatsapp?: boolean;
     communityUpdates?: boolean;
     directMessages?: boolean;
     mentions?: boolean;
@@ -1128,4 +1133,105 @@ export interface GuestAttendeeRecord {
 
 export const fetchGuestAttendanceApi = (eventId: string, eventDate: string) =>
   request<{ data: GuestAttendeeRecord[]; status: number }>(`/events/${eventId}/guest-attendance?event_date=${eventDate}`);
+
+// ─── Follow-ups ─────────────────────────────────────────────────────────────
+import type {
+  FollowUp,
+  FollowUpContactLog,
+  CreateFollowUpDTO,
+  UpdateFollowUpDTO,
+  CreateContactLogDTO,
+  FollowUpStats,
+  FollowUpFunnel,
+  FollowUpFiltersState,
+  SavedFilter,
+} from '@/types/follow-up';
+
+export const fetchFollowUps = (params?: { page?: number; limit?: number } & FollowUpFiltersState) => {
+  const p = new URLSearchParams();
+  if (params?.page) p.set('page', String(params.page));
+  if (params?.limit) p.set('limit', String(params.limit));
+  if (params?.search) p.set('search', params.search);
+  if (params?.status?.length) p.set('status', params.status.join(','));
+  if (params?.type?.length) p.set('type', params.type.join(','));
+  if (params?.priority?.length) p.set('priority', params.priority.join(','));
+  if (params?.assigneeId) p.set('assigneeId', params.assigneeId);
+  if (params?.from) p.set('from', params.from);
+  if (params?.to) p.set('to', params.to);
+  if (params?.overdueOnly) p.set('overdueOnly', '1');
+  const qs = p.toString() ? `?${p.toString()}` : '';
+  return request<{ data: FollowUp[]; total: number; page: number; limit: number; status: number; message: string }>(
+    `/follow-ups${qs}`,
+  );
+};
+
+export const fetchFollowUpById = (id: string) =>
+  request<{ data: FollowUp; status: number; message: string }>(`/follow-ups/${id}`);
+
+export const createFollowUpApi = (data: CreateFollowUpDTO) =>
+  request<{ data: FollowUp; status: number; message: string }>(`/follow-ups`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const updateFollowUpApi = (id: string, data: UpdateFollowUpDTO) =>
+  request<{ data: FollowUp; status: number; message: string }>(`/follow-ups/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+export const deleteFollowUpsApi = (ids: string[]) =>
+  request<{ status: number; message: string; data: { deleted: number } }>(`/follow-ups`, {
+    method: 'DELETE',
+    body: JSON.stringify({ ids }),
+  });
+
+export const bulkAssignFollowUpsApi = (ids: string[], assigned_to: string | null) =>
+  request<{ status: number; message: string; data: { updated: number } }>(`/follow-ups/bulk/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ ids, assigned_to }),
+  });
+
+export const bulkSetFollowUpStatusApi = (ids: string[], status: string) =>
+  request<{ status: number; message: string; data: { updated: number } }>(`/follow-ups/bulk/status`, {
+    method: 'POST',
+    body: JSON.stringify({ ids, status }),
+  });
+
+export const autoAssignFollowUpsApi = () =>
+  request<{ status: number; message: string; data: { updated: number } }>(`/follow-ups/bulk/auto-assign`, {
+    method: 'POST',
+  });
+
+export const fetchFollowUpStats = () =>
+  request<{ data: FollowUpStats; status: number; message: string }>(`/follow-ups/stats`);
+
+export const fetchFollowUpFunnel = (months = 6) =>
+  request<{ data: FollowUpFunnel; status: number; message: string }>(`/follow-ups/funnel?months=${months}`);
+
+export const fetchFollowUpLogs = (id: string) =>
+  request<{ data: FollowUpContactLog[]; status: number; message: string }>(`/follow-ups/${id}/logs`);
+
+export const addFollowUpLogApi = (id: string, data: CreateContactLogDTO) =>
+  request<{ data: FollowUpContactLog; status: number; message: string }>(`/follow-ups/${id}/logs`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const fetchSavedFiltersApi = () =>
+  request<{ data: SavedFilter[]; status: number; message: string }>(`/follow-ups/saved-filters`);
+
+export const createSavedFilterApi = (name: string, filters: FollowUpFiltersState) =>
+  request<{ data: SavedFilter; status: number; message: string }>(`/follow-ups/saved-filters`, {
+    method: 'POST',
+    body: JSON.stringify({ name, filters }),
+  });
+
+export const deleteSavedFilterApi = (id: string) =>
+  request<{ status: number; message: string }>(`/follow-ups/saved-filters/${id}`, {
+    method: 'DELETE',
+  });
+
+
+
 

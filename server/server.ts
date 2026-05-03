@@ -19,10 +19,13 @@ const startServer = async () => {
     }
     logger.info('Database connected successfully');
 
-    // Only run built-in cron in local/dev — Render's native cron job handles production
-    // if (process.env.NODE_ENV !== 'production') {
-    //   startCronJobs();
-    // }
+    // Run cron jobs in-process when IN_TEST=true (local / staging).
+    // In production on Render, native cron services call the standalone job
+    // scripts instead — so we skip the in-process scheduler there.
+    if (process.env.IN_TEST === 'true') {
+      startCronJobs();
+      logger.info('Cron jobs started in-process (IN_TEST=true)');
+    }
 
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);

@@ -11,6 +11,7 @@ import eventRoutes from './routes/event.route';
 import denominationRequestRoutes from './routes/denomination-request.route';
 import customDomainRoutes from './routes/custom-domain.route';
 import websiteVisitRoutes from './routes/website-visit.route';
+import followUpRoutes from './routes/follow-up.route';
 import { errorHandler } from './middleware/error_handler.middleware';
 import { setupMiddleware } from './middleware';
 import { AppDataSource } from './config/database';
@@ -34,6 +35,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/denomination-requests', denominationRequestRoutes);
 app.use('/api/custom-domains', customDomainRoutes);
 app.use('/api/visits', websiteVisitRoutes);
+app.use('/api/follow-ups', followUpRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

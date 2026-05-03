@@ -54,3 +54,29 @@ services:
         value: "true"
       - key: APP_TIMEZONE
         value: "Africa/Lagos"
+
+  # Cron Job — follow-up automation (escalation, absentee, birthday) — runs hourly
+  - type: cron
+    name: process-follow-ups
+    env: node
+    region: oregon
+    schedule: "0 * * * *"
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && node dist/jobs/processFollowUps.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "Africa/Lagos"

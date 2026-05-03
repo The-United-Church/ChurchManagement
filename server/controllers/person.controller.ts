@@ -6,9 +6,12 @@ import { Person } from "../models/person.model";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { emitToBranch, emitToAll } from "../services/socket.service";
 import { normalizeEmail } from "../utils/email";
+import { FollowUpService } from "../services/follow-up.service";
+import { FollowUpType, FollowUpPriority } from "../models/follow-up.model";
 
 const personService = new PersonService();
 const userService = new UserService();
+const followUpService = new FollowUpService();
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -84,6 +87,27 @@ export const createPerson = asyncHandler(async (req: Request, res: Response) => 
   const bid = person.branch_id;
   if (bid) emitToBranch(bid, "people:changed", { action: "created" });
   else emitToAll("people:changed", { action: "created" });
+  // Auto-create a "first_visit" follow-up for the new visitor (best-effort, non-blocking)
+  if (bid) {
+    followUpService
+      .autoCreate(
+        {
+          branch_id: bid,
+          person_id: person.id,
+          type: FollowUpType.FIRST_VISIT,
+          priority: FollowUpPriority.MEDIUM,
+          notes: "Auto-created on visitor record creation. Reach out to welcome them.",
+          created_by: (req as AuthRequest).user?.id ?? null,
+        },
+        { skipIfDuplicate: true },
+      )
+      .then((fu) => {
+        if (fu && bid) emitToBranch(bid, "followups:changed", { action: "created", id: fu.id });
+      })
+      .catch(() => {
+        /* fire-and-forget */
+      });
+  }
   res.status(201).json({ data: person, status: 201, message: "Person created" });
 });
 
